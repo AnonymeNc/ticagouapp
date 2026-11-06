@@ -74,6 +74,12 @@
             <version>${fastexcel.version}</version>
         </dependency>
         <dependency>
+            <!-- Lecture des fichiers de reprise (ADR 0016) -->
+            <groupId>org.dhatim</groupId>
+            <artifactId>fastexcel-reader</artifactId>
+            <version>${fastexcel.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>

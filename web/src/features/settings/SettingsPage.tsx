@@ -34,9 +34,10 @@ import { StructureTab } from "./StructureTab";
 import { UsersTab } from "./UsersTab";
 import { PortalTab } from "@/features/portal/PortalTab";
 import { AccountingSettingsTab } from "@/features/accounting/AccountingSettingsTab";
+import { DataImportTab } from "@/features/dataimport/DataImportTab";
 
 type Tab = "structure" | "sections" | "encadrement" | "criteres" | "repas" | "bareme" | "financeurs" | "utilisateurs"
-  | "comptabilite" | "sauvegardes" | "appareils" | "portail";
+  | "comptabilite" | "sauvegardes" | "reprise" | "appareils" | "portail";
 
 /**
  * Rubriques de la maquette, par groupe ; la comptabilité ne voit que « Barème et financeurs ». Une rubrique d'un module
@@ -58,6 +59,7 @@ const GROUPS: { label: string; items: { key: Tab; label: string; meta: string; a
   { label: "Accès", items: [{ key: "utilisateurs", label: "Utilisateurs et rôles", meta: "Comptes, droits, personnel" }] },
   { label: "Système", items: [
     { key: "sauvegardes", label: "Sauvegardes", meta: "Chiffrées, chaque nuit" },
+    { key: "reprise", label: "Reprise des données", meta: "Depuis Excel, enfants et familles" },
     { key: "appareils", label: "Tablettes et abonnement", meta: "Appairage, abonnement" },
     { key: "portail", label: "Portail parents", meta: "Partage avec les familles", module: "PORTAIL_PARENTS" },
   ] },
@@ -115,6 +117,7 @@ export function SettingsPage() {
           {tab === "criteres" && <Criteria />}
           {tab === "utilisateurs" && <><UsersTab /><RightsMatrix />{modules.has("PERSONNEL") && <StaffSettingsSection />}</>}
           {tab === "sauvegardes" && <BackupsTab />}
+          {tab === "reprise" && <DataImportTab />}
           {tab === "appareils" && <><DevicesTab /><LicenseSection /></>}
           {tab === "portail" && <PortalTab />}
         </div>

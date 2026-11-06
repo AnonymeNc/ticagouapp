@@ -5,6 +5,7 @@
 
 ## Mettre en route une crèche
 
+- [Reprendre les données d'une crèche](14-reprise-des-donnees.md) : modèle Excel, relecture, import.
 - [Installer une tablette](04-tablettes.md) : un QR code, rien à installer.
 - [Relier une crèche au portail parents](08-portail-nouvelle-creche.md) : code d'activation, réglages, information des
   familles, invitations.
