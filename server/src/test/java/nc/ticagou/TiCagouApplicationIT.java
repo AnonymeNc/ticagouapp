@@ -3,8 +3,14 @@ package nc.ticagou;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import jakarta.validation.ValidatorFactory;
 
 class TiCagouApplicationIT extends IntegrationTest {
+
+    @Autowired
+    private ValidatorFactory validators;
 
     @Test
     void demarreAvecPostgresEtFlyway() {
@@ -22,6 +28,11 @@ class TiCagouApplicationIT extends IntegrationTest {
         assertThat(health.get("status").asText()).isEqualTo("UP");
         assertThat(health.get("database").asText()).isEqualTo("UP");
         assertThat(health.get("zone").asText()).isEqualTo("Pacific/Noumea");
+    }
+
+    @Test
+    void laValidationDesDatesSuitLeFuseauDeNoumea() {
+        assertThat(validators.getClockProvider().getClock().getZone().getId()).isEqualTo("Pacific/Noumea");
     }
 
     @Test
