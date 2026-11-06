@@ -27,7 +27,7 @@ export function mockApi(routes: Record<string, Reply>) {
   const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = new URL(String(input), "http://localhost");
     const key = `${init?.method ?? "GET"} ${url.pathname.replace(/^\/api\/v1/, "")}`;
-    const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+    const body = init?.body instanceof FormData ? init.body : init?.body ? JSON.parse(String(init.body)) : undefined;
     calls.push({ key, body, headers: (init?.headers ?? {}) as Record<string, string> });
     const route = routes[key];
     const reply = typeof route === "function" ? route(body) : route;

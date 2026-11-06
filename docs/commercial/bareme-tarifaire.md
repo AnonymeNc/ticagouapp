@@ -16,7 +16,8 @@
 - **Trois formules** : Essentiel, Gestion, Complet ([ADR 0015](../adr/0015-formules-et-modules.md)).
 - **Des modules à la carte**, qui s'ajoutent à toute formule. Le logiciel ne montre que ce qui est compris : menus et
   paramètres suivent la formule.
-- **Des prestations ponctuelles** facturées à part : mise en route, saisie, formation.
+- **Des prestations ponctuelles** facturées à part : mise en route, formation, saisie depuis le papier.
+- **La reprise des données est offerte** depuis un fichier numérique (§ 4) : changer de logiciel ne coûte rien de plus.
 - L'**hébergement**, les **sauvegardes**, les **mises à jour** et le **support standard** sont compris dans l'abonnement : c'est ce qui justifie un paiement
   récurrent plutôt qu'un achat unique.
 
@@ -71,13 +72,22 @@ Engagement : 1 an, renouvelable. **− 10 %** sur l'abonnement pour un engagemen
 |---|---|---|
 | **Mise en route** | 30 000 F | création de la crèche, paramétrage avec la directrice, à distance ou 2 h sur place |
 | Routeur 4G de secours | prix fournisseur + 15 % | recommandé : garde le bureau en ligne si la fibre coupe |
-| **Saisie initiale** des enfants et familles | 1 800 F par enfant, plafonné à 45 000 F jusqu'à 30 enfants | à partir du fichier de la crèche : fiches, familles, personnes autorisées, santé, contrats en cours |
+| **Reprise des données** depuis Excel ou Meeko | **offerte** | une reprise par crèche, avec une passe de correction : familles, responsables, enfants, personnes autorisées, santé, autorisations |
+| **Saisie depuis des dossiers papier** | 1 800 F par enfant, plafonné à 45 000 F jusqu'à 30 enfants | mêmes données, saisies à partir des dossiers de la crèche |
 | **Formation direction** | 30 000 F | 3 h, support remis ([12-formation-direction.md](../wiki/12-formation-direction.md)) |
 | **Formation équipes** | 15 000 F par séance | 1 h, jusqu'à 8 personnes ([13-formation-equipe.md](../wiki/13-formation-equipe.md)) |
 | Intervention sur site hors contrat | 9 000 F de l'heure | formation complémentaire, réglage du réseau |
 | Matériel (si fourni par vous) | prix fournisseur + 15 % | tablettes et supports |
 
 Offre de lancement possible : mise en route offerte pour un engagement de 3 ans.
+
+**Ce que couvre la reprise offerte.** La crèche remplit le modèle Excel de Ti'Cagou ou y copie son fichier, puis le dépose
+elle-même dans son instance : le fichier ne passe pas par e-mail. La direction relit les allergies, les PAI et les
+personnes autorisées avant de valider ([ADR 0016](../adr/0016-reprise-des-donnees.md)).
+
+- **Non repris :** les contrats en cours (ressaisis avec l'assistant de contrat), les anciennes factures (à conserver en
+  PDF : la numérotation Ti'Cagou commence à la mise en service), les pointages passés, les photos et les documents joints.
+- **Meeko :** ne pas l'annoncer tant qu'un export réel n'a pas été repris avec succès. Son format n'est pas encore connu.
 
 ## 5. Niveaux de support
 
@@ -96,7 +106,7 @@ Offre de lancement possible : mise en route offerte pour un engagement de 3 ans.
 | Ligne | Mensuel | Annuel |
 |---|---|---|
 | **Essentiel Structure** | **9 500 F** | **114 000 F** |
-| Première année : mise en route, saisie (20 enfants), formation direction | | 30 000 + 36 000 + 30 000 = **96 000 F** |
+| Première année : mise en route, formation direction (reprise des données offerte) | | 30 000 + 30 000 = **60 000 F** |
 
 **Micro-crèche de 12 places, Gestion et Repas, 1 PC, 2 tablettes**
 
@@ -105,7 +115,7 @@ Offre de lancement possible : mise en route offerte pour un engagement de 3 ans.
 | Gestion Micro | 11 500 F | 138 000 F |
 | Repas | 2 000 F | 24 000 F |
 | **Total abonnement** | **13 500 F** | **162 000 F** |
-| Première année : mise en route, saisie (12 enfants), formation direction, 1 séance équipe | | 30 000 + 21 600 + 30 000 + 15 000 = **96 600 F** |
+| Première année : mise en route, formation direction, 1 séance équipe (reprise des données offerte) | | 30 000 + 30 000 + 15 000 = **75 000 F** |
 
 **Crèche de 48 places, Complet, 2 PC, 5 tablettes, support Premium**
 
@@ -116,7 +126,9 @@ Offre de lancement possible : mise en route offerte pour un engagement de 3 ans.
 | Tablettes supplémentaires (3) | 3 000 F | 36 000 F |
 | Support Premium | 4 000 F | 48 000 F |
 | **Total abonnement** | **45 000 F** | **540 000 F** |
-| Première année : mise en route, saisie (48 enfants), formation direction, 2 séances équipes | | 30 000 + 86 400 + 30 000 + 30 000 = **176 400 F** |
+| Première année : mise en route, formation direction, 2 séances équipes (reprise des données offerte) | | 30 000 + 30 000 + 30 000 = **90 000 F** |
+
+Ces exemples supposent un fichier numérique ; depuis le papier, ajouter la saisie (§ 4).
 
 TGC à ajouter au taux applicable (pour des prestations informatiques, souvent le taux de 11 % : à confirmer avec votre
 comptable).
@@ -129,6 +141,7 @@ comptable).
 | Test d'intrusion | 180 000 à 360 000 F par an | hypothèse : un tous les deux ans |
 | Assurance RC professionnelle et cyber | à demander à votre assureur | |
 | Support | 0,75 h par client et par mois, hypothèse | à mesurer et suivre |
+| Reprise des données offerte | votre temps d'aide au remplissage du modèle | à mesurer : 12 minutes par enfant équivalent au tarif de saisie, à 9 000 F de l'heure |
 | Exploitation du serveur | 4 h par mois | |
 | Mises à jour et corrections | votre temps de développement | |
 

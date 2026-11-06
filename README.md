@@ -178,6 +178,8 @@ cd desktop; pnpm typecheck
   contrôlé et RIB imprimé sur les factures si coché), sections (trous et chevauchements signalés, passages à
   valider), encadrement, critères, repas, barème, financeurs, utilisateurs (avec la matrice des droits, en lecture),
   sauvegardes, tablettes et abonnement. Les rubriques suivent la formule ([ADR 0015](docs/adr/0015-formules-et-modules.md)).
+- **Reprise des données** ([ADR 0016](docs/adr/0016-reprise-des-donnees.md)) : modèle Excel, aperçu sans écriture, relecture de la
+  santé, import tout ou rien. Guide : [docs/wiki/14-reprise-des-donnees.md](docs/wiki/14-reprise-des-donnees.md).
 - **Sauvegardes** ([ADR 0007](docs/adr/0007-sauvegardes-chiffrees.md)) : chaque nuit ou à la demande, `pg_dump` et documents
   dans une archive AES-256-GCM ; rotation 7 jours, 4 semaines, 12 mois ; copie hors site par l'hébergement. « Tester une
   restauration » relit la dernière archive dans une base temporaire, puis la supprime.

@@ -43,7 +43,8 @@ fiscaux sont des pistes à faire valider par un comptable et un juriste au fait 
       paiement, mises à jour, support, limites de responsabilité, suspension pour impayé, fin de contrat et
       restitution des données.
 - [ ] **Accord de niveau de service** (support Standard et Premium du [barème](bareme-tarifaire.md#5-niveaux-de-support)).
-- [ ] **Contrat de sous-traitance des données personnelles** avec chaque crèche : vous hébergez leurs données d'enfants.
+- [ ] **Contrat de sous-traitance des données personnelles** avec chaque crèche : vous hébergez leurs données d'enfants
+      et vous aidez à leur reprise.
 - [ ] Clauses de **réversibilité** : export des données et restitution à la fin du contrat.
 - [ ] Modèles : devis, bon de commande, procès-verbal de mise en service (signé après la recette), facture.
 - [ ] Tableau des clients : numéro, crèche, RIDET, modules, dates, contacts, dates de renouvellement.
@@ -58,6 +59,7 @@ Ti'Cagou traite des **données de santé d'enfants** : c'est le point le plus se
 - [ ] Procédure en cas de **violation de données** (serveur compromis, accès non autorisé) : qui prévenir, sous quel délai.
 - [ ] Note d'information des familles pour le portail ([modèle](../wiki/08-portail-nouvelle-creche.md#4-informer-les-familles-avant-toute-invitation)).
 - [ ] Accès du support aux données de la crèche encadré : uniquement à la demande de la directrice, tracé.
+- [ ] Reprise des données : le fichier est déposé par la crèche dans son instance, jamais envoyé par e-mail.
 
 ## 6. L'organisation
 
@@ -75,6 +77,7 @@ Ti'Cagou traite des **données de santé d'enfants** : c'est le point le plus se
 - [ ] Barème validé auprès de directrices ([bareme-tarifaire.md § 8](bareme-tarifaire.md#8-comment-valider-ces-prix)).
 - [ ] Coût de revient par client calculé ([§ 7](bareme-tarifaire.md#7-ce-que-coûte-un-client-pour-vérifier-la-marge)).
 - [ ] Offre de lancement définie (crèches pilotes, engagement 3 ans).
+- [ ] Reprise Meeko essayée sur un export réel avant de l'annoncer ([barème § 4](bareme-tarifaire.md#4-prestations-ponctuelles)).
 
 ## 8. Faire connaître
 
@@ -94,4 +97,5 @@ Ti'Cagou traite des **données de santé d'enfants** : c'est le point le plus se
 - [ ] Devis signé, bon de commande, acompte éventuel.
 - [ ] Contrat d'abonnement et contrat de sous-traitance signés.
 - [ ] Internet de la crèche vérifié.
+- [ ] Reprise des données faite par la direction : allergies, PAI et personnes autorisées relus, contrats en cours ressaisis.
 - [ ] Crèche créée, abonnement enregistré, `creche.env` au coffre, recette, PV de mise en service signé, facture émise.
