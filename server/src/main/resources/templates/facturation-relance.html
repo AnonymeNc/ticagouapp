@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${documentTitle}">Relance</title>
+    <style th:replace="~{facturation-commun :: style}"></style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Rappel de paiement · facture FA-2026-0147</div>
+<table th:replace="~{facturation-commun :: header(${level}, ${place})}"></table>
+
+<table style="width: 100%; border-collapse: collapse; margin-bottom: 18pt">
+    <tr>
+        <td style="width: 55%"></td>
+        <td>
+            <strong th:text="${payerName}">Clémence Dupré</strong>
+            <div th:each="l : ${payerAddress}" th:text="${l}">12 rue Jules Ferry</div>
+        </td>
+    </tr>
+</table>
+
+<p><strong th:text="${'Objet : ' + level}">Objet : rappel de paiement</strong></p>
+<p>Madame, Monsieur,</p>
+<p th:text="${body}">Sauf erreur de notre part, la facture n’est pas encore réglée.</p>
+<p th:text="${request}">Nous vous remercions de bien vouloir effectuer le règlement.</p>
+<p>Si vous rencontrez une difficulté, n’hésitez pas à en parler avec la direction : nous chercherons ensemble une solution. Si votre règlement a été effectué entre-temps, merci de ne pas tenir compte de ce courrier.</p>
+<p class="signature">Avec nos salutations les meilleures,<br/><span th:text="${signature}">Marie Néa · Les P’tits Niaoulis</span></p>
+
+<div th:replace="~{facturation-commun :: mentions}"></div>
+</body>
+</html>

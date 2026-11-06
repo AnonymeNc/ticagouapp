@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: ticagou-parents-portal
+  datasource:
+    url: ${PORTAL_DB_URL:jdbc:postgresql://localhost:5434/portail}
+    username: ${PORTAL_DB_USER:portail}
+    password: ${PORTAL_DB_PASSWORD:portail}
+    hikari:
+      data-source-properties:
+        # Pas de contenu de ligne dans les erreurs PostgreSQL (journaux sans données personnelles).
+        logServerErrorDetail: false
+  flyway:
+    locations: classpath:db/migration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  mvc:
+    problemdetails:
+      enabled: true
+  web:
+    locale: fr_FR
+    locale-resolver: fixed
+  mail:
+    host: ${PORTAL_SMTP_HOST:localhost}
+    port: ${PORTAL_SMTP_PORT:1025}
+    username: ${PORTAL_SMTP_USER:}
+    password: ${PORTAL_SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${PORTAL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${PORTAL_SMTP_STARTTLS:false}
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+  servlet:
+    multipart:
+      enabled: false
+
+server:
+  port: ${PORTAL_PORT:8090}
+  # Derrière le proxy TLS de l'hébergeur : adresse du client et schéma lus dans X-Forwarded-*.
+  forward-headers-strategy: ${PORTAL_FORWARD_HEADERS:native}
+  tomcat:
+    max-swallow-size: 12MB
+    max-http-form-post-size: 12MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+portal:
+  # Adresse publique de la PWA (liens magiques des e-mails).
+  public-url: ${PORTAL_PUBLIC_URL:http://localhost:8090}
+  mail-from: ${PORTAL_MAIL_FROM:Ti'Cagou <portail@ticagou.nc>}
+  # Clé maîtresse de chiffrement des fichiers (Base64, 32 octets) ; une clé par structure en est dérivée.
+  file-key: ${PORTAL_FILE_KEY:}
+  # Jeton de l'hébergeur pour créer les codes d'activation (/admin/v1).
+  admin-token: ${PORTAL_ADMIN_TOKEN:}
+  # Adresse du prestataire qui reçoit les alertes de supervision des serveurs de crèche (vide : journal seulement).
+  supervision-email: ${PORTAL_SUPERVISION_EMAIL:}
+  # Cookie de session marqué Secure (désactivé seulement en développement HTTP).
+  secure-cookie: ${PORTAL_SECURE_COOKIE:true}
+  scheduling: ${PORTAL_SCHEDULING:true}

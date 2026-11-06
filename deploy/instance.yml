@@ -1,0 +1,16 @@
+# Instance d'une crèche : un conteneur, ses secrets dans creche.env, ses données dans son propre dossier.
+# Ne se lance pas à la main : ./creche.sh creer | mettre-a-jour | suspendre | reprendre
+services:
+  app:
+    image: ${IMAGE:?IMAGE manquante}
+    container_name: creche-${SLUG:?SLUG manquant}
+    restart: unless-stopped
+    env_file: ${DOSSIER:?DOSSIER manquant}/creche.env
+    volumes:
+      - ${DOSSIER}/data:/data
+    mem_limit: 768m
+    networks: [ticagou]
+
+networks:
+  ticagou:
+    external: true

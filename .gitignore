@@ -1,0 +1,40 @@
+# --- Système / éditeurs ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# --- Secrets & config locale ---
+.env
+.env.*
+!.env.example
+*.local
+
+# --- server/ (Maven) ---
+server/target/
+parents-portal/server/target/
+!server/.mvn/wrapper/maven-wrapper.jar
+
+# --- web/ (Node, Vite) ---
+node_modules/
+web/dist/
+web/coverage/
+*.log
+
+# --- deploy/ : secrets du serveur ---
+deploy/socle.env
+deploy/.version
+
+# --- Données (sauvegardes, documents enfants) : jamais dans le dépôt ---
+backups/
+data/
+data-demo/
+*.dump
+*.backup
+
+# --- Documents de prospection : jamais dans le dépôt ---
+Claude outputs/

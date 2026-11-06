@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${'Bilan d’activité · ' + r.label}">Bilan d’activité</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm 18mm 20mm 18mm;
+            @bottom-right { content: "Ti’Cagou · page " counter(page) " sur " counter(pages); font: 8.5pt Helvetica, sans-serif; color: #665b4e; }
+        }
+        body { font: 10pt/1.45 Helvetica, sans-serif; color: #2b2620; }
+        .header { border-bottom: 1px solid #d9cdbb; padding-bottom: 6pt; margin-bottom: 12pt; font-size: 9pt; color: #665b4e; }
+        .header strong { color: #08585c; font-size: 11pt; }
+        h1 { font-size: 18pt; margin: 0 0 2pt 0; color: #08585c; }
+        h2 { font-size: 12pt; margin: 14pt 0 4pt 0; color: #08585c; }
+        .subtitle { color: #665b4e; margin: 0 0 12pt 0; }
+        .tiles { width: 100%; border-collapse: separate; border-spacing: 6pt 0; margin: 0 -6pt 12pt -6pt; }
+        .tiles td { background: #f4eee4; padding: 8pt; width: 25%; }
+        .tiles .value { font-size: 16pt; font-weight: bold; }
+        .label { font-size: 8.5pt; color: #665b4e; text-transform: uppercase; letter-spacing: 0.04em; }
+        table.grid { width: 100%; border-collapse: collapse; margin: 4pt 0; }
+        table.grid th { text-align: right; font-size: 9pt; color: #665b4e; border-bottom: 1px solid #d9cdbb; padding: 3pt 4pt; }
+        table.grid th.text, table.grid td.text { text-align: left; }
+        table.grid td { padding: 4pt; border-bottom: 1px solid #ebe2d4; text-align: right; }
+        table.grid tr.total td { font-weight: bold; border-bottom: 0; border-top: 1px solid #968a78; }
+        .note { font-size: 9pt; color: #665b4e; margin-top: 8pt; }
+        .signatures { width: 100%; border-collapse: collapse; margin-top: 24pt; page-break-inside: avoid; }
+        .signatures td { width: 50%; vertical-align: top; padding: 8pt; border: 1px solid #d9cdbb; height: 70pt; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <strong th:text="${r.structureName}">Les P'tits Niaoulis</strong>
+    <span th:text="${' · Capacité agréée : ' + r.capacity + ' places'}"> · Capacité agréée : 48 places</span>
+</div>
+
+<h1 th:text="${'Bilan d’activité · ' + r.label}">Bilan d’activité · Octobre 2026</h1>
+<p class="subtitle" th:text="${period}">Du 01/10/2026 au 31/10/2026 · 22 jours d’ouverture</p>
+
+<table class="tiles">
+    <tr>
+        <td><div class="label">Enfants accueillis</div><div class="value" th:text="${r.total.children}">28</div></td>
+        <td><div class="label">Heures réalisées</div><div class="value" th:text="${hours.apply(r.total.realizedMinutes)}">4 120 h</div></td>
+        <td><div class="label">Taux d’occupation</div><div class="value" th:text="${percent.apply(r.total.occupancy)}">71,2 %</div></td>
+        <td><div class="label">Taux de réalisation</div><div class="value" th:text="${percent.apply(r.total.realization)}">93,5 %</div></td>
+    </tr>
+</table>
+
+<h2>Fréquentation par section</h2>
+<table class="grid">
+    <thead>
+    <tr>
+        <th class="text">Section</th><th>Places</th><th>Enfants</th><th>Heures réalisées</th><th>Heures contractualisées</th>
+        <th>Occupation</th><th>Réalisation</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="s : ${r.sections}">
+        <td class="text" th:text="${s.name}">Bébés</td>
+        <td th:text="${s.capacity}">12</td>
+        <td th:text="${s.indicators.children}">10</td>
+        <td th:text="${hours.apply(s.indicators.realizedMinutes)}">1 200 h</td>
+        <td th:text="${hours.apply(s.indicators.plannedMinutes)}">1 300 h</td>
+        <td th:text="${percent.apply(s.indicators.occupancy)}">68,0 %</td>
+        <td th:text="${percent.apply(s.indicators.realization)}">92,3 %</td>
+    </tr>
+    <tr class="total">
+        <td class="text">Structure</td>
+        <td th:text="${r.capacity}">48</td>
+        <td th:text="${r.total.children}">28</td>
+        <td th:text="${hours.apply(r.total.realizedMinutes)}">4 120 h</td>
+        <td th:text="${hours.apply(r.total.plannedMinutes)}">4 400 h</td>
+        <td th:text="${percent.apply(r.total.occupancy)}">71,2 %</td>
+        <td th:text="${percent.apply(r.total.realization)}">93,5 %</td>
+    </tr>
+    </tbody>
+</table>
+
+<th:block th:if="${!r.months.isEmpty()}">
+    <h2>Par mois</h2>
+    <table class="grid">
+        <thead>
+        <tr><th class="text">Mois</th><th>Jours d’ouverture</th><th>Enfants</th><th>Heures réalisées</th><th>Occupation</th><th>Réalisation</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="m : ${r.months}">
+            <td class="text" th:text="${monthLabel.apply(m.month)}">janvier 2026</td>
+            <td th:text="${m.openDays}">21</td>
+            <td th:text="${m.indicators.children}">27</td>
+            <td th:text="${hours.apply(m.indicators.realizedMinutes)}">3 900 h</td>
+            <td th:text="${percent.apply(m.indicators.occupancy)}">70,0 %</td>
+            <td th:text="${percent.apply(m.indicators.realization)}">92,0 %</td>
+        </tr>
+        </tbody>
+    </table>
+</th:block>
+
+<h2>Aides déduites des factures</h2>
+<p class="note" th:if="${r.funders.isEmpty()}">Aucune aide déduite sur la période.</p>
+<table class="grid" th:if="${!r.funders.isEmpty()}">
+    <thead><tr><th class="text">Financeur</th><th class="text">Catégorie</th><th>Enfants aidés</th><th>Montant</th></tr></thead>
+    <tbody>
+    <tr th:each="f : ${r.funders}">
+        <td class="text" th:text="${f.name}">Province Sud</td>
+        <td class="text" th:text="${category.apply(f.category)}">Province</td>
+        <td th:text="${f.children}">4</td>
+        <td th:text="${xpf.apply(f.amount)}">74 400 F</td>
+    </tr>
+    </tbody>
+</table>
+
+<h2>Absences</h2>
+<p class="note" th:if="${r.absences.isEmpty()}">Aucune absence enregistrée sur la période.</p>
+<table class="grid" th:if="${!r.absences.isEmpty()}">
+    <thead><tr><th class="text">Motif</th><th class="text">Déduite de la facture</th><th>Jours</th></tr></thead>
+    <tbody>
+    <tr th:each="a : ${r.absences}">
+        <td class="text" th:text="${a.reason}">Maladie</td>
+        <td class="text" th:text="${a.deductible ? 'Oui' : 'Non'}">Oui</td>
+        <td th:text="${a.days}">6</td>
+    </tr>
+    </tbody>
+</table>
+
+<h2>Facturation des mois de la période</h2>
+<table class="grid">
+    <tbody>
+    <tr><td class="text">Factures émises</td><td th:text="${r.money.invoices}">21</td></tr>
+    <tr><td class="text">Frais de garde facturés (hors TGC)</td><td th:text="${xpf.apply(r.money.invoiced)}">1 900 000 F</td></tr>
+    <tr><td class="text">TGC</td><td th:text="${xpf.apply(r.money.tgc)}">0 F</td></tr>
+    <tr><td class="text">Aides déduites</td><td th:text="${xpf.apply(r.money.aids)}">166 000 F</td></tr>
+    <tr><td class="text">Reste à charge des familles</td><td th:text="${xpf.apply(r.money.families)}">1 734 000 F</td></tr>
+    <tr><td class="text">Avoirs</td><td th:text="${xpf.apply(r.money.credited)}">2 500 F</td></tr>
+    <tr class="total"><td class="text">Reste dû à ce jour</td><td th:text="${xpf.apply(r.money.remaining)}">120 000 F</td></tr>
+    </tbody>
+</table>
+
+<p class="note">
+    Heures réalisées : pointages d’arrivée et de départ. Heures contractualisées : planning des contrats signés (hors
+    plannings variables). Taux d’occupation : heures réalisées rapportées aux places agréées multipliées par les heures
+    d’ouverture. Taux de réalisation : heures réalisées rapportées aux heures contractualisées.
+</p>
+<p class="note" th:text="${printedAt}">Édité le 03/11/2026 à 09:32</p>
+
+<table class="signatures">
+    <tr>
+        <td><div class="label">La direction</div><br/>Date et signature</td>
+        <td><div class="label">Cachet de la structure</div></td>
+    </tr>
+</table>
+</body>
+</html>

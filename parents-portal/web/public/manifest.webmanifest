@@ -1,0 +1,16 @@
+{
+  "name": "Ti’Cagou parents",
+  "short_name": "Ti’Cagou",
+  "description": "La journée de votre enfant à la crèche, les messages, les factures et les documents à signer.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbf8f3",
+  "theme_color": "#0b6e72",
+  "icons": [
+    { "src": "/icons/icon-256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Fragments des pièces de facturation</title>
+    <style th:fragment="style">
+        @page {
+            size: A4;
+            margin: 16mm 16mm 20mm 16mm;
+            @bottom-left { content: element(footer); }
+            @bottom-right { content: counter(page) " / " counter(pages); font: 8.5pt Helvetica, sans-serif; color: #665b4e; }
+        }
+        body { font: 10pt/1.45 Helvetica, sans-serif; color: #2b2620; }
+        .footer { position: running(footer); font-size: 8.5pt; color: #665b4e; }
+        .header { width: 100%; border-collapse: collapse; border-bottom: 1px solid #d9cdbb; margin-bottom: 14pt; }
+        .header td { vertical-align: top; padding-bottom: 8pt; }
+        .header .brand strong { color: #08585c; font-size: 13pt; display: block; }
+        .header .brand { font-size: 9pt; color: #665b4e; }
+        .header .doc { text-align: right; }
+        .header .doc .number { font-size: 14pt; font-weight: bold; color: #2b2620; }
+        .logo { max-height: 42pt; max-width: 120pt; margin-bottom: 4pt; }
+        h1 { font-size: 17pt; margin: 0 0 8pt 0; color: #08585c; }
+        h2 { font-size: 11pt; margin: 14pt 0 4pt 0; color: #2b2620; }
+        h3 { font-size: 10pt; margin: 8pt 0 2pt 0; color: #08585c; }
+        .parties { width: 100%; border-collapse: collapse; margin-bottom: 8pt; }
+        .parties td { vertical-align: top; padding: 6pt 8pt; background: #f4eee4; }
+        .label { font-size: 8pt; color: #665b4e; text-transform: uppercase; letter-spacing: 0.04em; }
+        table.grid { width: 100%; border-collapse: collapse; margin: 2pt 0; }
+        table.grid th { text-align: left; font-size: 8.5pt; color: #665b4e; border-bottom: 1px solid #d9cdbb; padding: 3pt 4pt; font-weight: normal; }
+        table.grid td { padding: 4pt; border-bottom: 1px solid #ebe2d4; vertical-align: top; }
+        table.grid td.num, table.grid th.num { text-align: right; white-space: nowrap; }
+        table.grid tr.total td { font-weight: bold; border-bottom: 0; border-top: 1px solid #968a78; }
+        .detail { font-size: 8.5pt; color: #665b4e; }
+        .due { margin-top: 12pt; padding: 8pt 10pt; background: #e3f0ef; border-left: 3pt solid #08585c; }
+        .due .amount { font-size: 15pt; font-weight: bold; color: #08585c; }
+        .note { font-size: 9pt; color: #665b4e; }
+        .conditions { width: 100%; border-collapse: collapse; margin-top: 4pt; }
+        .conditions td { vertical-align: top; width: 33%; padding: 4pt 6pt 4pt 0; font-size: 9pt; }
+        .mentions { margin-top: 14pt; font-size: 8.5pt; color: #665b4e; }
+        .warning { color: #a3231b; font-weight: bold; }
+        .signature { margin-top: 24pt; }
+        .page-break { page-break-before: always; }
+    </style>
+</head>
+<body>
+<table class="header" th:fragment="header(number, issuedLine)">
+    <tr>
+        <td class="brand">
+            <img class="logo" th:if="${logo}" th:src="${logo}" alt=""/>
+            <strong th:text="${structureName}">Les P'tits Niaoulis</strong>
+            <span th:if="${structureLine}" th:text="${structureLine}">Nouméa · RIDET 1234567.001</span>
+        </td>
+        <td class="doc">
+            <div class="number" th:text="${number}">FA-2026-0147</div>
+            <div th:text="${issuedLine}">Émise le 01/11/2026</div>
+        </td>
+    </tr>
+</table>
+<div class="mentions" th:fragment="mentions">
+    <div th:if="${rib}" th:text="${rib}"><strong>RIB</strong></div>
+    <div th:each="l : ${invoiceFooter}" th:text="${l}">IBAN NC00 0000 0000 0000</div>
+</div>
+</body>
+</html>

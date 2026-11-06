@@ -1,0 +1,26 @@
+# Base de données de développement Ti'Cagou.
+# En production, voir deploy/. Nom distinct de « ticagou-postgres », le conteneur de la V1.
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ticagou-web-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ticagou
+      POSTGRES_USER: ticagou
+      POSTGRES_PASSWORD: ticagou
+      TZ: Pacific/Noumea
+      PGTZ: Pacific/Noumea
+    ports:
+      # 5435 côté hôte : 5432 et 5433 sont pris par les PostgreSQL installés sur le poste (dont celui de la V1)
+      - "5435:5432"
+    volumes:
+      - ticagou-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticagou -d ticagou"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  ticagou-pgdata:

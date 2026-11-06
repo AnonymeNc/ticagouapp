@@ -1,0 +1,12 @@
+{
+  "name": "ticagou-publicite",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "captures": "node capturer.mjs",
+    "generer": "node generer.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}

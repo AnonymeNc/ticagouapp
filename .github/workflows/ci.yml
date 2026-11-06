@@ -1,0 +1,97 @@
+# Intégration continue : tous les tests à chaque envoi et à chaque demande de fusion.
+# Les tests d'intégration utilisent Testcontainers (Docker est disponible sur les machines Ubuntu de GitHub).
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  serveur:
+    name: Serveur (Java)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Tests unitaires et d'intégration
+        working-directory: server
+        run: bash mvnw -B verify
+      - name: Rapports des tests en échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-serveur
+          path: |
+            server/target/surefire-reports
+            server/target/failsafe-reports
+
+  portail:
+    name: Portail parents (Java + PWA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: parents-portal/web/pnpm-lock.yaml
+      - name: PWA des parents
+        working-directory: parents-portal/web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+          pnpm build
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Service hébergé
+        working-directory: parents-portal/server
+        run: bash mvnw -B verify
+
+  web:
+    name: Bureau et tablette (React)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - working-directory: web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+          pnpm build
+
+  image:
+    name: Image de l'instance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -f deploy/Dockerfile -t ticagou-web:ci .
+      - name: Scripts d'exploitation (syntaxe)
+        run: sh -n deploy/creche.sh && sh -n deploy/sauvegarde-hors-site.sh

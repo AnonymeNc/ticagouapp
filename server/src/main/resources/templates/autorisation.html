@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${title}">Autorisation parentale</title>
+    <style>
+        @page { size: A4; margin: 22mm; @bottom-center { content: element(footer); } }
+        body { font: 11pt/1.55 Helvetica, sans-serif; color: #2b2620; }
+        h1 { font-size: 18pt; color: #08585c; margin: 0 0 4pt 0; }
+        .structure { color: #665b4e; margin: 0 0 18pt 0; }
+        .child { font-weight: bold; margin: 12pt 0; }
+        .text { border-left: 3pt solid #08585c; padding: 6pt 12pt; background: #eef6f5; margin: 14pt 0; }
+        .note { color: #665b4e; font-size: 9.5pt; }
+        .footer { position: running(footer); font-size: 8.5pt; color: #8a7f72; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Autorisation</div>
+<h1 th:text="${title}">Autorisation de photographier</h1>
+<p class="structure" th:text="${structureLine}">Les P’tits Niaoulis · Dumbéa</p>
+<p class="child" th:text="${childLine}">Pour Léa Wamytan, née le 03/04/2025</p>
+<p>Je soussigné(e), responsable légal(e) de l’enfant :</p>
+<div class="text">
+    <p th:each="line : ${lines}" th:text="${line}">J’autorise…</p>
+</div>
+<p class="note">Cette autorisation peut être retirée à tout moment auprès de la direction ; le retrait prend effet
+    immédiatement.</p>
+<p class="note" th:text="${proposedLine}">Proposée le 02/11/2026 par Nathalie Kaloï, à signer sur le portail parents.</p>
+</body>
+</html>

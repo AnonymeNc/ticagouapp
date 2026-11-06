@@ -1,0 +1,19 @@
+# HTTPS automatique (Let's Encrypt) devant les crèches et le portail. Chaque site est un fichier de caddy-sites/,
+# écrit par creche.sh.
+(securite) {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+		Permissions-Policy "geolocation=(), microphone=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		-Server
+	}
+	# Exploitation et documentation : jamais sur internet.
+	@interne path /actuator/* /v3/api-docs* /swagger-ui* /admin/*
+	respond @interne 404
+}
+
+import /etc/caddy/sites/*.caddy

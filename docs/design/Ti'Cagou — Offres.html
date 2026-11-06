@@ -1,0 +1,62 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ti’Cagou — Offres</title><style>
+
+:root { --lagon: #0b6e72; --nuit: #08484b; --pale: #dcefee; --sable: #fbf8f3; --terre: #b5532a; --encre: #1d2b2c; --doux: #556566; }
+* { box-sizing: border-box; margin: 0; }
+
+body { position: relative; font-family: "Source Sans 3", "Segoe UI", sans-serif; color: var(--encre); -webkit-font-smoothing: antialiased; }
+h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; letter-spacing: -0.02em; line-height: 1.02; font-size: 96px; font-variation-settings: "SOFT" 40; }
+.sous { font-size: 34px; line-height: 1.3; margin-top: 26px; max-width: 1040px; }
+.cadre { position: absolute; border-radius: 22px; overflow: hidden; box-shadow: 0 30px 70px rgb(8 40 42 / 0.32); background: #fff; }
+.cadre img { display: block; width: 100%; }
+.barre { height: 36px; background: #e9eded; display: flex; gap: 9px; align-items: center; padding-left: 16px; }
+.barre i { width: 12px; height: 12px; border-radius: 50%; background: #c6cfcf; }
+.pied { position: absolute; left: 72px; right: 72px; bottom: 46px; display: flex; align-items: center; justify-content: space-between; z-index: 3; }
+.marque { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 44px; letter-spacing: -0.01em; }
+.marque small { display: block; font-family: "Source Sans 3", sans-serif; font-size: 21px; font-weight: 500; letter-spacing: 0; opacity: 0.85; margin-top: 2px; }
+.appel { font-size: 27px; font-weight: 700; padding: 18px 32px; border-radius: 999px; }
+.contact { font-size: 24px; font-weight: 600; margin-right: 22px; }
+
+body { background: var(--sable); }
+main { max-width: 1180px; margin: 0 auto; padding: 56px 24px 72px; }
+h1 { font-size: clamp(40px, 6vw, 68px); color: var(--nuit); }
+.intro { font-size: 22px; color: var(--doux); margin-top: 14px; max-width: 760px; }
+.tailles { display: flex; flex-wrap: wrap; gap: 8px; margin: 32px 0 20px; }
+.tailles button { font: inherit; font-size: 17px; font-weight: 600; padding: 10px 18px; border-radius: 999px; border: 1px solid #c9d6d5; background: #fff; color: var(--encre); cursor: pointer; }
+.tailles button[aria-pressed="true"] { background: var(--nuit); border-color: var(--nuit); color: #fff; }
+.cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+.carte { background: #fff; border-radius: 18px; padding: 26px; box-shadow: 0 8px 24px rgb(8 40 42 / 0.08); }
+.carte.accent { background: var(--nuit); color: #fff; }
+.carte h2 { font-family: Fraunces, Georgia, serif; font-size: 32px; font-weight: 600; }
+.prix { font-family: Fraunces, Georgia, serif; font-size: 42px; font-weight: 600; margin-top: 14px; }
+.carte ul { padding-left: 20px; margin-top: 14px; line-height: 1.6; font-size: 17px; }
+h3 { font-family: Fraunces, Georgia, serif; font-size: 30px; font-weight: 600; color: var(--nuit); margin: 52px 0 16px; }
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; font-size: 17px; }
+th, td { padding: 12px 16px; text-align: center; border-bottom: 1px solid #e8eeed; }
+th:first-child, td:first-child { text-align: left; }
+.oui { color: var(--lagon); font-weight: 700; } .non { color: #b9c5c4; }
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+figure { margin: 0; } figure img { width: 100%; border-radius: 12px; box-shadow: 0 8px 24px rgb(8 40 42 / 0.12); display: block; }
+figcaption { margin-top: 8px; color: var(--doux); font-size: 16px; }
+.note { color: var(--doux); font-size: 15px; margin-top: 18px; }
+</style></head><body><main>
+<p class="marque" style="color:var(--nuit)">Ti’Cagou</p>
+<h1 style="margin-top:24px">Ne payez que ce dont votre crèche a besoin.</h1>
+<p class="intro">Commencez par les présences. Ajoutez la facturation, le portail parents ou les repas quand vous en avez besoin, sans rien réinstaller.</p>
+<div class="tailles" role="group" aria-label="Taille de la structure"><button type="button" data-i="0" aria-pressed="true">Micro · jusqu’à 15 places</button><button type="button" data-i="1" aria-pressed="false">Structure · 16 à 40 places</button><button type="button" data-i="2" aria-pressed="false">Grande · 41 à 80 places</button></div>
+<div class="cartes"><section class="carte"><h2>Essentiel</h2><p>Savoir qui est là, à chaque instant</p>
+<p class="prix" data-prix="6 500 F|9 500 F|14 000 F">6 500 F</p><p>par mois, hors TGC</p><ul><li>Dossiers enfants et familles</li><li>Santé, PAI, personnes autorisées</li><li>Présences enfants et personnel</li><li>Encadrement en temps réel</li><li>Sauvegardes et mises à jour</li></ul></section><section class="carte accent"><h2>Gestion</h2><p>Inscrire, facturer, encaisser</p>
+<p class="prix" data-prix="11 500 F|16 500 F|23 500 F">11 500 F</p><p>par mois, hors TGC</p><ul><li>Tout Essentiel</li><li>Inscriptions et liste d’attente</li><li>Contrats</li><li>Facturation avec aides déduites</li><li>Encaissements et statistiques</li></ul></section><section class="carte"><h2>Complet</h2><p>Toute la crèche, parents compris</p>
+<p class="prix" data-prix="18 500 F|26 000 F|36 500 F">18 500 F</p><p>par mois, hors TGC</p><ul><li>Tout Gestion</li><li>Portail parents</li><li>Personnel : planning et heures</li><li>Repas : menus, fiche cuisine</li><li>Comptabilité : export CSV et FEC</li></ul></section></div>
+<h3>Le détail</h3>
+<table><thead><tr><th>Fonction</th><th>Essentiel</th><th>Gestion</th><th>Complet</th></tr></thead><tbody>
+<tr><td>Dossiers enfants et familles, santé, PAI</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td></tr><tr><td>Présences des enfants sur tablette</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td></tr><tr><td>Présences du personnel</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td></tr><tr><td>Encadrement en temps réel</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td></tr><tr><td>Hébergement, sauvegardes, mises à jour, support</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td></tr><tr><td>Inscriptions, liste d’attente, contrats</td><td class="non">—</td><td class="oui">Oui</td><td class="oui">Oui</td></tr><tr><td>Facturation avec aides, encaissements, statistiques</td><td class="non">—</td><td class="oui">Oui</td><td class="oui">Oui</td></tr><tr><td>Comptabilité : export CSV et FEC</td><td class="non">—</td><td class="non">—</td><td class="oui">Oui</td></tr><tr><td>Personnel : fiches, planning, heures</td><td class="non">—</td><td class="non">—</td><td class="oui">Oui</td></tr><tr><td>Repas : menus, fiche cuisine, récapitulatif</td><td class="non">—</td><td class="non">—</td><td class="oui">Oui</td></tr><tr><td>Portail parents : journée, messages, factures, signatures</td><td class="non">—</td><td class="non">—</td><td class="oui">Oui</td></tr></tbody></table>
+<h3>Le logiciel suit votre formule</h3>
+<div class="duo"><figure><img src="../commercial/captures/parametres-essentiel.jpg" alt="Paramètres en formule Essentiel"><figcaption>Essentiel : six rubriques de paramètres.</figcaption></figure>
+<figure><img src="../commercial/captures/parametres-complet.jpg" alt="Paramètres en formule Complet"><figcaption>Complet : toutes les rubriques.</figcaption></figure></div>
+<p class="note">Chaque formule comprend 1 PC et 2 tablettes. Modules à la carte, mise en route et formation : voir le barème. Prix proposés, à valider.</p>
+</main><script>
+document.querySelectorAll(".tailles button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".tailles button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+  document.querySelectorAll("[data-prix]").forEach((p) => { p.textContent = p.dataset.prix.split("|")[b.dataset.i]; });
+}));
+</script></body></html>

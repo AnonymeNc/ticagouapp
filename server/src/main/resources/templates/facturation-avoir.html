@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${documentTitle}">Avoir</title>
+    <style th:replace="~{facturation-commun :: style}"></style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Avoir AV-2026-0003</div>
+<table th:replace="~{facturation-commun :: header(${number}, ${issuedLine})}"></table>
+
+<h1>Avoir</h1>
+
+<table class="parties">
+    <tr>
+        <td style="width: 50%">
+            <div class="label">Avoir au bénéfice de</div>
+            <div><strong th:text="${payerName}">Clémence Dupré</strong></div>
+            <div th:each="l : ${payerAddress}" th:text="${l}">12 rue Jules Ferry</div>
+        </td>
+        <td>
+            <div class="label">Objet</div>
+            <div th:text="${invoiceLine}">Annulation totale de la facture FA-2026-0147 d’octobre 2026</div>
+            <div class="label" style="margin-top: 4pt">Motif</div>
+            <div th:text="${reason}">Erreur de planning</div>
+        </td>
+    </tr>
+</table>
+
+<table class="grid">
+    <tr><th>Libellé</th><th class="num">Montant</th></tr>
+    <tr th:each="r : ${rows}">
+        <td th:text="${r.label}">Accueil d’octobre (forfait mensuel)</td>
+        <td class="num" th:text="${r.amount}">68 000 F</td>
+    </tr>
+</table>
+
+<div class="due">
+    <table style="width: 100%; border-collapse: collapse">
+        <tr>
+            <td><div class="label">Montant de l’avoir</div></td>
+            <td style="text-align: right" class="amount" th:text="${total}">43 600 F</td>
+        </tr>
+    </table>
+</div>
+<p class="note" th:if="${aidLine}" th:text="${aidLine}">Les aides déduites sont également annulées.</p>
+<p class="note">Cet avoir est déduit de ce que vous devez à la structure ; s’il ne reste rien à régler, il vous est remboursé.</p>
+
+<div th:replace="~{facturation-commun :: mentions}"></div>
+</body>
+</html>

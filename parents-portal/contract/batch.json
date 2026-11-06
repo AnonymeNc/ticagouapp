@@ -1,0 +1,136 @@
+{
+  "items": [
+    {
+      "seq": 1,
+      "type": "STRUCTURE",
+      "id": "0b9a3c1e-0000-4000-8000-000000000001",
+      "deleted": false,
+      "payload": {
+        "name": "Les P'tits Cagous",
+        "phone": "27 12 34",
+        "paymentInfo": "Virement : BCI, IBAN NC00 1234 5678 9012 3456 7890 123",
+        "mealAbsenceCutoff": "09:00"
+      }
+    },
+    {
+      "seq": 2,
+      "type": "GUARDIAN",
+      "id": "0b9a3c1e-0000-4000-8000-000000000010",
+      "deleted": false,
+      "payload": {
+        "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+        "firstName": "Marie",
+        "lastName": "Wamytan",
+        "email": "marie.wamytan@example.nc"
+      }
+    },
+    {
+      "seq": 3,
+      "type": "CHILD",
+      "id": "0b9a3c1e-0000-4000-8000-000000001000",
+      "deleted": false,
+      "payload": {
+        "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+        "firstName": "Léa",
+        "lastInitial": "W",
+        "section": "Moyens",
+        "photo": "/9j/4AAQSkZJRgABAQ==",
+        "photoType": "image/jpeg",
+        "sharedHealth": [
+          { "label": "Allergie", "text": "Arachide : PAI en place, trousse dans la section" }
+        ]
+      }
+    },
+    {
+      "seq": 4,
+      "type": "ATTENDANCE",
+      "id": "0b9a3c1e-0000-4000-8000-000000002000",
+      "deleted": false,
+      "payload": {
+        "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+        "childId": "0b9a3c1e-0000-4000-8000-000000001000",
+        "day": "2026-11-02",
+        "arrivedAt": "2026-11-01T20:42:00Z",
+        "departedAt": null
+      }
+    },
+    {
+      "seq": 5,
+      "type": "ENTRY",
+      "id": "0b9a3c1e-0000-4000-8000-000000003000",
+      "deleted": false,
+      "payload": {
+        "familyIds": ["0b9a3c1e-0000-4000-8000-000000000100"],
+        "childIds": ["0b9a3c1e-0000-4000-8000-000000001000"],
+        "day": "2026-11-02",
+        "at": "2026-11-02T00:15:00Z",
+        "kind": "REPAS",
+        "text": "Purée de patate douce, poisson",
+        "details": { "quantity": "BIEN" },
+        "photo": null,
+        "photoType": null
+      }
+    },
+    {
+      "seq": 6,
+      "type": "INVOICE",
+      "id": "0b9a3c1e-0000-4000-8000-000000004000",
+      "deleted": false,
+      "payload": {
+        "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+        "number": "FA-2026-0042",
+        "kind": "FACTURE",
+        "month": "2026-10",
+        "issuedOn": "2026-11-02",
+        "dueOn": "2026-11-12",
+        "total": 23400,
+        "remaining": 23400,
+        "lines": [
+          { "label": "Accueil octobre 2026 (au réel)", "amount": 23400 }
+        ],
+        "pdf": "JVBERi0xLjQK"
+      }
+    },
+    {
+      "seq": 7,
+      "type": "DOCUMENT",
+      "id": "0b9a3c1e-0000-4000-8000-000000005000",
+      "deleted": false,
+      "payload": {
+        "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+        "childId": "0b9a3c1e-0000-4000-8000-000000001000",
+        "kind": "CONTRAT",
+        "title": "Contrat d'accueil n° CA-2026-0007",
+        "pdf": "JVBERi0xLjQK",
+        "sha256": "0d1f9a8a1d1c1b8c4f6a1d3b0e2c5a7e9f0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
+        "status": "A_SIGNER"
+      }
+    },
+    {
+      "seq": 8,
+      "type": "MESSAGE",
+      "id": "0b9a3c1e-0000-4000-8000-000000006000",
+      "deleted": false,
+      "payload": {
+        "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+        "author": "Sandrine",
+        "body": "Pensez à apporter une tenue de rechange demain.",
+        "sentAt": "2026-11-02T03:30:00Z"
+      }
+    },
+    {
+      "seq": 9,
+      "type": "ENTRY",
+      "id": "0b9a3c1e-0000-4000-8000-000000003001",
+      "deleted": true,
+      "payload": null
+    },
+    {
+      "seq": 10,
+      "type": "PURGE_FAMILY",
+      "id": "0b9a3c1e-0000-4000-8000-000000000200",
+      "deleted": true,
+      "payload": null
+    }
+  ]
+}

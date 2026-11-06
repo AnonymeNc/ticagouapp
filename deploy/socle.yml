@@ -1,0 +1,68 @@
+# Socle commun du serveur : PostgreSQL (une base par crèche), Caddy (HTTPS automatique) et, en option, le portail
+# parents et la supervision. Voir docs/EXPLOITATION.md.
+#   ./creche.sh socle
+name: ticagou-socle
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ticagou_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Renseignez POSTGRES_PASSWORD dans socle.env}
+      POSTGRES_DB: postgres
+      TZ: Pacific/Noumea
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks: [ticagou]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticagou_admin -d postgres"]
+      interval: 10s
+      retries: 10
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${TICAGOU_DONNEES}/caddy-sites:/etc/caddy/sites:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [ticagou]
+
+  # Portail parents et supervision : ./creche.sh socle --portail
+  portail:
+    profiles: [portail]
+    build: ../parents-portal
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORTAL_DB_URL: jdbc:postgresql://db:5432/portail
+      PORTAL_DB_USER: portail
+      PORTAL_DB_PASSWORD: ${PORTAL_DB_PASSWORD:-}
+      PORTAL_PUBLIC_URL: https://${PORTAL_DOMAIN:-}
+      PORTAL_FILE_KEY: ${PORTAL_FILE_KEY:-}
+      PORTAL_ADMIN_TOKEN: ${PORTAL_ADMIN_TOKEN:-}
+      PORTAL_SUPERVISION_EMAIL: ${PORTAL_SUPERVISION_EMAIL:-}
+      PORTAL_SMTP_HOST: ${PORTAL_SMTP_HOST:-}
+      PORTAL_SMTP_PORT: ${PORTAL_SMTP_PORT:-587}
+      PORTAL_SMTP_USER: ${PORTAL_SMTP_USER:-}
+      PORTAL_SMTP_PASSWORD: ${PORTAL_SMTP_PASSWORD:-}
+      PORTAL_SMTP_AUTH: "true"
+      PORTAL_SMTP_STARTTLS: "true"
+      PORTAL_MAIL_FROM: ${PORTAL_MAIL_FROM:-}
+      PORTAL_FORWARD_HEADERS: native
+    networks: [ticagou]
+
+volumes:
+  db:
+  caddy-data:
+  caddy-config:
+
+networks:
+  ticagou:
+    name: ticagou

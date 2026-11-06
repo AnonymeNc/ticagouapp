@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${documentTitle}">Demande de règlement</title>
+    <style th:replace="~{facturation-commun :: style}"></style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Demande DF-2026-0012 · CAFAT</div>
+<table th:replace="~{facturation-commun :: header(${number}, ${issuedLine})}"></table>
+
+<h1>Demande de règlement des aides</h1>
+
+<table class="parties">
+    <tr>
+        <td style="width: 50%">
+            <div class="label">Financeur</div>
+            <div><strong th:text="${funderName}">CAFAT</strong></div>
+            <div th:if="${funderLine}" th:text="${funderLine}">Convention n° 2024-118</div>
+        </td>
+        <td>
+            <div class="label">Période</div>
+            <div th:text="${monthLabel}">octobre 2026</div>
+        </td>
+    </tr>
+</table>
+
+<table class="grid">
+    <tr><th>Enfant</th><th>Parent bénéficiaire</th><th class="num">Jours de présence</th><th>Facture famille</th><th class="num">Montant de l’aide</th></tr>
+    <tr th:each="r : ${rows}">
+        <td th:text="${r.child}">Maëlys Dupré</td>
+        <td th:text="${r.beneficiary}">Clémence Dupré</td>
+        <td class="num" th:text="${r.days}">20</td>
+        <td th:text="${r.invoice}">FA-2026-0147</td>
+        <td class="num" th:text="${r.amount}">12 000 F</td>
+    </tr>
+    <tr class="total"><td colspan="4">Total à régler</td><td class="num" th:text="${total}">44 000 F</td></tr>
+</table>
+<p class="note">Les aides ont été déduites des factures des familles. Le relevé de présence de chaque enfant est joint.</p>
+<div th:replace="~{facturation-commun :: mentions}"></div>
+
+<div class="page-break"></div>
+<h1>Justificatifs : relevé de présence</h1>
+<th:block th:each="s : ${statements}">
+    <h2 th:text="${s.name}">Maëlys Dupré</h2>
+    <p class="note" th:text="${(s.beneficiary == null ? '' : 'Parent bénéficiaire : ' + s.beneficiary + ' · ') + s.days + ' jours de présence · ' + s.hours + ' au total'}">
+        20 jours de présence · 180 h 00 au total</p>
+    <table class="grid">
+        <tr><th>Date</th><th>Arrivée</th><th>Départ</th><th class="num">Durée</th></tr>
+        <tr th:each="d : ${s.rows}">
+            <td th:text="${d.day}">01/10/2026</td>
+            <td th:text="${d.arrived}">07:32</td>
+            <td th:text="${d.departed}">16:45</td>
+            <td class="num" th:text="${d.duration}">9 h 13</td>
+        </tr>
+    </table>
+</th:block>
+</body>
+</html>

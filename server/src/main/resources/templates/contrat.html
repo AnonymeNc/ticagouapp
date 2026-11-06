@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${title}">Contrat d'accueil</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm 18mm 20mm 18mm;
+            @bottom-left { content: element(footer); }
+            @bottom-right { content: counter(page) " / " counter(pages); font: 8.5pt Helvetica, sans-serif; color: #665b4e; }
+        }
+        body { font: 10pt/1.45 Helvetica, sans-serif; color: #2b2620; }
+        .footer { position: running(footer); font-size: 8.5pt; color: #665b4e; }
+        .header { border-bottom: 1px solid #d9cdbb; padding-bottom: 6pt; margin-bottom: 12pt; font-size: 9pt; color: #665b4e; }
+        .header strong { color: #08585c; font-size: 11pt; }
+        h1 { font-size: 18pt; margin: 0 0 2pt 0; color: #08585c; }
+        .subtitle { color: #665b4e; margin: 0 0 12pt 0; }
+        h2 { font-size: 11pt; margin: 14pt 0 4pt 0; color: #2b2620; }
+        .parties { width: 100%; border-collapse: collapse; margin-bottom: 6pt; }
+        .parties td { vertical-align: top; width: 50%; padding: 6pt 8pt; background: #f4eee4; }
+        .label { font-size: 8.5pt; color: #665b4e; text-transform: uppercase; letter-spacing: 0.04em; }
+        table.grid { width: 100%; border-collapse: collapse; margin: 4pt 0; }
+        table.grid th { text-align: left; font-size: 9pt; color: #665b4e; border-bottom: 1px solid #d9cdbb; padding: 3pt 4pt; }
+        table.grid td { padding: 3pt 4pt; border-bottom: 1px solid #ebe2d4; }
+        table.grid td.num, table.grid th.num { text-align: right; }
+        table.grid tr.total td { font-weight: bold; border-bottom: 0; border-top: 1px solid #968a78; }
+        .note { font-size: 9pt; color: #665b4e; }
+        .signatures { width: 100%; border-collapse: collapse; margin-top: 18pt; page-break-inside: avoid; }
+        .signatures td { width: 50%; vertical-align: top; padding: 8pt; border: 1px solid #d9cdbb; height: 90pt; }
+        .draft { color: #a3231b; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Contrat N° 2027-014</div>
+
+<div class="header">
+    <strong th:text="${structureName}">Les P'tits Niaoulis</strong>
+    <span th:if="${structureLine}" th:text="${' · ' + structureLine}"> · Nouméa · RIDET 1234567.001</span>
+</div>
+
+<h1 th:text="${title}">Contrat d'accueil</h1>
+<p class="subtitle">
+    <span th:text="${reference}">N° 2027-014 · version du 31/10/2026</span>
+    <span class="draft" th:if="${draft}"> · BROUILLON, non signé</span>
+    <span th:if="${forSignature}"> · à signer sur le portail parents</span>
+</p>
+
+<table class="parties">
+    <tr>
+        <td>
+            <div class="label">Enfant</div>
+            <div th:text="${childLine}">Maëlys Garnier, née le 02/09/2024</div>
+            <div th:if="${sectionName}" th:text="${'Section ' + sectionName}">Section Moyens</div>
+        </td>
+        <td>
+            <div class="label">Responsables légaux</div>
+            <div th:each="g : ${guardians}" th:text="${g}">Laura Garnier, mère</div>
+        </td>
+    </tr>
+</table>
+
+<th:block th:if="${amendment}">
+    <h2>Objet de l'avenant</h2>
+    <p>
+        <span th:text="${amendmentLine}">Le présent avenant modifie le contrat à compter du 01/09/2027.</span>
+        <span th:if="${reason}" th:text="${'Motif : ' + reason + '.'}">Motif : changement d'horaires de travail.</span>
+    </p>
+</th:block>
+
+<th:block th:unless="${amendment}">
+    <h2>Article 1 · Durée</h2>
+    <p>
+        <span th:text="${periodLine}">Le présent contrat prend effet le 01/02/2027 et prend fin le 31/01/2028.</span>
+        <span th:if="${adaptationLine}" th:text="${adaptationLine}">Il est précédé d'une période d'adaptation.</span>
+    </p>
+</th:block>
+
+<h2 th:text="${amendment ? 'Planning d''accueil' : 'Article 2 · Planning d''accueil'}">Article 2 · Planning d'accueil</h2>
+<table class="grid" th:if="${fixed}">
+    <tr><th>Jour</th><th>Arrivée</th><th>Départ</th><th class="num">Durée</th></tr>
+    <tr th:each="d : ${days}">
+        <td th:text="${d.name}">Lundi</td>
+        <td th:text="${d.arrives}">07:30</td>
+        <td th:text="${d.leaves}">16:30</td>
+        <td class="num" th:text="${d.duration}">9 h 00</td>
+    </tr>
+    <tr class="total"><td colspan="3">Total hebdomadaire</td><td class="num" th:text="${weekly}">39 h 30</td></tr>
+</table>
+<p th:unless="${fixed}" th:text="${variableLine}">
+    Planning variable : 120 h réservées par mois, planning transmis 14 jours avant chaque mois.
+</p>
+
+<h2 th:text="${amendment ? 'Participation financière' : 'Article 3 · Participation financière'}">Article 3 · Participation financière</h2>
+<p th:text="${tariffLine}">Le forfait est mensualisé sur 47 semaines d'accueil par an, selon le barème de la structure en vigueur au 01/01/2027.</p>
+<table class="grid">
+    <tr><td th:text="${feeLabel}">Forfait mensuel, 154 h 42 à 510 F</td><td class="num" th:text="${monthlyFee}">78 901 F</td></tr>
+    <tr th:if="${registrationFee}"><td>Frais d'inscription, facturés avec la première mensualité</td><td class="num" th:text="${registrationFee}">10 000 F</td></tr>
+    <tr th:if="${adaptationCost}"><td th:text="${adaptationCostLabel}">Adaptation</td><td class="num" th:text="${adaptationCost}">32 240 F</td></tr>
+</table>
+<p class="note">Montants en francs CFP, avant déduction des aides éventuelles, qui figurent sur les factures.</p>
+
+<th:block th:unless="${amendment}">
+    <h2>Article 4 · Absences et déductions</h2>
+    <p>Les absences déductibles du forfait sont celles prévues par le règlement de fonctionnement de la structure.
+        Les congés de la famille ne sont pas déduits, sauf mention contraire de ce règlement.</p>
+
+    <h2>Article 5 · Modification du contrat</h2>
+    <p>Toute modification durable des horaires fait l'objet d'un avenant signé par les deux parties.
+        Le forfait est recalculé à compter de sa date d'effet.</p>
+
+    <h2>Article 6 · Rupture</h2>
+    <p th:text="${noticeLine}">Chaque partie peut mettre fin au contrat par écrit, avec un préavis d'un mois.</p>
+
+    <h2>Article 7 · Documents annexés</h2>
+    <p>Règlement de fonctionnement de la structure.</p>
+</th:block>
+
+<table class="signatures">
+    <tr>
+        <td>
+            <div class="label">Pour la structure</div>
+            <div th:text="${signatory}">La direction</div>
+            <p class="note">Fait à <span th:text="${city}">Nouméa</span>, le ___/___/______</p>
+        </td>
+        <td>
+            <div class="label">Pour la famille</div>
+            <div th:text="${familySignatories}">Laura Garnier · Kévin Garnier</div>
+            <p class="note">Précédé de la mention « lu et approuvé »</p>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

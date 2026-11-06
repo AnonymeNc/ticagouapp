@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${documentTitle}">Attestation de frais de garde</title>
+    <style th:replace="~{facturation-commun :: style}"></style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Attestation 2026</div>
+<table th:replace="~{facturation-commun :: header(${'Année ' + year}, ${place})}"></table>
+
+<h1 th:text="${'Attestation de frais de garde ' + year}">Attestation de frais de garde 2026</h1>
+
+<table class="parties">
+    <tr>
+        <td>
+            <div class="label">Famille</div>
+            <div><strong th:text="${familyLine}">Clémence et Marc Dupré</strong></div>
+            <div th:each="l : ${payerAddress}" th:text="${l}">12 rue Jules Ferry</div>
+        </td>
+    </tr>
+</table>
+
+<p th:text="${statement}">La direction certifie que la famille a réglé la somme de 480 000 F.</p>
+
+<table class="grid">
+    <tr><th>Enfant</th><th>Né(e) le</th><th class="num">Frais de garde</th><th class="num">Aides déduites</th><th class="num">Part de la famille</th></tr>
+    <tr th:each="r : ${rows}">
+        <td th:text="${r.child}">Maëlys Dupré</td>
+        <td th:text="${r.born}">02/09/2024</td>
+        <td class="num" th:text="${r.care}">780 000 F</td>
+        <td class="num" th:text="${r.aids}">264 000 F</td>
+        <td class="num" th:text="${r.family}">516 000 F</td>
+    </tr>
+</table>
+
+<table class="grid" style="margin-top: 10pt">
+    <tr><td>Total facturé à la famille pour l’année</td><td class="num" th:text="${billed}">516 000 F</td></tr>
+    <tr th:if="${credited}"><td>dont avoirs déduits</td><td class="num" th:text="${credited}">2 200 F</td></tr>
+    <tr class="total"><td th:text="${'Payé par la famille en ' + year}">Payé par la famille en 2026</td><td class="num" th:text="${paid}">480 000 F</td></tr>
+</table>
+<p class="note" th:text="${monthsLine}">Mois facturés : janvier 2026 (FA-2026-0001)…</p>
+<p class="note">Attestation établie pour servir et valoir ce que de droit, notamment auprès de l’administration fiscale.</p>
+
+<p class="signature" th:text="${signature}">Marie Néa · Les P’tits Niaoulis</p>
+<div th:replace="~{facturation-commun :: mentions}"></div>
+</body>
+</html>

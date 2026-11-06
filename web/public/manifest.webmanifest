@@ -1,0 +1,16 @@
+{
+  "name": "Ti’Cagou — Pointage",
+  "short_name": "Pointage",
+  "description": "Tablette d’accueil : pointage des enfants et du personnel, taux d’encadrement en direct.",
+  "lang": "fr",
+  "start_url": "/kiosk",
+  "scope": "/kiosk",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#fbf8f3",
+  "theme_color": "#0b6e72",
+  "icons": [
+    { "src": "/icons/icon-256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

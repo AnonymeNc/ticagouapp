@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "seq": 1,
+      "type": "ABSENCE",
+      "id": "7c2e5d10-0000-4000-8000-000000000001",
+      "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+      "payload": {
+        "childId": "0b9a3c1e-0000-4000-8000-000000001000",
+        "guardianId": "0b9a3c1e-0000-4000-8000-000000000010",
+        "fromDay": "2026-11-05",
+        "toDay": "2026-11-06",
+        "reason": "Fièvre, rendez-vous chez le médecin",
+        "reportedAt": "2026-11-04T19:05:00Z"
+      }
+    },
+    {
+      "seq": 2,
+      "type": "MESSAGE",
+      "id": "7c2e5d10-0000-4000-8000-000000000002",
+      "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+      "payload": {
+        "guardianId": "0b9a3c1e-0000-4000-8000-000000000010",
+        "body": "Merci, ce sera fait !",
+        "sentAt": "2026-11-02T04:10:00Z"
+      }
+    },
+    {
+      "seq": 3,
+      "type": "SIGNATURE",
+      "id": "7c2e5d10-0000-4000-8000-000000000003",
+      "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+      "payload": {
+        "documentId": "0b9a3c1e-0000-4000-8000-000000005000",
+        "guardianId": "0b9a3c1e-0000-4000-8000-000000000010",
+        "signerName": "Marie Wamytan",
+        "decision": "ACCEPTE",
+        "signedAt": "2026-11-03T08:00:00Z",
+        "ip": "203.0.113.24",
+        "sha256": "0d1f9a8a1d1c1b8c4f6a1d3b0e2c5a7e9f0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"
+      }
+    }
+  ]
+}

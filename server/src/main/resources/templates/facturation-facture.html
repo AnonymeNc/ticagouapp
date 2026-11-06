@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${documentTitle}">Facture</title>
+    <style th:replace="~{facturation-commun :: style}"></style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Facture FA-2026-0147</div>
+<table th:replace="~{facturation-commun :: header(${number}, ${issuedLine})}"></table>
+
+<h1 th:text="${heading}">Facture de Maëlys Dupré</h1>
+
+<table class="parties">
+    <tr>
+        <td style="width: 50%">
+            <div class="label">Facture adressée à</div>
+            <div><strong th:text="${payerName}">Clémence Dupré</strong></div>
+            <div th:each="l : ${payerAddress}" th:text="${l}">12 rue Jules Ferry</div>
+        </td>
+        <td>
+            <div class="label">Enfant</div>
+            <div th:text="${childrenLine}">Maëlys Dupré, Bébés</div>
+            <div class="label" style="margin-top: 4pt">Période</div>
+            <div th:text="${period}">01/10/2026 au 31/10/2026</div>
+            <th:block th:if="${contractText}">
+                <div class="label" style="margin-top: 4pt">Contrat</div>
+                <div th:text="${contractText}">5 jours par semaine, 07:00 à 17:00</div>
+            </th:block>
+        </td>
+    </tr>
+</table>
+
+<h2>Frais de garde du mois</h2>
+<table class="grid">
+    <tr th:if="${withTgc}"><th>Prestation</th><th class="num">Montant HT</th><th class="num">TGC</th></tr>
+    <th:block th:each="g : ${care}">
+        <tr th:if="${g.title}"><td th:colspan="${withTgc ? 3 : 2}"><h3 th:text="${g.title}">Maëlys</h3></td></tr>
+        <tr th:each="r : ${g.rows}">
+            <td>
+                <div th:text="${r.label}">Accueil d’octobre (forfait mensuel)</div>
+                <div class="detail" th:if="${r.detail}" th:text="${r.detail}">Contrat n° 2026-012</div>
+            </td>
+            <td class="num" th:text="${r.amount}">68 000 F</td>
+            <td class="num" th:if="${withTgc}" th:text="${r.tgc}">—</td>
+        </tr>
+    </th:block>
+    <tr class="total">
+        <td>Total des frais de garde <span class="detail" th:if="${tgcLine}" th:text="${'(' + tgcLine + ')'}"></span></td>
+        <td class="num" th:colspan="${withTgc ? 2 : 1}" th:text="${careTotal}">65 600 F</td>
+    </tr>
+</table>
+
+<th:block th:unless="${aids.isEmpty()}">
+    <h2>Aides qui réduisent votre facture</h2>
+    <table class="grid">
+        <tr th:each="r : ${aids}">
+            <td>
+                <div th:text="${r.label}">CAFAT</div>
+                <div class="detail" th:text="${r.detail}">Aide à la garde versée directement à la crèche</div>
+            </td>
+            <td class="num" th:text="${r.amount}">−12 000 F</td>
+        </tr>
+        <tr class="total"><td>Total des aides</td><td class="num" th:text="${aidTotal}">−22 000 F</td></tr>
+    </table>
+    <p class="note">Ces aides sont réglées par les financeurs directement à la crèche. Vous n’avez aucune démarche à faire.</p>
+</th:block>
+
+<div class="due">
+    <table style="width: 100%; border-collapse: collapse">
+        <tr>
+            <td>
+                <div class="label">Reste à votre charge</div>
+                <div class="detail" th:if="${rounding}" th:text="${'dont arrondi ' + rounding}">dont arrondi −1 F</div>
+            </td>
+            <td style="text-align: right" class="amount" th:text="${familyTotal}">43 600 F</td>
+        </tr>
+    </table>
+</div>
+
+<h2>Conditions de paiement</h2>
+<p><strong th:text="${dueLine}">À régler avant le 10/11/2026</strong></p>
+<table class="conditions">
+    <tr>
+        <td><strong>Virement</strong><br/><span th:text="${transferLine}">Référence à indiquer : FA-2026-0147</span></td>
+        <td><strong>Chèque</strong><br/><span th:text="${chequeLine}">À l’ordre de Les P’tits Niaoulis</span></td>
+        <td><strong>Espèces ou carte</strong><br/>À l’accueil, aux heures d’ouverture</td>
+    </tr>
+</table>
+
+<div th:replace="~{facturation-commun :: mentions}"></div>
+</body>
+</html>

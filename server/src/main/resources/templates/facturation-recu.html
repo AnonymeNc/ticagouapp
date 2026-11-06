@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${documentTitle}">Reçu</title>
+    <style th:replace="~{facturation-commun :: style}"></style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Reçu R-2026-0118</div>
+<table th:replace="~{facturation-commun :: header(${number}, ${issuedLine})}"></table>
+
+<h1>Reçu de paiement en espèces</h1>
+<p class="warning" th:if="${cancelled}" th:text="${cancelled}">Paiement annulé</p>
+
+<table class="parties">
+    <tr>
+        <td style="width: 50%">
+            <div class="label">Reçu de</div>
+            <div><strong th:text="${payerName}">Paul Boiguivie</strong></div>
+        </td>
+        <td>
+            <div class="label">Montant reçu</div>
+            <div><strong th:text="${amount}">45 200 F</strong></div>
+        </td>
+    </tr>
+</table>
+
+<table class="grid">
+    <tr><th>Affecté à</th><th class="num">Montant</th></tr>
+    <tr th:each="r : ${rows}">
+        <td th:text="${r.label}">Facture FA-2026-0142</td>
+        <td class="num" th:text="${r.amount}">45 200 F</td>
+    </tr>
+</table>
+
+<p class="signature" th:text="${recordedBy}">Reçu par Marie Néa</p>
+<div th:replace="~{facturation-commun :: mentions}"></div>
+</body>
+</html>

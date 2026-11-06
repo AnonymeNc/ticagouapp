@@ -1,0 +1,22 @@
+# Portail parents en développement : PostgreSQL et Mailpit (e-mails de connexion visibles sur http://localhost:8025).
+# Le portail lui-même se lance avec `cd server && ./mvnw spring-boot:run` (port 8090).
+services:
+  portail-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: portail
+      POSTGRES_USER: portail
+      POSTGRES_PASSWORD: portail
+    ports:
+      - "5434:5432"
+    volumes:
+      - portail-db:/var/lib/postgresql/data
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  portail-db:
