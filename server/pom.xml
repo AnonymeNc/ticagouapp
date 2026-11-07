@@ -21,7 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <springdoc.version>2.10.0</springdoc.version>
         <bouncycastle.version>1.86</bouncycastle.version>
-        <openhtmltopdf.version>1.1.95</openhtmltopdf.version>
+        <openhtmltopdf.version>1.1.110</openhtmltopdf.version>
         <fastexcel.version>0.20.2</fastexcel.version>
         <ticagou.jvm.args></ticagou.jvm.args>
     </properties>
