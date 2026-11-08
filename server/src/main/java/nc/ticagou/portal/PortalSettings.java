@@ -1,6 +1,7 @@
 package nc.ticagou.portal;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -74,6 +75,10 @@ public class PortalSettings {
     @Column(nullable = false)
     private int failures;
 
+    /** Dernier jour d'accès des parents mis dans la file : un changement d'abonnement le renvoie au portail. */
+    @Column(name = "access_until_sent")
+    private LocalDate accessUntilSent;
+
     @Column(name = "activated_at")
     private Instant activatedAt;
 
@@ -124,6 +129,7 @@ public class PortalSettings {
     public void disabled(Instant now) {
         this.state = State.DESACTIVE;
         this.portalStructureId = null;
+        this.accessUntilSent = null;
         this.inboxCursor = 0;
         this.failures = 0;
         this.lastError = null;
@@ -141,6 +147,14 @@ public class PortalSettings {
         this.lastAttemptAt = now;
         this.lastError = error == null ? null : error.substring(0, Math.min(error.length(), 500));
         this.failures++;
+    }
+
+    public void accessUntilSent(LocalDate day) {
+        this.accessUntilSent = day;
+    }
+
+    public LocalDate getAccessUntilSent() {
+        return accessUntilSent;
     }
 
     public void inboxCursor(long cursor) {

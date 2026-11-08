@@ -10,7 +10,8 @@ powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Demo -Form
 ```
 
 Remplacez `Essentiel` par `Gestion` ou `Complet`. La relance garde les données et change la formule. Une formule sans
-portail efface ce que le portail détient, comme chez un client qui retire le module : revenir en Complet recharge tout.
+portail (Essentiel) efface ce que le portail détient, comme chez un client qui retire le module : revenir en Gestion ou
+Complet recharge tout.
 
 | Accès | Adresse | Compte |
 |---|---|---|
@@ -37,6 +38,7 @@ Pour une crèche qui facture sur tableur.
 3. Ouvrez une facture : les aides sont déduites, en francs CFP.
 4. **Encaissements** : un paiement, une relance.
 5. **Statistiques** : remplissage et chiffre d'affaires.
+6. **Portail parents** : la facture arrive dans l'application des parents (http://localhost:5180), avec un message.
 
 ## Complet : « Les parents suivent la journée sur leur téléphone »
 

@@ -123,8 +123,12 @@ public class SyncService {
     }
 
     private void structure(UUID structureId, JsonNode p) {
-        jdbc.update("UPDATE portal_structure SET name = ?, phone = ?, payment_info = ?, meal_absence_cutoff = ? WHERE id = ?",
-                clip(text(p, "name"), 150, "Crèche"), text(p, "phone"), text(p, "paymentInfo"), text(p, "mealAbsenceCutoff"),
+        // accessUntil : dernier jour d'accès des parents (fin d'abonnement plus la grâce) ; absent d'un serveur de
+        // crèche plus ancien, et alors sans limite.
+        var accessUntil = text(p, "accessUntil");
+        jdbc.update("UPDATE portal_structure SET name = ?, phone = ?, payment_info = ?, meal_absence_cutoff = ?, access_until = ? "
+                        + "WHERE id = ?", clip(text(p, "name"), 150, "Crèche"), text(p, "phone"), text(p, "paymentInfo"),
+                text(p, "mealAbsenceCutoff"), accessUntil == null ? null : java.sql.Date.valueOf(LocalDate.parse(accessUntil)),
                 structureId);
     }
 

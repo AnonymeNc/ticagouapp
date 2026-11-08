@@ -40,9 +40,12 @@ public final class SyncDtos {
 
     /**
      * {@code mealAbsenceCutoff} : heure avant laquelle une absence signalée évite la facturation du repas ; vide quand
-     * la structure ne le pratique pas, et le portail n'en parle alors pas aux parents.
+     * la structure ne le pratique pas, et le portail n'en parle alors pas aux parents. {@code accessUntil} : dernier
+     * jour d'accès des parents, celui où la crèche peut encore saisir (fin d'abonnement plus la grâce, ou fin
+     * d'évaluation).
      */
-    public record StructurePayload(String name, String phone, String paymentInfo, String mealAbsenceCutoff) {
+    public record StructurePayload(String name, String phone, String paymentInfo, String mealAbsenceCutoff,
+                                   LocalDate accessUntil) {
     }
 
     public record GuardianPayload(UUID familyId, String firstName, String lastName, String email) {

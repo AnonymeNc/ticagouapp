@@ -79,6 +79,14 @@ public record LicenseTerms(int evaluationDays, int graceDays) {
                 .formatted(Formats.date(validUntil)));
     }
 
+    /**
+     * Dernier jour où la saisie est permise : veille de la fin de l'évaluation, ou échéance plus la grâce. Il borne
+     * aussi l'accès des parents au portail : un parent garde l'accès tant que la crèche peut saisir.
+     */
+    public LocalDate lastWritableDay(LocalDate installedOn, License license) {
+        return license == null ? installedOn.plusDays(evaluationDays - 1L) : license.validUntil().plusDays(graceDays);
+    }
+
     private static String days(long n) {
         return n <= 1 ? n + " jour" : n + " jours";
     }
