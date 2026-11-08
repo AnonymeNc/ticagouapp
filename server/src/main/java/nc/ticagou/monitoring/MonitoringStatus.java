@@ -8,7 +8,7 @@ import java.time.LocalDate;
  * contient de donnée personnelle (ni enfant, ni famille, ni personnel) — un test le vérifie.
  */
 public record MonitoringStatus(String version, String database, Backup backup, Disk disk, License license,
-                               Tablets tablets, Portal portal, int attendanceToReview) {
+                               Tablets tablets, Portal portal, int attendanceToReview, Usage usage) {
 
     /** Sauvegardes : réussite la plus récente, retard de plus de 48 h, dernier test de restauration. */
     public record Backup(boolean enabled, boolean toolsAvailable, boolean stale, Instant lastSuccessAt,
@@ -28,5 +28,19 @@ public record MonitoringStatus(String version, String database, Backup backup, D
 
     /** Portail parents : état, échecs de synchronisation à la suite, dernière erreur, file d'attente. */
     public record Portal(String state, int failures, String lastError, int pending) {
+    }
+
+    /**
+     * Usage, pour l'éditeur (console, ADR 0017) : des nombres et une date, jamais un nom ni un identifiant.
+     *
+     * @param activeChildren          enfants entrés et pas encore sortis ce jour
+     * @param places                  places du contrat d'abonnement ; nul pendant l'évaluation
+     * @param activeUsers30d          comptes actifs connectés depuis 30 jours
+     * @param lastDirectionLoginOn    jour de la dernière connexion d'un compte de direction
+     * @param attendances7d           pointages d'arrivée des 7 derniers jours
+     * @param familyInvoicesLastMonth factures aux familles du mois dernier
+     */
+    public record Usage(int activeChildren, Integer places, int activeUsers30d, LocalDate lastDirectionLoginOn,
+                        int attendances7d, int familyInvoicesLastMonth) {
     }
 }

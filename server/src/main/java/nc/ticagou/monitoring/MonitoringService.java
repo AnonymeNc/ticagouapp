@@ -5,6 +5,8 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
@@ -42,6 +44,7 @@ public class MonitoringService {
     private static final Logger log = LoggerFactory.getLogger(MonitoringService.class);
     static final Duration INTERVAL = Duration.ofMinutes(15);
     static final Duration MAX_RETRY = Duration.ofHours(1);
+    private static final ZoneId NOUMEA = ZoneId.of("Pacific/Noumea");
 
     public record SettingsDto(String state, String serviceUrl, Instant activatedAt, String activatedBy,
                               Instant lastSuccessAt, Instant lastAttemptAt, String lastError, int failures) {
@@ -234,7 +237,26 @@ public class MonitoringService {
                 portal.isEmpty() ? new MonitoringStatus.Portal("DESACTIVE", 0, null, pending)
                         : new MonitoringStatus.Portal((String) portal.getFirst().get("state"), (Integer) portal.getFirst().get("failures"),
                                 (String) portal.getFirst().get("last_error"), pending),
-                toReview);
+                toReview, usage(structureId, license.license() == null ? null : license.license().places()));
+    }
+
+    /** Usage sans donnée personnelle : des comptes et une date (ADR 0012 amendée, console de l'éditeur). */
+    MonitoringStatus.Usage usage(UUID structureId, Integer places) {
+        var now = clock.instant();
+        var today = LocalDate.ofInstant(now, NOUMEA);
+        int children = jdbc.queryForObject("""
+                SELECT count(*) FROM child WHERE structure_id = ? AND entry_date IS NOT NULL AND entry_date <= ?
+                  AND (exit_date IS NULL OR exit_date >= ?)""", Integer.class, structureId, today, today);
+        int users = jdbc.queryForObject("SELECT count(*) FROM app_user WHERE structure_id = ? AND active AND last_login_at >= ?",
+                Integer.class, structureId, Timestamp.from(now.minus(Duration.ofDays(30))));
+        var direction = jdbc.queryForObject("SELECT max(last_login_at) FROM app_user WHERE structure_id = ? AND role = 'DIRECTION'",
+                Timestamp.class, structureId);
+        int attendances = jdbc.queryForObject("SELECT count(*) FROM child_attendance WHERE structure_id = ? AND day > ? AND day <= ?",
+                Integer.class, structureId, today.minusDays(7), today);
+        int invoices = jdbc.queryForObject("SELECT count(*) FROM invoice WHERE structure_id = ? AND month = ?", Integer.class,
+                structureId, today.withDayOfMonth(1).minusMonths(1));
+        return new MonitoringStatus.Usage(children, places, users,
+                direction == null ? null : LocalDate.ofInstant(direction.toInstant(), NOUMEA), attendances, invoices);
     }
 
     /** Octets libres et total du disque d'un dossier ; nul si le dossier est inaccessible. */

@@ -8,8 +8,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/** Erreurs au format RFC 7807, en français, sans détail technique. */
+/** Erreurs au format RFC 7807, en français, sans détail technique ; passe avant le gestionnaire générique de Spring. */
 @RestControllerAdvice
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
 public class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException.class)

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -80,6 +81,14 @@ public class AdminController {
     public List<Map<String, Object>> supervision(@RequestHeader(value = "Authorization", required = false) String authorization) {
         check(authorization);
         return supervision.sites();
+    }
+
+    /** Historique des alertes (console de l'éditeur, ADR 0017) : ouvertes ou fermées depuis {@code since}. */
+    @GetMapping("/supervision/alerts")
+    public List<Map<String, Object>> supervisionAlerts(@RequestHeader(value = "Authorization", required = false) String authorization,
+                                                       @RequestParam("since") java.time.Instant since) {
+        check(authorization);
+        return supervision.alertsSince(since);
     }
 
     @PostMapping("/supervision/{id}/suspend")

@@ -7,6 +7,8 @@ import { AuthProvider, type AuthState } from "@/features/auth/AuthProvider";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { SetupPage } from "@/features/auth/SetupPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { CrechePage } from "@/features/parc/CrechePage";
+import { ParcPage } from "@/features/parc/ParcPage";
 
 /** Console de l'éditeur : connexion (mot de passe + code), puis la coquille et ses écrans. */
 export default function App() {
@@ -26,9 +28,11 @@ function Gate({ state }: { state: AuthState }) {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<DashboardPage />} />
+        <Route path="parc" element={<ParcPage />} />
+        <Route path="parc/:slug" element={<CrechePage />} />
         <Route path="parametres" element={<SettingsPage />} />
         {navItems
-          .filter((item) => item.path !== "/" && item.path !== "/parametres")
+          .filter((item) => item.phase > 2 && item.path !== "/parametres")
           .map((item) => (
             <Route key={item.path} path={item.path.slice(1)} element={<PlannedPage item={item} />} />
           ))}

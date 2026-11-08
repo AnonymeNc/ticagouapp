@@ -122,9 +122,41 @@ class SupervisionIT extends PortalTest {
         var list = mvc.perform(get("/admin/v1/supervision").header("Authorization", "Bearer jeton-hebergeur")).andReturn();
         assertThat(body(list).get(0).get("name").asText()).isEqualTo("Les P'tits Niaoulis");
         assertThat(body(list).get(0).get("version").asText()).isEqualTo("0.2.0");
+        assertThat(body(list).get(0).get("slug").isNull()).as("libellé libre : pas de slug").isTrue();
         var code = mvc.perform(post("/admin/v1/supervision-codes").header("Authorization", "Bearer jeton-hebergeur")
                 .contentType(MediaType.APPLICATION_JSON).content("{\"label\":\"Crèche B\"}")).andReturn();
         assertThat(body(code).get("activationCode").asText()).startsWith("S");
+    }
+
+    @Test
+    void consoleDeLEditeurSlugUsageEtHistorique() throws Exception {
+        // Crèche créée par creche.sh : le libellé du code est son slug.
+        var keys = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+        var activated = mvc.perform(post("/supervision/v1/activate").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(
+                Map.of("activationCode", supervision.newCode("lagon-bleu"), "name", "Micro-crèche Lagon Bleu",
+                        "publicKey", Base64.getEncoder().encodeToString(keys.getPublic().getEncoded()))))).andReturn();
+        var lagon = new Creche(UUID.fromString(body(activated).get("siteId").asText()), keys);
+        var since = Instant.now().minusSeconds(1);
+        var status = new java.util.HashMap<>(healthy());
+        status.put("usage", Map.of("activeChildren", 12, "places", 12, "attendances7d", 118));
+        status.put("backup", Map.of("enabled", false));
+        assertThat(status(signed(lagon, "POST", "/supervision/v1/status", json.writeValueAsBytes(status), Instant.now()))).isEqualTo(204);
+
+        var list = body(mvc.perform(get("/admin/v1/supervision").header("Authorization", "Bearer jeton-hebergeur")).andReturn());
+        var row = java.util.stream.StreamSupport.stream(list.spliterator(), false)
+                .filter(n -> "lagon-bleu".equals(n.path("slug").asText(null))).findFirst().orElseThrow();
+        assertThat(row.at("/status/usage/attendances7d").asInt()).as("usage gardé").isEqualTo(118);
+
+        assertThat(status(mvc.perform(get("/admin/v1/supervision/alerts").param("since", since.toString())).andReturn())).isEqualTo(401);
+        var alerts = body(mvc.perform(get("/admin/v1/supervision/alerts").param("since", since.toString())
+                .header("Authorization", "Bearer jeton-hebergeur")).andReturn());
+        assertThat(alerts).hasSize(1);
+        assertThat(alerts.get(0).get("slug").asText()).isEqualTo("lagon-bleu");
+        assertThat(alerts.get(0).get("kind").asText()).isEqualTo("SAUVEGARDE");
+        assertThat(alerts.get(0).get("closedAt").isNull()).isTrue();
+        var later = body(mvc.perform(get("/admin/v1/supervision/alerts").param("since", Instant.now().plusSeconds(60).toString())
+                .header("Authorization", "Bearer jeton-hebergeur")).andReturn());
+        assertThat(later).isEmpty();
     }
 
     @Test

@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Import(AuthIT.Config.class)
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {"console.setup-token=jeton-du-socle", "console.secret-key=AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
-        "console.secure-cookie=true"})
+        "console.secure-cookie=true", "console.scheduling=false"})
 class AuthIT {
 
     static final String PASSWORD = "un mot de passe assez long";

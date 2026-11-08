@@ -52,6 +52,14 @@ public class AuditService {
                 Timestamp.from(clock.instant()), operatorId, login, action, target, text, ClientAddress.current());
     }
 
+    /** Journal d'une cible (« creche:lagon-bleu »), le plus récent d'abord. */
+    public List<Event> forTarget(String target, int limit) {
+        return jdbc.query("SELECT id, at, operator_login, action, target, detail::text AS detail, ip FROM audit_event WHERE target = ? ORDER BY at DESC, id DESC LIMIT ?",
+                (rs, i) -> new Event(rs.getLong("id"), rs.getTimestamp("at").toInstant(), rs.getString("operator_login"),
+                        rs.getString("action"), rs.getString("target"), rs.getString("detail"), rs.getString("ip")),
+                target, Math.max(1, Math.min(limit, 500)));
+    }
+
     public List<Event> latest(int limit) {
         return jdbc.query("SELECT id, at, operator_login, action, target, detail::text AS detail, ip FROM audit_event ORDER BY at DESC, id DESC LIMIT ?",
                 (rs, i) -> new Event(rs.getLong("id"), rs.getTimestamp("at").toInstant(), rs.getString("operator_login"),

@@ -239,7 +239,48 @@ cmd_mettre_a_jour() {
     echo "Mise à jour terminée."
 }
 
+etat_conteneur() {
+    docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "creche-$1" 2>/dev/null || echo absent
+}
+
+# Texte JSON : guillemets et barres obliques inverses échappés, sauts de ligne retirés.
+json_texte() { printf '"%s"' "$(printf %s "$1" | tr -d '\n\r' | sed 's/\\/\\\\/g; s/"/\\"/g')"; }
+
+# etat --json : pour la console de l'éditeur (ADR 0017) ; conteneur, image, domaine et abonnement de chaque crèche,
+# disque des données. Aucun secret, aucune donnée de crèche.
+cmd_etat_json() {
+    libre=$(df -P -B1 "$TICAGOU_DONNEES" 2>/dev/null | awk 'NR == 2 { print $4 }')
+    total=$(df -P -B1 "$TICAGOU_DONNEES" 2>/dev/null | awk 'NR == 2 { print $2 }')
+    printf '{"at":"%s","disk":{"freeBytes":%s,"totalBytes":%s},"creches":[' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${libre:-null}" "${total:-null}"
+    premier=1
+    for slug in $(creches); do
+        [ -f "$(dossier_de "$slug")/creche.env" ] || continue
+        abonnement=$(sql_creche "$slug" "SELECT coalesce((SELECT json_build_object('number', number, 'plan', plan,
+            'places', places, 'desktops', desktops, 'tablets', tablets, 'validUntil', valid_until, 'modules', modules)
+            FROM subscription WHERE id = 1)::text, 'null')" 2>/dev/null || echo null)
+        [ -n "$abonnement" ] || abonnement=null
+        [ $premier = 1 ] || printf ','
+        premier=0
+        printf '{"slug":%s,"container":%s,"image":%s,"domain":%s,"subscription":%s}' "$(json_texte "$slug")" \
+            "$(json_texte "$(etat_conteneur "$slug")")" "$(json_texte "$(valeur "$slug" IMAGE | cut -d: -f2)")" \
+            "$(json_texte "$(valeur "$slug" DOMAINE)")" "$abonnement"
+    done
+    printf ']}\n'
+}
+
+# rapport-console : envoie `etat --json` à la console (cron toutes les 5 min, sur l'hôte)
+#   */5 * * * * /opt/ticagou/ticagou-web/deploy/creche.sh rapport-console >>/var/log/ticagou-console.log 2>&1
+cmd_rapport_console() {
+    : "${CONSOLE_HOST_TOKEN:?Renseignez CONSOLE_HOST_TOKEN dans socle.env}"
+    entetes=$(mktemp)
+    trap 'rm -f "$entetes"' EXIT
+    # Le jeton passe par un fichier : il n'apparaît pas dans la liste des processus.
+    printf 'Authorization: Bearer %s\nContent-Type: application/json\n' "$CONSOLE_HOST_TOKEN" >"$entetes"
+    cmd_etat_json | curl -fsS -m 30 -X POST -H @"$entetes" --data-binary @- http://127.0.0.1:8095/interne/v1/hote
+}
+
 cmd_etat() {
+    [ "${1:-}" = --json ] && { cmd_etat_json; return; }
     printf '%-24s %-10s %-22s %s\n' CRÈCHE ÉTAT VERSION "ABONNEMENT JUSQU'AU"
     for slug in $(creches); do
         etat=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "creche-$slug" 2>/dev/null || echo arrêtée)
@@ -334,7 +375,7 @@ socle [--portail] [--console]  démarre PostgreSQL, Caddy et, en option, le port
 construire [version]           construit l'image de l'application
 creer <crèche> [--domaine n]   crée une instance et donne le lien de démarrage
 abonnement <crèche> ...        --numero --offre --places --jusqu-au [--pc --tablettes --modules A,B]
-etat                           liste les crèches, leur version, leur abonnement
+etat [--json]                  liste les crèches, leur version, leur abonnement (--json : pour la console)
 mettre-a-jour <version> <crèche>|--toutes
 suspendre <crèche>             arrête l'instance (impayé, fin de contrat)
 reprendre <crèche>
@@ -342,6 +383,7 @@ restaurer <crèche> <archive>   remplace les données par une sauvegarde
 telephone-perdu <crèche> <identifiant>
 code-portail <libellé>         code d'activation du portail parents
 sauvegarder-console            sauvegarde chiffrée de la base de la console (cron, chaque nuit)
+rapport-console                envoie l'état des crèches à la console (cron, toutes les 5 min)
 console-telephone-perdu <identifiant>   double authentification de la console à refaire
 supprimer <crèche>             efface tout, après restitution des données
 FIN
@@ -354,7 +396,7 @@ case $commande in
     construire) cmd_construire "$@" ;;
     creer) cmd_creer "$@" ;;
     abonnement) cmd_abonnement "$@" ;;
-    etat) cmd_etat ;;
+    etat) cmd_etat "$@" ;;
     mettre-a-jour) cmd_mettre_a_jour "$@" ;;
     suspendre) cmd_suspendre "${1:?crèche manquante}" ;;
     reprendre) cmd_reprendre "${1:?crèche manquante}" ;;
@@ -362,6 +404,7 @@ case $commande in
     telephone-perdu) cmd_telephone_perdu "$@" ;;
     code-portail) cmd_code_portail "$@" ;;
     sauvegarder-console) cmd_sauvegarder_console ;;
+    rapport-console) cmd_rapport_console ;;
     console-telephone-perdu) cmd_console_telephone_perdu "$@" ;;
     supprimer) cmd_supprimer "$@" ;;
     *) aide ;;

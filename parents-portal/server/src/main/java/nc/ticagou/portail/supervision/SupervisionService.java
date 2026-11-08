@@ -38,7 +38,10 @@ public class SupervisionService {
 
     /** Champs acceptés dans un état : tout le reste est ignoré (aucune donnée personnelle n'est attendue). */
     static final List<String> FIELDS = List.of("version", "database", "backup", "disk", "license", "tablets", "portal",
-            "attendanceToReview");
+            "attendanceToReview", "usage");
+
+    /** Slug d'une crèche hébergée (deploy/creche.sh) : le libellé du code, quand il en a la forme. */
+    private static final java.util.regex.Pattern SLUG = java.util.regex.Pattern.compile("^[a-z0-9][a-z0-9-]{1,40}$");
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
@@ -81,8 +84,10 @@ public class SupervisionService {
         }
         var id = UUID.randomUUID();
         var clean = name == null || name.isBlank() ? "Crèche" : name.strip();
-        jdbc.update("INSERT INTO supervision_site (id, name, public_key, activated_at) VALUES (?, ?, ?, ?)",
-                id, clean.length() > 150 ? clean.substring(0, 150) : clean, publicKey, Timestamp.from(now));
+        var label = jdbc.queryForObject("SELECT label FROM supervision_code WHERE code_hash = ?", String.class, hash);
+        var slug = label != null && SLUG.matcher(label).matches() ? label : null;
+        jdbc.update("INSERT INTO supervision_site (id, name, slug, public_key, activated_at) VALUES (?, ?, ?, ?, ?)",
+                id, clean.length() > 150 ? clean.substring(0, 150) : clean, slug, publicKey, Timestamp.from(now));
         jdbc.update("UPDATE supervision_code SET site_id = ? WHERE code_hash = ?", id, hash);
         return id;
     }
@@ -182,11 +187,12 @@ public class SupervisionService {
     /** Liste pour l'hébergeur : état résumé et alertes en cours (aucune donnée personnelle). */
     public List<Map<String, Object>> sites() {
         var result = new ArrayList<Map<String, Object>>();
-        jdbc.query("SELECT id, name, activated_at, last_seen_at, last_status::text AS status, suspended_at FROM supervision_site ORDER BY name", rs -> {
+        jdbc.query("SELECT id, name, slug, activated_at, last_seen_at, last_status::text AS status, suspended_at FROM supervision_site ORDER BY name", rs -> {
             var id = rs.getObject("id", UUID.class);
             var site = new java.util.LinkedHashMap<String, Object>();
             site.put("id", id);
             site.put("name", rs.getString("name"));
+            site.put("slug", rs.getString("slug"));
             site.put("activatedAt", rs.getTimestamp("activated_at").toInstant());
             site.put("lastSeenAt", rs.getTimestamp("last_seen_at") == null ? null : rs.getTimestamp("last_seen_at").toInstant());
             site.put("suspended", rs.getTimestamp("suspended_at") != null);
@@ -201,6 +207,24 @@ public class SupervisionService {
             result.add(site);
         });
         return result;
+    }
+
+    /** Alertes ouvertes ou fermées depuis {@code since}, pour l'historique de la console de l'éditeur. */
+    public List<Map<String, Object>> alertsSince(Instant since) {
+        return jdbc.query("""
+                SELECT a.id, a.site_id, s.slug, a.kind, a.detail, a.opened_at, a.closed_at
+                FROM supervision_alert a JOIN supervision_site s ON s.id = a.site_id
+                WHERE a.opened_at >= ? OR a.closed_at >= ? ORDER BY a.id""", (rs, i) -> {
+            var alert = new java.util.LinkedHashMap<String, Object>();
+            alert.put("id", rs.getLong("id"));
+            alert.put("siteId", rs.getObject("site_id", UUID.class));
+            alert.put("slug", rs.getString("slug"));
+            alert.put("kind", rs.getString("kind"));
+            alert.put("detail", rs.getString("detail"));
+            alert.put("openedAt", rs.getTimestamp("opened_at").toInstant());
+            alert.put("closedAt", rs.getTimestamp("closed_at") == null ? null : rs.getTimestamp("closed_at").toInstant());
+            return alert;
+        }, Timestamp.from(since), Timestamp.from(since));
     }
 
     private void notify(String subject, String text) {

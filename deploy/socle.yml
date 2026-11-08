@@ -75,6 +75,11 @@ services:
       CONSOLE_DB_PASSWORD: ${CONSOLE_DB_PASSWORD:-}
       CONSOLE_SECRET_KEY: ${CONSOLE_SECRET_KEY:-}
       CONSOLE_SETUP_TOKEN: ${CONSOLE_SETUP_TOKEN:-}
+      # Supervision lue dans le portail (réseau interne) avec son jeton d'administration.
+      CONSOLE_PORTAL_URL: http://portail:8090
+      CONSOLE_PORTAL_ADMIN_TOKEN: ${PORTAL_ADMIN_TOKEN:-}
+      # Rapport de l'hôte : creche.sh rapport-console (cron), sur 127.0.0.1:8095/interne/v1/hote.
+      CONSOLE_HOST_TOKEN: ${CONSOLE_HOST_TOKEN:-}
       CONSOLE_FORWARD_HEADERS: native
     networks: [ticagou]
 

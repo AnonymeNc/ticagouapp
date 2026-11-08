@@ -34,6 +34,14 @@ public class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.FORBIDDEN, code, detail);
     }
 
+    public static ApiException notFound(String code, String detail) {
+        return new ApiException(HttpStatus.NOT_FOUND, code, detail);
+    }
+
+    public static ApiException conflict(String code, String detail) {
+        return new ApiException(HttpStatus.CONFLICT, code, detail);
+    }
+
     public static ApiException locked(Instant until) {
         return new ApiException(HttpStatus.LOCKED, "account_locked",
                 "Trop d’essais manqués : ce compte est bloqué pendant quelques minutes.", until);
