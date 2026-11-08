@@ -81,11 +81,21 @@ public class LicenseService {
         return license == null ? LicenseTerms.EVALUATION_DESKTOPS : Math.max(license.desktops(), 1);
     }
 
+    /** Dernier jour où la saisie est permise ; c'est aussi la fin de l'accès des parents au portail. */
+    public LocalDate lastWritableDay() {
+        var today = today();
+        return terms.lastWritableDay(installedOn(today), stored());
+    }
+
     private LicenseTerms.Status status(License license) {
         var today = today();
+        return terms.status(installedOn(today), today, license);
+    }
+
+    private LocalDate installedOn(LocalDate today) {
         var installed = jdbc.queryForList("SELECT initialized_at FROM installation WHERE id = 1", Timestamp.class);
-        var installedOn = installed.isEmpty() ? today : LocalDate.ofInstant(installed.getFirst().toInstant(), clock.getZone());
-        return terms.status(installedOn, today, license);
+        return installed.isEmpty() || installed.getFirst() == null ? today
+                : LocalDate.ofInstant(installed.getFirst().toInstant(), clock.getZone());
     }
 
     /** Dernier jour enregistré : reculer l'horloge du PC ne rend pas de jours d'évaluation ou de grâce. */

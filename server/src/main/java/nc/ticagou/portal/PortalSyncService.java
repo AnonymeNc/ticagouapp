@@ -120,6 +120,7 @@ public class PortalSyncService {
                 return purge(settingsRepository.findById(structureId).orElseThrow());
             }
             try {
+                settings = announceAccess(structureId);
                 int sent = sendPending(settings);
                 int received = inbox.pull(settings, keys.privateKey(structureId));
                 record(structureId, null);
@@ -132,6 +133,26 @@ public class PortalSyncService {
         } finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * Fin d'accès des parents (fin d'abonnement plus la grâce, ou fin d'évaluation) : quand elle change, après un
+     * renouvellement par exemple, la structure repart au portail, qui allonge ou coupe les sessions des parents.
+     */
+    private PortalSettings announceAccess(UUID structureId) {
+        return transactions.execute(s -> {
+            var current = settingsRepository.findById(structureId).orElseThrow();
+            var accessUntil = licenses.lastWritableDay();
+            if (!accessUntil.equals(current.getAccessUntilSent())) {
+                if (!outbox.existsByStructureIdAndTypeAndEntityIdAndSentAtIsNull(structureId, PortalItemType.STRUCTURE,
+                        structureId)) {
+                    outbox.save(new PortalOutboxItem(structureId, PortalItemType.STRUCTURE, structureId, clock.instant()));
+                }
+                current.accessUntilSent(accessUntil);
+                settingsRepository.save(current);
+            }
+            return current;
+        });
     }
 
     /** Passe la structure en effacement : la file est vidée, seul l'ordre PURGE_STRUCTURE partira. */

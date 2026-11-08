@@ -338,6 +338,26 @@ class PortalIT extends IntegrationTest {
     }
 
     @Test
+    void finDAccesDesParentsSuitLAbonnement() throws Exception {
+        activate();
+        sync();
+        // Évaluation : 30 jours depuis l'installation (aujourd'hui), dernier jour compris.
+        assertThat(received("STRUCTURE").getLast().at("/payload/accessUntil").asText())
+                .isEqualTo(TODAY.plusDays(29).toString());
+
+        // Abonnement enregistré : la fin d'accès devient l'échéance plus la grâce, renvoyée sans autre changement.
+        TestLicenses.apply(jdbc, 2, TODAY.plusMonths(6));
+        sync();
+        assertThat(received("STRUCTURE")).hasSize(2);
+        assertThat(received("STRUCTURE").getLast().at("/payload/accessUntil").asText())
+                .isEqualTo(TODAY.plusMonths(6).plusDays(30).toString());
+
+        // Rien de changé : rien de renvoyé.
+        sync();
+        assertThat(received("STRUCTURE")).hasSize(2);
+    }
+
+    @Test
     void moduleAbsentDeLaLicence() throws Exception {
         TestLicenses.apply(jdbc, 48, Set.of(LicenseModule.FACTURATION), 2, TODAY.plusYears(1));
         var result = perform(post("/api/v1/portal/activate"), director,

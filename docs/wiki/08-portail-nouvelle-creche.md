@@ -67,7 +67,8 @@ stade : c'est lui qui se connecte (§ 6). Remettez-lui l'adresse du portail (QR 
 1. Sur son téléphone : `https://parents.ticagou.nc` › son adresse e-mail › **Recevoir mon lien de connexion**.
 2. Il ouvre l'e-mail « Votre connexion à Ti'Cagou » : il touche le lien, **ou** recopie le code à 6 chiffres.
 3. Il ajoute l'application à l'écran d'accueil (menu du navigateur › « Ajouter à l'écran d'accueil »).
-4. Il reste connecté 30 jours.
+4. Il reste connecté tant que l'abonnement de la crèche court (grâce de 30 jours comprise) : pas de nouvel e-mail
+   à chaque visite. Un renouvellement (`creche.sh abonnement`) prolonge sa connexion.
 
 ## 7. Vérifier
 

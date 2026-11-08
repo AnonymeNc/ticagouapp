@@ -31,7 +31,7 @@ autour.
 
 **Les formules** sont des assemblages de modules, pas une notion du logiciel, qui ne connaît que les modules :
 - **Essentiel** : la base ;
-- **Gestion** : la base, `INSCRIPTIONS`, `FACTURATION` ;
+- **Gestion** : la base, `INSCRIPTIONS`, `FACTURATION`, `PORTAIL_PARENTS` ;
 - **Complet** : tous les modules.
 
 Tout module s'ajoute à la carte. Un module entraîne ceux dont il a besoin (`LicenseModule.withRequired`).

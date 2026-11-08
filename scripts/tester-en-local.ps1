@@ -160,7 +160,7 @@ function Clear-Port([int]$port) {
 
 # Formule de la base de démonstration : l'abonnement est une ligne, comme avec deploy/creche.sh.
 function Set-DemoFormule([string]$name) {
-    $modules = @{ Essentiel = ''; Gestion = 'INSCRIPTIONS,FACTURATION'; Complet = 'INSCRIPTIONS,FACTURATION,COMPTABILITE,PERSONNEL,REPAS,PORTAIL_PARENTS' }[$name]
+    $modules = @{ Essentiel = ''; Gestion = 'INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS'; Complet = 'INSCRIPTIONS,FACTURATION,COMPTABILITE,PERSONNEL,REPAS,PORTAIL_PARENTS' }[$name]
     $sql = "INSERT INTO subscription (id, number, holder, plan, places, desktops, tablets, valid_until, modules) SELECT 1, 'DEMO', name, '$name (demonstration)', 60, 5, 5, CURRENT_DATE + 365, '$modules' FROM structure LIMIT 1 ON CONFLICT (id) DO UPDATE SET plan = excluded.plan, modules = excluded.modules, valid_until = excluded.valid_until"
     if (-not (Invoke-Quiet "docker exec ticagou-web-postgres psql -U ticagou -d ticagou_demo -c `"$sql`"")) { throw 'Formule impossible à appliquer.' }
 }

@@ -189,6 +189,58 @@ class ParentIT extends PortalTest {
         }
     }
 
+    private void accessUntil(long seq, LocalDate day) throws Exception {
+        var payload = new java.util.HashMap<String, Object>(Map.of("name", "Les P'tits Cagous"));
+        payload.put("accessUntil", day == null ? null : day.toString());
+        assertThat(status(batch(creche, Map.of("items", List.of(Map.of("seq", seq, "type", "STRUCTURE", "id", creche.id(),
+                "deleted", false, "payload", payload)))))).isEqualTo(200);
+    }
+
+    private java.time.Instant sessionEnd() {
+        return jdbc.queryForObject("SELECT max(expires_at) FROM parent_session", java.sql.Timestamp.class).toInstant();
+    }
+
+    private static long maxAge(MvcResult result) {
+        var m = java.util.regex.Pattern.compile("Max-Age=(\\d+)").matcher(result.getResponse().getHeader("Set-Cookie"));
+        assertThat(m.find()).isTrue();
+        return Long.parseLong(m.group(1));
+    }
+
+    @Test
+    void laSessionSuitLAbonnementDeLaCreche() throws Exception {
+        var noumea = ZoneId.of("Pacific/Noumea");
+        var today = LocalDate.now(noumea);
+        accessUntil(40, today.plusDays(60));
+        var cookie = login(MARIE);
+        // Fin de session : lendemain du dernier jour d'accès, à minuit à Nouméa.
+        assertThat(sessionEnd()).isEqualTo(today.plusDays(61).atStartOfDay(noumea).toInstant());
+
+        // Renouvellement : la même session s'allonge, le cookie aussi (plafonné à un an), sans nouvel e-mail.
+        accessUntil(41, today.plusDays(400));
+        var me = call(get("/api/v1/me"), cookie, null);
+        assertThat(status(me)).isEqualTo(200);
+        assertThat(maxAge(me)).isEqualTo(java.time.Duration.ofDays(365).toSeconds());
+        assertThat(sessionEnd()).isEqualTo(today.plusDays(401).atStartOfDay(noumea).toInstant());
+
+        // Abonnement échu (grâce comprise) : plus d'accès ni d'e-mail de connexion.
+        accessUntil(42, today.minusDays(1));
+        assertThat(status(call(get("/api/v1/me"), cookie, null))).isEqualTo(401);
+        MAILS.clear();
+        assertThat(status(call(post("/api/v1/auth/request"), null, Map.of("email", MARIE)))).isEqualTo(202);
+        Thread.sleep(300);
+        assertThat(MAILS).isEmpty();
+
+        // Dernier jour d'accès : encore ouvert.
+        accessUntil(43, today);
+        assertThat(status(call(get("/api/v1/me"), login(MARIE), null))).isEqualTo(200);
+
+        // Serveur de crèche sans date : 30 jours glissants.
+        accessUntil(44, null);
+        var fresh = login(MARIE);
+        assertThat(maxAge(call(get("/api/v1/me"), fresh, null))).isBetween(java.time.Duration.ofDays(29).toSeconds(),
+                java.time.Duration.ofDays(30).toSeconds());
+    }
+
     @Test
     void accesRetireLaSessionNeVoitPlusRien() throws Exception {
         var cookie = login(MARIE);

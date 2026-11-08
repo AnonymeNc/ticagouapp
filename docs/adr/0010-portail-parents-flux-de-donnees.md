@@ -89,7 +89,10 @@ derniers jours, dans la limite de la conservation ci-dessous.
 **Connexion des parents**
 - Le parent saisit son e-mail. Il reçoit un lien valable 15 min, à usage unique, et un code à 6 chiffres
   (5 essais au plus).
-- Le lien ou le code ouvrent une session de 30 jours (cookie HttpOnly, SameSite=Strict), révocable.
+- Le lien ou le code ouvrent une session (cookie HttpOnly, SameSite=Strict), révocable, qui suit l'abonnement de la
+  crèche : elle court jusqu'à la fin d'abonnement plus la grâce (ou la fin d'évaluation), date envoyée par le serveur de
+  la crèche (`accessUntil`). Un renouvellement l'allonge sans nouvel e-mail ; une crèche échue est traitée comme
+  suspendue. Sans cette date (serveur de crèche plus ancien), 30 jours glissants.
 - La réponse est identique, que l'adresse soit connue ou non.
 
 ## Conséquences
@@ -108,7 +111,7 @@ derniers jours, dans la limite de la conservation ci-dessous.
 ## Écarts à la maquette « Ti'Cagou — app parents mobile »
 
 - **Connexion** : lien magique et code à 6 chiffres au lieu du mot de passe de la maquette (choix validé) ; la case
-  « Rester connecté » disparaît : la session dure 30 jours.
+  « Rester connecté » disparaît : la session dure autant que l'abonnement de la crèche.
 - **Fil de la journée** : le régime (« Sans porc ») et les personnes autorisées ne sont pas affichés, car ce sont des
   données qui restent dans la crèche ; l'heure de départ prévue non plus. Les informations de santé que la direction
   partage apparaissent dans un encadré.

@@ -1,8 +1,11 @@
 package nc.ticagou.portail.auth;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -11,6 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import nc.ticagou.portail.PortalProperties;
 import nc.ticagou.portail.common.ApiException;
 
 /**
@@ -25,9 +29,13 @@ public class ParentSessionInterceptor implements HandlerInterceptor, WebMvcConfi
     public static final String CSRF_HEADER = "X-Ticagou-Portail";
 
     private final AuthService auth;
+    private final PortalProperties properties;
+    private final Clock clock;
 
-    public ParentSessionInterceptor(AuthService auth) {
+    public ParentSessionInterceptor(AuthService auth, PortalProperties properties, Clock clock) {
         this.auth = auth;
+        this.properties = properties;
+        this.clock = clock;
     }
 
     @Override
@@ -45,9 +53,14 @@ public class ParentSessionInterceptor implements HandlerInterceptor, WebMvcConfi
         }
         var token = request.getCookies() == null ? null : Arrays.stream(request.getCookies())
                 .filter(c -> AuthController.COOKIE.equals(c.getName())).map(Cookie::getValue).findFirst().orElse(null);
-        var email = auth.email(token)
+        var session = auth.active(token)
                 .orElseThrow(() -> ApiException.unauthorized("unauthenticated", "Connexion requise."));
-        request.setAttribute(EMAIL, email);
+        request.setAttribute(EMAIL, session.email());
+        if ("/api/v1/me".equals(request.getRequestURI())) {
+            // Profil lu à l'ouverture de l'application : le cookie suit un renouvellement d'abonnement.
+            response.addHeader(HttpHeaders.SET_COOKIE, AuthController.cookie(token,
+                    Duration.between(clock.instant(), session.expiresAt()), properties.secureCookie()));
+        }
         return true;
     }
 }

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import nc.ticagou.portail.TimeConfig;
+import nc.ticagou.portail.auth.AuthService;
 import nc.ticagou.portail.common.ApiException;
 import nc.ticagou.portail.common.FileCrypto;
 import nc.ticagou.portail.common.Hashes;
@@ -55,9 +56,10 @@ public class ParentService {
 
     public List<Access> accesses(String email) {
         return jdbc.query("SELECT g.structure_id, g.family_id, g.id, g.first_name, g.last_name FROM guardian g "
-                        + "JOIN portal_structure s ON s.id = g.structure_id WHERE lower(g.email) = lower(?) AND s.suspended_at IS NULL "
-                        + "ORDER BY s.name", (rs, i) -> new Access(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class),
-                        rs.getObject(3, UUID.class), rs.getString(4), rs.getString(5)), email);
+                        + "JOIN portal_structure s ON s.id = g.structure_id WHERE lower(g.email) = lower(?) AND "
+                        + AuthService.OPEN_STRUCTURE + " ORDER BY s.name", (rs, i) -> new Access(rs.getObject(1, UUID.class),
+                        rs.getObject(2, UUID.class), rs.getObject(3, UUID.class), rs.getString(4), rs.getString(5)), email,
+                java.sql.Date.valueOf(LocalDate.now(clock.withZone(TimeConfig.NOUMEA))));
     }
 
     private Access access(String email, UUID structureId, UUID familyId) {

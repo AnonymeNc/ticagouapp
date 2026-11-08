@@ -44,7 +44,7 @@ supplémentaire.
 | Comptabilité : export CSV et FEC | | | ✔ |
 | Personnel : fiches, diplômes, planning, heures | | | ✔ |
 | Repas : menus, fiche cuisine, récapitulatif des aides | | | ✔ |
-| Portail parents : journée, photos, messages, factures, signatures | | | ✔ |
+| Portail parents : journée, photos, messages, factures, signatures | | ✔ | ✔ |
 
 Chaque formule comprend **1 PC et 2 tablettes**.
 

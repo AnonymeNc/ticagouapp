@@ -37,6 +37,7 @@ import nc.ticagou.portal.SyncDtos.InvoicePayload;
 import nc.ticagou.portal.SyncDtos.MessagePayload;
 import nc.ticagou.portal.SyncDtos.SharedHealth;
 import nc.ticagou.portal.SyncDtos.StructurePayload;
+import nc.ticagou.license.LicenseService;
 import nc.ticagou.structure.SectionRepository;
 import nc.ticagou.structure.StructureRepository;
 
@@ -80,6 +81,7 @@ public class PortalProjections {
     private final FamilyMessageRepository messages;
     private final EncryptedFileStore fileStore;
     private final StoredFileRepository files;
+    private final LicenseService licenses;
 
     public PortalProjections(StructureRepository structures, GuardianRepository guardians,
                              GuardianPortalAccessRepository accesses, ChildRepository children,
@@ -88,7 +90,8 @@ public class PortalProjections {
                              InvoiceRepository invoices, CreditNoteRepository creditNotes, InvoiceBalances balances,
                              InvoiceLineRepository invoiceLines, CreditNoteLineRepository creditNoteLines,
                              BillingDocuments billingDocuments, PortalDocumentRepository documents,
-                             FamilyMessageRepository messages, EncryptedFileStore fileStore, StoredFileRepository files) {
+                             FamilyMessageRepository messages, EncryptedFileStore fileStore, StoredFileRepository files,
+                             LicenseService licenses) {
         this.structures = structures;
         this.guardians = guardians;
         this.accesses = accesses;
@@ -108,6 +111,7 @@ public class PortalProjections {
         this.messages = messages;
         this.fileStore = fileStore;
         this.files = files;
+        this.licenses = licenses;
     }
 
     @Transactional(readOnly = true)
@@ -130,7 +134,8 @@ public class PortalProjections {
         return structures.findById(settings.getStructureId())
                 .map(s -> Projection.of(new StructurePayload(s.getName(), s.getPhone(),
                         settings.getPaymentInfo() != null ? settings.getPaymentInfo() : transferInfo(s.getBankName(),
-                                s.getIban(), s.getBankHolder()), settings.getMealAbsenceCutoff())))
+                                s.getIban(), s.getBankHolder()), settings.getMealAbsenceCutoff(),
+                        licenses.lastWritableDay())))
                 .orElseGet(Projection::delete);
     }
 

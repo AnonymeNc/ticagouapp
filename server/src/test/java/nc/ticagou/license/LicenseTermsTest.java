@@ -51,6 +51,18 @@ class LicenseTermsTest {
     }
 
     @Test
+    void dernierJourDeSaisieQuiBorneLePortailParents() {
+        assertThat(TERMS.lastWritableDay(INSTALLED, null)).as("évaluation").isEqualTo(LocalDate.of(2026, 11, 30));
+        var license = until(LocalDate.of(2027, 3, 31));
+        assertThat(TERMS.lastWritableDay(INSTALLED, license)).as("échéance plus la grâce").isEqualTo(LocalDate.of(2027, 4, 30));
+        // Cohérent avec l'état : le dernier jour est encore en saisie, le lendemain en lecture seule.
+        assertThat(TERMS.status(INSTALLED, LocalDate.of(2026, 11, 30), null).state().readOnly()).isFalse();
+        assertThat(TERMS.status(INSTALLED, LocalDate.of(2026, 12, 1), null).state().readOnly()).isTrue();
+        assertThat(TERMS.status(INSTALLED, LocalDate.of(2027, 4, 30), license).state().readOnly()).isFalse();
+        assertThat(TERMS.status(INSTALLED, LocalDate.of(2027, 5, 1), license).state().readOnly()).isTrue();
+    }
+
+    @Test
     void uneLicenceRemplaceLEvaluationTerminee() {
         var status = TERMS.status(INSTALLED, LocalDate.of(2027, 1, 15), until(LocalDate.of(2028, 1, 14)));
         assertThat(status.state()).isEqualTo(State.ACTIVE);

@@ -171,7 +171,7 @@ cmd_abonnement() {
     [ -n "$numero" ] && [ -n "$offre" ] && [ -n "$places" ] && [ -n "$fin" ] || { echo "--numero, --offre, --places et --jusqu-au sont obligatoires." >&2; exit 1; }
     case $offre in
         essentiel) libelle=Essentiel liste="" ;;
-        gestion) libelle=Gestion liste=INSCRIPTIONS,FACTURATION ;;
+        gestion) libelle=Gestion liste=INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS ;;
         complet) libelle=Complet liste=INSCRIPTIONS,FACTURATION,COMPTABILITE,PERSONNEL,REPAS,PORTAIL_PARENTS ;;
         *) echo "--offre : essentiel, gestion ou complet." >&2; exit 1 ;;
     esac

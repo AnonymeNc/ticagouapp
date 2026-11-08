@@ -1,5 +1,6 @@
 package nc.ticagou.portail.auth;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
 
@@ -37,10 +38,12 @@ public class AuthController {
 
     private final AuthService auth;
     private final PortalProperties properties;
+    private final Clock clock;
 
-    public AuthController(AuthService auth, PortalProperties properties) {
+    public AuthController(AuthService auth, PortalProperties properties, Clock clock) {
         this.auth = auth;
         this.properties = properties;
+        this.clock = clock;
     }
 
     @PostMapping("/request")
@@ -60,18 +63,25 @@ public class AuthController {
         } else {
             throw ApiException.rule("verify_incomplete", "Saisissez le code reçu par e-mail.");
         }
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie(session.token(), AuthService.SESSION_VALIDITY))
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie(session.token(),
+                        Duration.between(clock.instant(), session.expiresAt()), properties.secureCookie()))
                 .body(Map.of("email", session.email()));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@CookieValue(value = COOKIE, required = false) String token) {
         auth.logout(token);
-        return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO)).build();
+        return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO, properties.secureCookie()))
+                .build();
     }
 
-    private String cookie(String value, Duration maxAge) {
-        return ResponseCookie.from(COOKIE, value).httpOnly(true).secure(properties.secureCookie()).sameSite("Strict")
-                .path("/api/").maxAge(maxAge).build().toString();
+    /** Les navigateurs plafonnent la durée d'un cookie (400 jours pour Chrome) : il est rafraîchi à chaque ouverture. */
+    static final Duration MAX_COOKIE_AGE = Duration.ofDays(365);
+
+    /** Cookie de session ; sa durée suit la fin de la session (abonnement des crèches), plafonnée à un an. */
+    static String cookie(String value, Duration maxAge, boolean secure) {
+        var age = maxAge.isNegative() ? Duration.ZERO : maxAge.compareTo(MAX_COOKIE_AGE) > 0 ? MAX_COOKIE_AGE : maxAge;
+        return ResponseCookie.from(COOKIE, value).httpOnly(true).secure(secure).sameSite("Strict")
+                .path("/api/").maxAge(age).build().toString();
     }
 }
