@@ -131,7 +131,15 @@ class MonitoringIT extends IntegrationTest {
         var fields = new java.util.HashSet<String>();
         status.fieldNames().forEachRemaining(fields::add);
         assertThat(fields).containsExactlyInAnyOrder("version", "database", "backup", "disk", "license", "tablets", "portal",
-                "attendanceToReview");
+                "attendanceToReview", "usage");
+        var usage = new java.util.HashSet<String>();
+        status.get("usage").fieldNames().forEachRemaining(usage::add);
+        assertThat(usage).as("usage : des nombres et une date, rien d'autre").containsExactlyInAnyOrder("activeChildren", "places",
+                "activeUsers30d", "lastDirectionLoginOn", "attendances7d", "familyInvoicesLastMonth");
+        status.get("usage").forEach(value -> assertThat(value.isNumber() || value.isNull()
+                || value.asText().matches("\\d{4}-\\d{2}-\\d{2}")).as("valeur d'usage : %s", value).isTrue());
+        assertThat(status.at("/usage/activeUsers30d").asInt()).as("la direction vient de se connecter").isPositive();
+        assertThat(status.at("/usage/places").isNull()).as("évaluation : pas de contrat").isTrue();
         assertThat(status.at("/license/state").asText()).isEqualTo("EVALUATION");
         assertThat(status.at("/backup/enabled").asBoolean()).isTrue();
         assertThat(status.at("/disk/dataFreeBytes").asLong()).isPositive();

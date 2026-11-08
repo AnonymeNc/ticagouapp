@@ -29,9 +29,13 @@ veut le savoir avant la directrice, sans accéder aux données de la crèche.
   - licence : état, échéance, date de lecture seule, PC utilisés et permis ;
   - tablettes appairées et muettes depuis 3 jours ;
   - portail parents : état, échecs à la suite, dernière erreur, file d'attente ;
-  - nombre de pointages à vérifier.
+  - nombre de pointages à vérifier ;
+  - usage, pour la console de l'éditeur (amendement du 08/11/2026, [ADR 0017](0017-console-editeur.md)) : enfants
+    actifs, places du contrat, utilisateurs actifs sur 30 jours, jour de la dernière connexion d'un compte de direction,
+    pointages des 7 derniers jours, factures aux familles du mois dernier. Des nombres et une date, rien d'autre.
 
-  Aucun nom, aucune donnée d'enfant, de famille ou du personnel : un test le vérifie.
+  Aucun nom, aucune donnée d'enfant, de famille ou du personnel : un test le vérifie, et un autre vérifie que l'usage
+  ne contient que des nombres et une date.
 - **Rythme** : toutes les 15 minutes, puis attente doublée après chaque échec, jusqu'à 1 h.
 - **Alertes** (`supervision/AlertRules`, évaluées à la réception et toutes les 15 minutes) :
   - serveur muet depuis 2 h entre 6 h et 19 h (heure de Nouméa), 12 h la nuit ;
@@ -45,7 +49,9 @@ veut le savoir avant la directrice, sans accéder aux données de la crèche.
   site), plus un récapitulatif à 7 h. Le destinataire est le prestataire (`PORTAL_SUPERVISION_EMAIL`), pas la
   crèche.
 - **Hébergeur** : `POST /admin/v1/supervision-codes`, `GET /admin/v1/supervision`,
-  `POST /admin/v1/supervision/{id}/suspend`, avec le jeton d'administration.
+  `GET /admin/v1/supervision/alerts?since=` (historique, pour la console), `POST /admin/v1/supervision/{id}/suspend`,
+  avec le jeton d'administration. Un site créé par `creche.sh creer` porte le slug de la crèche (libellé de son code
+  d'activation) : la console rapproche ainsi supervision et hôte.
 
 ## Conséquences
 

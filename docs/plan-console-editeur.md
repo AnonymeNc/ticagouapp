@@ -28,9 +28,22 @@ familles, qui existent déjà dans le module `FACTURATION`. Une relance par e-ma
   Seuls les e-mails de supervision existants, qui vous sont adressés, restent automatiques.
 - **Maquette** : `docs/design/Ti'Cagou — Console éditeur.html`, à suivre pour toutes les phases.
 
-**Avancement** : phase 1 livrée le 08/11/2026 (`console/`, [ADR 0017](adr/0017-console-editeur.md)). Écarts assumés avec la
-maquette jusqu'à la phase 2 : pas de recherche dans la barre du haut, pas de compteur sur la boîte d'envoi, pas d'heure de
-lecture de la supervision en bas de la barre latérale — rien à chercher ni à compter avant le parc et les factures.
+**Avancement** : phase 1 livrée le 08/11/2026 (`console/`, [ADR 0017](adr/0017-console-editeur.md)) ; phase 2 livrée le
+08/11/2026 (parc, fiche crèche, tableau de bord, recherche, heure des lectures en bas de la barre latérale).
+
+Écarts assumés avec la maquette jusqu'à la phase 3 (rien à compter avant les factures) :
+- pas de compteur sur la boîte d'envoi, pas de colonne « Solde dû » ni de filtre « Impayés » dans le parc ;
+- tableau de bord : indicateurs du parc (crèches suivies, en alerte, évaluations sous 7 jours, renouvellements sous
+  30 jours) à la place du revenu récurrent, de l'encours et du délai de paiement ; pas de graphique « Facturé et
+  encaissé » ;
+- fiche crèche : boutons « Facture » (phase 3) et « Suspendre… » (phase 5) présents mais désactivés ; la ligne
+  « Contrat : aligné » est remplacée par l'état du portail parents, le contrat complet est dans l'onglet Abonnement.
+
+Choix de la phase 2 :
+- le statut commercial n'a que trois valeurs saisies (prospect, client, résilié) ; évaluation, grâce, lecture seule et
+  suspension se lisent dans l'état reçu (licence, conteneur), pour ne jamais diverger de l'instance ;
+- un client est créé avec chaque crèche (raison sociale modifiable) ; regrouper plusieurs crèches sous un même client
+  (collectivité) viendra avec la facturation si le besoin se confirme.
 
 ## 1. Ce qui existe déjà et sur quoi on s'appuie
 

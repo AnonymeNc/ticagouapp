@@ -52,3 +52,9 @@ console:
   setup-token: ${CONSOLE_SETUP_TOKEN:}
   secure-cookie: ${CONSOLE_SECURE_COOKIE:true}
   session-max-hours: 8
+  # Supervision, lue dans le portail sur le réseau interne du socle (ADR 0012, 0017).
+  portal-url: ${CONSOLE_PORTAL_URL:http://portail:8090}
+  portal-admin-token: ${CONSOLE_PORTAL_ADMIN_TOKEN:}
+  # Rapport de l'hôte (creche.sh rapport-console, cron toutes les 5 min) : POST /interne/v1/hote.
+  host-token: ${CONSOLE_HOST_TOKEN:}
+  scheduling: ${CONSOLE_SCHEDULING:true}

@@ -8,10 +8,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /** Console de l'éditeur (ADR 0017) : parc des crèches, facturation, relances préparées, reporting. */
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 @ConfigurationPropertiesScan
+@EnableScheduling
 public class ConsoleApplication {
 
     public static final ZoneId NOUMEA = ZoneId.of("Pacific/Noumea");

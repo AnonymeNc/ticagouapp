@@ -11,7 +11,13 @@ ordres aux instances, reporting. Décision : [ADR 0017](../docs/adr/0017-console
 
 **Livré (phase 1)** : premier compte par jeton, connexion par mot de passe et code TOTP obligatoire, blocage après
 5 échecs, limite par adresse, CSRF, session de 8 heures au plus, code redemandé pour les actions sensibles
-(`SensitiveAction`), journal (Paramètres › Journal). Les autres écrans annoncent leur phase.
+(`SensitiveAction`), journal (Paramètres › Journal).
+
+**Livré (phase 2)** : parc des crèches (`parc/`) — supervision lue dans le portail toutes les 5 minutes
+(`SupervisionCollector`), rapport de l'hôte reçu sur `POST /interne/v1/hote` (`HostReports`, `creche.sh rapport-console`),
+rapprochés par le slug ; pastille de santé (`Health`), instantanés réduits à un par jour après 30 jours (`Snapshots`),
+historique des alertes ; fiche crèche (santé, abonnement, usage, client et contacts, notes et appels, journal),
+prospects, recherche, tableau de bord « À faire aujourd'hui ». Les autres écrans annoncent leur phase.
 
 ## Lancer en développement
 
@@ -22,6 +28,11 @@ CONSOLE_SECRET_KEY=$(openssl rand -base64 32) CONSOLE_SETUP_TOKEN=dev CONSOLE_SE
 ```
 
 Gardez la même `CONSOLE_SECRET_KEY` d'un lancement à l'autre : elle chiffre les secrets TOTP en base.
+
+Pour remplir le parc en développement : `CONSOLE_PORTAL_URL=http://localhost:8090` et
+`CONSOLE_PORTAL_ADMIN_TOKEN=<jeton du portail>` (portail lancé à part), et `CONSOLE_HOST_TOKEN=dev` pour envoyer un rapport
+d'hôte à la main (`curl -H "Authorization: Bearer dev" -H "Content-Type: application/json" --data-binary @hote.json
+http://localhost:8095/interne/v1/hote`, au format de `creche.sh etat --json`).
 
 Interface : `cd web && pnpm install && pnpm dev` (http://localhost:1421, l'API est relayée vers le port 8095).
 Premier compte : http://localhost:1421/premier-compte?jeton=dev, puis connexion avec une application d'authentification.

@@ -35,7 +35,10 @@ instances.
 **La console ne touche jamais Docker** : elle dépose des ordres que `creche.sh appliquer` (cron de l'hôte) exécute, sur
 une liste blanche (phase 5).
 
-**Supervision** : reste dans le portail ; la console la lit par l'API d'administration, sur le réseau Docker interne.
+**Supervision** : reste dans le portail ; la console la lit par l'API d'administration, sur le réseau Docker interne,
+toutes les 5 minutes (`PORTAL_ADMIN_TOKEN`). L'hôte, lui, envoie son rapport (`creche.sh rapport-console`, cron toutes les
+5 minutes : conteneur, image, abonnement de chaque crèche, disque) à `POST /interne/v1/hote` avec `CONSOLE_HOST_TOKEN`,
+sur `127.0.0.1:8095`. Caddy ne publie jamais `/interne`. Les deux sources se rejoignent par le slug de la crèche.
 
 **Un seul hébergeur** pour l'instant : la base de la console est sauvegardée sur le même serveur, sans copie hors site.
 

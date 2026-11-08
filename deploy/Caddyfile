@@ -11,8 +11,8 @@
 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		-Server
 	}
-	# Exploitation et documentation : jamais sur internet.
-	@interne path /actuator/* /v3/api-docs* /swagger-ui* /admin/*
+	# Exploitation, documentation et rapport de l'hôte à la console : jamais sur internet.
+	@interne path /actuator/* /v3/api-docs* /swagger-ui* /admin/* /interne/*
 	respond @interne 404
 }
 

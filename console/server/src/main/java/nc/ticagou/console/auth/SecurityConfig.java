@@ -53,12 +53,14 @@ class SecurityConfig {
                                             Clock clock) throws Exception {
         var csrf = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrf.setCookieCustomizer(cookie -> cookie.sameSite("Strict").secure(properties.secureCookie()));
-        http.csrf(c -> c.csrfTokenRepository(csrf).csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+        // /interne : rapport de l'hôte, sans session ni cookie, authentifié par son jeton (HostReports).
+        http.csrf(c -> c.csrfTokenRepository(csrf).csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers("/interne/**"))
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterAfter(new SessionAgeFilter(Duration.ofHours(properties.sessionMaxHours()), clock), SecurityContextHolderFilter.class)
                 .securityContext(s -> s.securityContextRepository(contexts))
                 .authorizeHttpRequests(a -> a
-                        .requestMatchers("/api/v1/auth/**", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/actuator/health/**", "/interne/**").permitAll()
                         .requestMatchers("/api/**", "/actuator/**").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(e -> e
