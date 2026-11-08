@@ -58,6 +58,26 @@ services:
       PORTAL_FORWARD_HEADERS: native
     networks: [ticagou]
 
+  # Console de l'éditeur (ADR 0017) : ./creche.sh socle --console
+  # Publiée par Caddy seulement pour CONSOLE_ADRESSES_AUTORISEES ; toujours joignable par tunnel SSH sur 127.0.0.1:8095.
+  console:
+    profiles: [console]
+    build: ../console
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8095:8095"
+    environment:
+      CONSOLE_DB_URL: jdbc:postgresql://db:5432/console
+      CONSOLE_DB_USER: console
+      CONSOLE_DB_PASSWORD: ${CONSOLE_DB_PASSWORD:-}
+      CONSOLE_SECRET_KEY: ${CONSOLE_SECRET_KEY:-}
+      CONSOLE_SETUP_TOKEN: ${CONSOLE_SETUP_TOKEN:-}
+      CONSOLE_FORWARD_HEADERS: native
+    networks: [ticagou]
+
 volumes:
   db:
   caddy-data:

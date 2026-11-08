@@ -65,6 +65,38 @@ jobs:
         working-directory: parents-portal/server
         run: bash mvnw -B verify
 
+  console:
+    name: Console de l'éditeur (Java + React)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: console/web/pnpm-lock.yaml
+      - name: Interface
+        working-directory: console/web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+          pnpm build
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Serveur
+        working-directory: console/server
+        run: bash mvnw -B verify
+      - name: Image
+        run: docker build -t ticagou-console:ci console
+
   web:
     name: Bureau et tablette (React)
     runs-on: ubuntu-latest

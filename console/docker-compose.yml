@@ -1,0 +1,16 @@
+# Console en développement : PostgreSQL seulement (port 5436).
+# La console se lance avec `cd server && ./mvnw spring-boot:run` (port 8095), voir README.md.
+services:
+  console-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: console
+      POSTGRES_USER: console
+      POSTGRES_PASSWORD: console
+    ports:
+      - "5436:5432"
+    volumes:
+      - console-db:/var/lib/postgresql/data
+
+volumes:
+  console-db:
