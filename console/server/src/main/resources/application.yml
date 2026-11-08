@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: ticagou-console
+  datasource:
+    url: ${CONSOLE_DB_URL:jdbc:postgresql://localhost:5436/console}
+    username: ${CONSOLE_DB_USER:console}
+    password: ${CONSOLE_DB_PASSWORD:console}
+    hikari:
+      data-source-properties:
+        logServerErrorDetail: false
+  flyway:
+    locations: classpath:db/migration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  mvc:
+    problemdetails:
+      enabled: true
+  web:
+    locale: fr_FR
+    locale-resolver: fixed
+
+server:
+  port: ${CONSOLE_PORT:8095}
+  # Derrière Caddy : adresse du client et schéma lus dans X-Forwarded-*.
+  forward-headers-strategy: ${CONSOLE_FORWARD_HEADERS:native}
+  servlet:
+    session:
+      # Inactivité ; la durée maximale (8 h) est contrôlée par SessionAgeFilter.
+      timeout: 30m
+      cookie:
+        name: CONSOLE_SESSION
+        http-only: true
+        secure: ${CONSOLE_SECURE_COOKIE:true}
+        same-site: strict
+      tracking-modes: cookie
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+console:
+  # Clé de chiffrement des secrets TOTP (Base64, 32 octets) : openssl rand -base64 32
+  secret-key: ${CONSOLE_SECRET_KEY:}
+  # Jeton à usage unique pour créer le premier compte ; sans effet dès qu'un compte existe.
+  setup-token: ${CONSOLE_SETUP_TOKEN:}
+  secure-cookie: ${CONSOLE_SECURE_COOKIE:true}
+  session-max-hours: 8

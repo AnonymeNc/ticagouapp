@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ti’Cagou — Console éditeur</title>
+<!--
+  Maquette de la console de l'éditeur (docs/plan-console-editeur.md, ADR 0017).
+  Mêmes jetons que le poste bureau (web/src/index.css). Données fictives.
+  Écrans : connexion, tableau de bord, parc, fiche crèche, factures, boîte d'envoi, ordres, reporting, paramètres.
+-->
+<style>
+:root {
+  --lagon-700: #08585c; --lagon-600: #0b6e72; --lagon-100: #dcefee; --lagon-50: #eef7f6;
+  --niaouli-700: #3f5a26; --niaouli-100: #e7eedb; --terre-600: #b5532a;
+  --bg: #fbf8f3; --surface: #ffffff; --sunken: #f4eee4; --border-subtle: #ebe2d4; --border: #d9cdbb; --control: #968a78;
+  --ink: #2b2620; --muted: #665b4e;
+  --success-700: #1d6a43; --success-600: #1f7a4d; --success-100: #e1f1e7;
+  --warning-700: #7f4a00; --warning-500: #e7a53e; --warning-100: #fcefd6;
+  --danger-700: #a3231b; --danger-600: #b3261e; --danger-100: #fbe4e1;
+  --info-700: #23529a; --info-100: #e3ecf8;
+  --shadow-1: 0 1px 2px rgba(43,38,32,.08); --shadow-2: 0 6px 18px rgba(43,38,32,.12); --shadow-3: 0 18px 48px rgba(43,38,32,.22);
+  --sans: "Source Sans 3 Variable", "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --display: "Fraunces Variable", Fraunces, Georgia, serif;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 15px/22px var(--sans); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--lagon-600); outline-offset: 2px; }
+
+/* Coquille */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+nav.side { width: 240px; flex-shrink: 0; background: var(--sunken); border-right: 1px solid var(--border-subtle); padding: 0 12px 16px; display: flex; flex-direction: column; }
+.brand { height: 60px; display: flex; align-items: baseline; gap: 8px; padding: 0 8px; padding-top: 16px; }
+.brand b { font: 600 24px/30px var(--display); color: var(--lagon-700); }
+.brand span { font-size: 12px; font-weight: 600; color: var(--terre-600); text-transform: uppercase; letter-spacing: .06em; }
+nav.side ul { list-style: none; padding: 0; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+nav.side a { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 10px; color: var(--ink); text-decoration: none; cursor: pointer; }
+nav.side a:hover { background: var(--lagon-50); }
+nav.side a[aria-current="page"] { background: var(--lagon-100); color: var(--lagon-600); font-weight: 600; }
+nav.side a svg { width: 20px; height: 20px; flex-shrink: 0; }
+nav.side .count { margin-left: auto; background: var(--terre-600); color: #fff; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 0 7px; line-height: 20px; }
+.side-foot { margin-top: auto; font-size: 13px; color: var(--muted); padding: 8px; border-top: 1px solid var(--border-subtle); }
+.side-foot .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success-600); margin-right: 6px; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+header.top { min-height: 60px; display: flex; align-items: center; gap: 16px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; }
+.search { flex: 1 1 280px; max-width: 480px; height: 36px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--control); border-radius: 10px; padding: 0 12px; color: var(--muted); background: var(--surface); }
+.search input { border: 0; outline: 0; flex: 1; min-width: 0; background: transparent; }
+kbd { font: 600 12px/16px var(--sans); border: 1px solid var(--border); background: var(--sunken); border-radius: 6px; padding: 2px 6px; color: var(--muted); }
+.who { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.stamp { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--lagon-100); color: var(--lagon-700); font-weight: 600; font-size: 13px; display: grid; place-items: center; }
+.who small { display: block; color: var(--muted); font-size: 13px; line-height: 18px; }
+.scroll { flex: 1; overflow-y: auto; }
+main.page { max-width: 1360px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+
+/* Typo, éléments */
+h1 { font: 600 32px/38px var(--display); }
+h2 { font: 600 20px/26px var(--display); }
+h3 { font-size: 17px; line-height: 24px; font-weight: 600; }
+.sub { color: var(--muted); margin-top: 4px; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid transparent; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn.primary { background: var(--lagon-600); color: #fff; }
+.btn.primary:hover { background: var(--lagon-700); }
+.btn.outline { background: var(--surface); border-color: var(--border); }
+.btn.outline:hover { background: var(--lagon-50); }
+.btn.ghost { background: transparent; color: var(--lagon-600); }
+.btn.danger { background: var(--surface); border-color: var(--danger-600); color: var(--danger-700); }
+.btn.sm { height: 30px; padding: 0 10px; font-size: 14px; }
+.btn svg { width: 16px; height: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 16px; box-shadow: var(--shadow-1); padding: 20px; }
+.card > h2, .card > h3 { margin-bottom: 12px; }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.grid { display: grid; gap: 16px; }
+.g4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+.split { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 1100px) { .split { grid-template-columns: 1fr; } .g2 { grid-template-columns: 1fr; } }
+.kpi .label { font-size: 14px; font-weight: 600; color: var(--muted); }
+.kpi .value { font: 600 32px/36px var(--display); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.kpi .hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.kpi .up { color: var(--success-700); font-weight: 600; }
+.kpi .down { color: var(--danger-700); font-weight: 600; }
+.pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 10px; font-size: 13px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+.pill.ok { background: var(--success-100); color: var(--success-700); }
+.pill.warn { background: var(--warning-100); color: var(--warning-700); }
+.pill.bad { background: var(--danger-100); color: var(--danger-700); }
+.pill.info { background: var(--info-100); color: var(--info-700); }
+.pill.neutral { background: var(--sunken); color: var(--muted); }
+.pill.lagon { background: var(--lagon-100); color: var(--lagon-700); }
+.health { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+.health.ok { background: var(--success-600); } .health.warn { background: var(--warning-500); } .health.bad { background: var(--danger-600); } .health.off { background: var(--control); }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 13px; font-weight: 600; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+tr.link { cursor: pointer; } tr.link:hover td { background: var(--lagon-50); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .small, .small { font-size: 13px; color: var(--muted); line-height: 18px; }
+.table-wrap { overflow-x: auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-weight: 600; font-size: 14px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--lagon-700); border-color: var(--lagon-700); color: #fff; }
+.todo { list-style: none; padding: 0; display: flex; flex-direction: column; }
+.todo li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
+.todo li:last-child { border-bottom: 0; }
+.todo .ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+.todo .ico svg { width: 18px; height: 18px; }
+.todo .txt { flex: 1; min-width: 0; }
+.ico.bad { background: var(--danger-100); color: var(--danger-700); } .ico.warn { background: var(--warning-100); color: var(--warning-700); }
+.ico.info { background: var(--info-100); color: var(--info-700); } .ico.lagon { background: var(--lagon-100); color: var(--lagon-700); }
+.bars { display: flex; align-items: flex-end; gap: 14px; height: 160px; padding-top: 8px; }
+.bars .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+.bars .pair { display: flex; gap: 3px; align-items: flex-end; width: 100%; justify-content: center; height: 100%; }
+.bars .b { width: 40%; max-width: 22px; border-radius: 4px 4px 0 0; }
+.b.fact { background: var(--lagon-100); border: 1px solid var(--lagon-600); } .b.enc { background: var(--lagon-600); }
+.bars .m { font-size: 12px; color: var(--muted); font-weight: 600; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.meter { height: 8px; border-radius: 999px; background: var(--sunken); overflow: hidden; margin-top: 6px; }
+.meter > span { display: block; height: 100%; background: var(--lagon-600); border-radius: 999px; }
+.meter.warn > span { background: var(--warning-500); } .meter.bad > span { background: var(--danger-600); }
+dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; }
+dl.kv dt { color: var(--muted); } dl.kv dd { font-weight: 600; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.tabs button { background: none; border: 0; padding: 10px 14px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+.tabs button[aria-selected="true"] { color: var(--lagon-600); border-bottom-color: var(--lagon-600); }
+.banner { border-radius: 10px; padding: 12px 16px; display: flex; gap: 12px; align-items: flex-start; }
+.banner.info { background: var(--info-100); color: var(--info-700); }
+.banner.warn { background: var(--warning-100); color: var(--warning-700); }
+.banner svg { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }
+.mail-list { display: flex; flex-direction: column; }
+.mail { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; padding: 12px; border-radius: 10px; cursor: pointer; align-items: start; }
+.mail:hover { background: var(--lagon-50); }
+.mail[aria-selected="true"] { background: var(--lagon-100); }
+.mail .t { font-weight: 600; }
+.mail .p { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 14px; font-weight: 600; }
+.input, textarea.input, select.input { border: 1px solid var(--control); border-radius: 10px; background: var(--surface); padding: 6px 12px; min-height: 36px; width: 100%; }
+textarea.input { min-height: 220px; line-height: 22px; resize: vertical; }
+.attach { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px; background: var(--sunken); font-size: 14px; font-weight: 600; }
+.attach svg { width: 16px; height: 16px; color: var(--danger-700); }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.paper { background: #fff; border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-2); padding: 28px; font-size: 13px; line-height: 19px; }
+.paper .ph { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.paper b.logo { font: 600 22px var(--display); color: var(--lagon-700); }
+.paper table td, .paper table th { padding: 6px 4px; font-size: 13px; }
+.paper .tot td { font-weight: 700; border-bottom: 0; }
+.aging td.num.late { color: var(--danger-700); font-weight: 600; }
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--bg); }
+.login .card { width: 100%; max-width: 400px; padding: 32px; box-shadow: var(--shadow-2); }
+.otp { display: flex; gap: 8px; justify-content: space-between; }
+.otp input { width: 48px; height: 56px; text-align: center; font: 600 24px var(--display); border: 1px solid var(--control); border-radius: 10px; }
+.screen { display: none; } .screen.on { display: block; }
+.screens-nav { position: fixed; right: 16px; bottom: 16px; z-index: 10; background: var(--ink); color: #fff; border-radius: 999px; padding: 6px 6px 6px 14px; display: flex; gap: 6px; align-items: center; font-size: 13px; box-shadow: var(--shadow-3); }
+.screens-nav button { background: rgba(255,255,255,.12); color: #fff; border: 0; border-radius: 999px; padding: 4px 10px; cursor: pointer; font-weight: 600; }
+.note-ecart { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- Icônes (lucide, traits 1.75) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18l2-1.5L9 21l2-1.5L13 21l2-1.5L17 21l2-1.5V3l-2 1.5L15 3l-2 1.5L11 3 9 4.5 7 3z"/><path d="M9 8h6M9 12h6M9 16h4"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6M12 19h8"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============================================================ CONNEXION -->
+<section class="screen" data-screen="connexion">
+  <div class="login">
+    <div class="card stack" style="gap:20px">
+      <div>
+        <div class="brand" style="padding:0;height:auto"><b>Ti’Cagou</b><span>Console</span></div>
+        <p class="sub">Réservée à l’éditeur. Accès depuis le réseau autorisé seulement.</p>
+      </div>
+      <div class="field"><label for="l-id">Identifiant</label><input id="l-id" class="input" value="jordan" autocomplete="username"></div>
+      <div class="field"><label for="l-mdp">Mot de passe</label><input id="l-mdp" class="input" type="password" value="••••••••••••" autocomplete="current-password"></div>
+      <button class="btn primary" style="justify-content:center">Continuer</button>
+      <hr style="border:0;border-top:1px solid var(--border-subtle)">
+      <div class="stack">
+        <h3>Code de l’application d’authentification</h3>
+        <div class="otp" role="group" aria-label="Code à 6 chiffres">
+          <input value="4" aria-label="Chiffre 1"><input value="8" aria-label="Chiffre 2"><input value="1" aria-label="Chiffre 3"><input aria-label="Chiffre 4"><input aria-label="Chiffre 5"><input aria-label="Chiffre 6">
+        </div>
+        <p class="small">Première connexion : un QR code s’affiche à cette étape pour enregistrer la double authentification.</p>
+        <button class="btn primary" style="justify-content:center">Se connecter</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ COQUILLE -->
+<div class="shell" id="shell">
+  <nav class="side" aria-label="Navigation principale">
+    <div class="brand"><b>Ti’Cagou</b><span>Console</span></div>
+    <ul>
+      <li><a data-go="accueil"><svg><use href="#i-home"/></svg>Tableau de bord</a></li>
+      <li><a data-go="parc"><svg><use href="#i-server"/></svg>Parc des crèches</a></li>
+      <li><a data-go="factures"><svg><use href="#i-receipt"/></svg>Factures</a></li>
+      <li><a data-go="envoi"><svg><use href="#i-send"/></svg>Boîte d’envoi<span class="count">4</span></a></li>
+      <li><a data-go="ordres"><svg><use href="#i-terminal"/></svg>Ordres</a></li>
+      <li><a data-go="reporting"><svg><use href="#i-chart"/></svg>Reporting</a></li>
+      <li><a data-go="parametres"><svg><use href="#i-settings"/></svg>Paramètres</a></li>
+    </ul>
+    <div class="side-foot"><span class="dot"></span>Supervision lue à 08:45<br>Hôte : rapport à 08:45</div>
+  </nav>
+
+  <div class="main">
+    <header class="top">
+      <label class="search"><svg width="16" height="16"><use href="#i-search"/></svg><input type="search" placeholder="Rechercher une crèche, un client, une facture"><kbd>Ctrl K</kbd></label>
+      <div class="who">
+        <span class="stamp">Lundi 09/11/2026 · 08:47</span>
+        <div class="avatar">JM</div>
+        <span><span style="font-weight:600;font-size:14px">Jordan Moniot</span><small>Éditeur</small></span>
+        <button class="btn ghost sm" aria-label="Se déconnecter" title="Se déconnecter"><svg><use href="#i-logout"/></svg></button>
+      </div>
+    </header>
+
+    <div class="scroll"><main class="page">
+
+<!-- ============================================================ TABLEAU DE BORD -->
+<section class="screen" data-screen="accueil">
+  <div class="stack" style="gap:24px">
+    <div class="head">
+      <div><h1>Bonjour Jordan</h1><p class="sub">9 crèches, dont 1 en évaluation. 4 messages attendent votre clic.</p></div>
+      <div class="actions"><button class="btn outline"><svg><use href="#i-plus"/></svg>Facture</button><button class="btn primary" data-go="envoi"><svg><use href="#i-send"/></svg>Boîte d’envoi (4)</button></div>
+    </div>
+
+    <div class="grid g4">
+      <div class="card kpi"><div class="label">Revenu mensuel récurrent</div><div class="value">171 000 F</div><div class="hint"><span class="up">+ 13 500 F</span> depuis octobre · ARR 2 052 000 F</div></div>
+      <div class="card kpi"><div class="label">Encours clients</div><div class="value">412 650 F</div><div class="hint"><span class="down">186 480 F en retard</span> sur 3 factures</div></div>
+      <div class="card kpi"><div class="label">Crèches en alerte</div><div class="value">2 / 9</div><div class="hint">1 sauvegarde, 1 serveur muet</div></div>
+      <div class="card kpi"><div class="label">Délai moyen de paiement</div><div class="value">27 j</div><div class="hint">sur 90 jours · objectif 30 j</div></div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <div class="card-head"><h2>À faire aujourd’hui</h2><span class="small">trié par urgence</span></div>
+        <ul class="todo">
+          <li><span class="ico bad"><svg><use href="#i-alert"/></svg></span><div class="txt"><b>Les Niaoulis — Koné</b> : serveur muet depuis 3 h 10<div class="small">Dernier contact 05:35 · version 1.4.2</div></div><button class="btn outline sm" data-go="fiche">Voir</button></li>
+          <li><span class="ico bad"><svg><use href="#i-mail"/></svg></span><div class="txt"><b>3 relances préparées</b> : Crèche municipale de Païta (J+32), Lagon Bleu (J+16), P’tits Cagous (J+8)<div class="small">Préparées à 06:00 · rien n’est parti</div></div><button class="btn primary sm" data-go="envoi">Relire et envoyer</button></li>
+          <li><span class="ico warn"><svg><use href="#i-receipt"/></svg></span><div class="txt"><b>2 brouillons de renouvellement</b> à valider : Tiare (01/01/2027), Port Autonome (15/01/2027)<div class="small">Générés 45 jours avant l’échéance</div></div><button class="btn outline sm" data-go="factures">Valider</button></li>
+          <li><span class="ico warn"><svg><use href="#i-clock"/></svg></span><div class="txt"><b>Kids Club Bourail</b> : évaluation finie dans 5 jours<div class="small">Usage : 31 enfants, 214 pointages sur 7 jours · à appeler</div></div><button class="btn outline sm">Noter un appel</button></li>
+          <li><span class="ico info"><svg><use href="#i-terminal"/></svg></span><div class="txt"><b>Lagon Bleu</b> : facture F2026-0041 soldée, abonnement à prolonger au 31/10/2027<div class="small">Ordre « abonnement » prêt, à confirmer</div></div><button class="btn outline sm" data-go="ordres">Confirmer</button></li>
+        </ul>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <div class="card-head"><h2>Santé du parc</h2><button class="btn ghost sm" data-go="parc">Tout voir</button></div>
+          <table>
+            <tr><td><span class="health ok"></span>En ordre</td><td class="num"><b>6</b></td></tr>
+            <tr><td><span class="health warn"></span>À surveiller</td><td class="num"><b>1</b></td></tr>
+            <tr><td><span class="health bad"></span>En alerte</td><td class="num"><b>2</b></td></tr>
+            <tr><td><span class="health off"></span>Suspendue</td><td class="num"><b>0</b></td></tr>
+          </table>
+          <p class="small" style="margin-top:10px">Version courante 1.5.0 : 7 crèches à jour, 2 en 1.4.2.</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Facturé et encaissé</h2><span class="small">6 mois</span></div>
+          <div class="bars" aria-label="Facturé et encaissé par mois">
+            <div class="col"><div class="pair"><div class="b fact" style="height:52%"></div><div class="b enc" style="height:48%"></div></div><span class="m">juin</span></div>
+            <div class="col"><div class="pair"><div class="b fact" style="height:58%"></div><div class="b enc" style="height:55%"></div></div><span class="m">juil.</span></div>
+            <div class="col"><div class="pair"><div class="b fact" style="height:61%"></div><div class="b enc" style="height:50%"></div></div><span class="m">août</span></div>
+            <div class="col"><div class="pair"><div class="b fact" style="height:92%"></div><div class="b enc" style="height:70%"></div></div><span class="m">sept.</span></div>
+            <div class="col"><div class="pair"><div class="b fact" style="height:66%"></div><div class="b enc" style="height:74%"></div></div><span class="m">oct.</span></div>
+            <div class="col"><div class="pair"><div class="b fact" style="height:70%"></div><div class="b enc" style="height:22%"></div></div><span class="m">nov.</span></div>
+          </div>
+          <div class="legend"><span><i style="background:var(--lagon-100);border:1px solid var(--lagon-600)"></i>Facturé TTC</span><span><i style="background:var(--lagon-600)"></i>Encaissé</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ PARC -->
+<section class="screen" data-screen="parc">
+  <div class="stack" style="gap:20px">
+    <div class="head">
+      <div><h1>Parc des crèches</h1><p class="sub">État reçu toutes les 15 minutes par la supervision, rapport de l’hôte toutes les 5 minutes.</p></div>
+      <div class="actions"><button class="btn outline"><svg><use href="#i-download"/></svg>Exporter</button><button class="btn primary"><svg><use href="#i-plus"/></svg>Nouvelle crèche</button></div>
+    </div>
+    <div class="chips" role="group" aria-label="Filtrer">
+      <button class="chip" aria-pressed="true">Toutes · 9</button><button class="chip" aria-pressed="false">En alerte · 2</button><button class="chip" aria-pressed="false">À renouveler · 2</button><button class="chip" aria-pressed="false">Évaluation · 1</button><button class="chip" aria-pressed="false">Impayés · 3</button><button class="chip" aria-pressed="false">Suspendues · 0</button>
+    </div>
+    <div class="card" style="padding:8px 8px 4px"><div class="table-wrap">
+      <table>
+        <thead><tr><th>Crèche</th><th>Dernier contact</th><th>Version</th><th>Formule</th><th>Abonnement</th><th class="num">PC</th><th class="num">Tablettes</th><th>Sauvegarde</th><th>Disque</th><th class="num">Solde dû</th><th>Alertes</th></tr></thead>
+        <tbody>
+          <tr class="link" data-go="fiche"><td><span class="health bad"></span><b>Les Niaoulis</b><div class="small" style="margin-left:18px">Koné · 24 places</div></td><td>05:35<div class="small">il y a 3 h 10</div></td><td>1.4.2</td><td>Gestion</td><td><span class="pill ok">Actif</span><div class="small">→ 31/08/2027</div></td><td class="num">1/1</td><td class="num">2/2</td><td><span class="pill ok">03:12</span></td><td>41 %</td><td class="num">0 F</td><td><span class="pill bad">Serveur muet</span></td></tr>
+          <tr class="link" data-go="fiche"><td><span class="health bad"></span><b>Lagon Bleu</b><div class="small" style="margin-left:18px">Mont-Dore · micro, 12 places</div></td><td>08:45</td><td>1.5.0</td><td>Gestion + Repas</td><td><span class="pill warn">Grâce</span><div class="small">échu le 31/10/2026</div></td><td class="num">1/1</td><td class="num">2/2</td><td><span class="pill bad">Retard 52 h</span></td><td>63 %</td><td class="num"><b>174 960 F</b><div class="small">J+16</div></td><td><span class="pill bad">Sauvegarde</span></td></tr>
+          <tr class="link" data-go="fiche"><td><span class="health warn"></span><b>Crèche municipale de Païta</b><div class="small" style="margin-left:18px">Païta · 48 places · collectivité</div></td><td>08:45</td><td>1.5.0</td><td>Complet</td><td><span class="pill ok">Actif</span><div class="small">→ 31/03/2027</div></td><td class="num"><b style="color:var(--warning-700)">3/2</b></td><td class="num">5/5</td><td><span class="pill ok">02:47</span></td><td>58 %</td><td class="num"><b>11 520 F</b><div class="small">J+32</div></td><td><span class="pill warn">PC au-delà</span></td></tr>
+          <tr class="link" data-go="fiche"><td><span class="health ok"></span><b>Les P’tits Cagous</b><div class="small" style="margin-left:18px">Nouméa · 20 places</div></td><td>08:45</td><td>1.5.0</td><td>Essentiel</td><td><span class="pill ok">Actif</span><div class="small">→ 28/02/2027</div></td><td class="num">1/1</td><td class="num">1/2</td><td><span class="pill ok">01:20</span></td><td>37 %</td><td class="num">0 F<div class="small">relance J+8 prête</div></td><td>—</td></tr>
+          <tr class="link" data-go="fiche"><td><span class="health ok"></span><b>Crèche Tiare</b><div class="small" style="margin-left:18px">Dumbéa · 32 places</div></td><td>08:45</td><td>1.5.0</td><td>Gestion</td><td><span class="pill info">À renouveler</span><div class="small">→ 31/12/2026</div></td><td class="num">1/1</td><td class="num">2/2</td><td><span class="pill ok">04:05</span></td><td>29 %</td><td class="num">0 F</td><td>—</td></tr>
+          <tr class="link" data-go="fiche"><td><span class="health ok"></span><b>Kids Club Bourail</b><div class="small" style="margin-left:18px">Bourail · 31 places</div></td><td>08:45</td><td>1.5.0</td><td>Évaluation</td><td><span class="pill lagon">Évaluation</span><div class="small">fin le 14/11/2026</div></td><td class="num">2/2</td><td class="num">2/2</td><td><span class="pill ok">02:02</span></td><td>22 %</td><td class="num">—</td><td>—</td></tr>
+          <tr class="link" data-go="fiche"><td><span class="health ok"></span><b>Crèche du Port Autonome</b><div class="small" style="margin-left:18px">Nouméa · entreprise, 40 places</div></td><td>08:45</td><td>1.5.0</td><td>Complet</td><td><span class="pill info">À renouveler</span><div class="small">→ 14/01/2027</div></td><td class="num">2/2</td><td class="num">4/4</td><td><span class="pill ok">01:48</span></td><td>45 %</td><td class="num">0 F</td><td>—</td></tr>
+          <tr class="link" data-go="fiche"><td><span class="health ok"></span><b>Les Petits Bancouliers</b><div class="small" style="margin-left:18px">Lifou · micro, 10 places</div></td><td>08:44</td><td>1.4.2</td><td>Essentiel</td><td><span class="pill ok">Actif</span><div class="small">→ 30/06/2027</div></td><td class="num">1/1</td><td class="num">1/2</td><td><span class="pill ok">03:55</span></td><td>18 %</td><td class="num">0 F</td><td>—</td></tr>
+          <tr class="link" data-go="fiche"><td><span class="health ok"></span><b>Ô Ti’Loup</b><div class="small" style="margin-left:18px">Nouméa · 18 places</div></td><td>08:45</td><td>1.5.0</td><td>Gestion</td><td><span class="pill ok">Actif</span><div class="small">→ 31/05/2027</div></td><td class="num">1/1</td><td class="num">2/2</td><td><span class="pill ok">02:31</span></td><td>33 %</td><td class="num">0 F</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div></div>
+    <p class="note-ecart">Pastille : rouge = alerte ouverte ; orange = à surveiller (PC ou tablettes au-delà du contrat, version en retard, impayé) ; vert = en ordre ; gris = suspendue.</p>
+  </div>
+</section>
+
+<!-- ============================================================ FICHE CRÈCHE -->
+<section class="screen" data-screen="fiche">
+  <div class="stack" style="gap:20px">
+    <div class="head">
+      <div>
+        <p class="small"><a data-go="parc" style="color:var(--lagon-600);cursor:pointer">Parc des crèches</a> › Lagon Bleu</p>
+        <h1 style="margin-top:4px">Micro-crèche Lagon Bleu</h1>
+        <p class="sub">Mont-Dore · <code>lagon-bleu</code> · lagon-bleu.ticagou.nc · client depuis le 01/11/2025</p>
+        <div class="row" style="margin-top:10px"><span class="pill bad">Sauvegarde en retard</span><span class="pill warn">Abonnement en grâce</span><span class="pill bad">174 960 F dus</span></div>
+      </div>
+      <div class="actions"><button class="btn outline"><svg><use href="#i-plus"/></svg>Facture</button><button class="btn outline">Noter un appel</button><button class="btn danger">Suspendre…</button></div>
+    </div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="true">Santé</button><button role="tab" aria-selected="false">Abonnement</button><button role="tab" aria-selected="false">Usage</button><button role="tab" aria-selected="false">Factures · 4</button><button role="tab" aria-selected="false">Contacts et notes</button><button role="tab" aria-selected="false">Journal</button></div>
+    <div class="grid g3">
+      <div class="card">
+        <h3>Serveur</h3>
+        <dl class="kv"><dt>Dernier contact</dt><dd>09/11/2026 08:45</dd><dt>Version</dt><dd>1.5.0</dd><dt>Conteneur</dt><dd><span class="pill ok">sain</span></dd><dt>Base</dt><dd>en ligne</dd></dl>
+        <div style="margin-top:14px"><div class="row"><span>Disque des données</span><span class="spacer"></span><b>63 %</b></div><div class="meter warn"><span style="width:63%"></span></div><p class="small" style="margin-top:4px">18,4 Go libres sur 50 Go</p></div>
+      </div>
+      <div class="card">
+        <h3>Sauvegardes</h3>
+        <dl class="kv"><dt>Dernière réussite</dt><dd style="color:var(--danger-700)">07/11/2026 03:41</dd><dt>Retard</dt><dd style="color:var(--danger-700)">52 h</dd><dt>Test de restauration</dt><dd>02/11/2026, réussi</dd><dt>Copie hors site</dt><dd style="font-weight:400;color:var(--muted)">non prévue (un seul hébergeur)</dd></dl>
+      </div>
+      <div class="card">
+        <h3>Abonnement de l’instance</h3>
+        <dl class="kv"><dt>Formule</dt><dd>Gestion Micro + Repas</dd><dt>Échéance</dt><dd>31/10/2026</dd><dt>Lecture seule le</dt><dd>30/11/2026</dd><dt>PC / tablettes</dt><dd>1/1 · 2/2</dd><dt>Contrat</dt><dd><span class="pill ok">aligné</span></dd></dl>
+      </div>
+      <div class="card">
+        <h3>Usage (sans donnée personnelle)</h3>
+        <dl class="kv"><dt>Enfants actifs</dt><dd>12 / 12 places</dd><dt>Pointages sur 7 jours</dt><dd>118</dd><dt>Utilisateurs actifs (30 j)</dt><dd>5</dd><dt>Dernière connexion direction</dt><dd>08/11/2026</dd><dt>Factures familles (oct.)</dt><dd>12</dd></dl>
+      </div>
+      <div class="card" style="grid-column: span 2">
+        <div class="card-head"><h3>Historique des alertes</h3><span class="small">90 jours</span></div>
+        <table>
+          <thead><tr><th>Alerte</th><th>Ouverte</th><th>Fermée</th><th>Détail</th></tr></thead>
+          <tr><td><span class="pill bad">Sauvegarde</span></td><td>09/11/2026 03:45</td><td>en cours</td><td>Aucune sauvegarde réussie depuis le 07/11/2026 à 03:41</td></tr>
+          <tr><td><span class="pill warn">Licence</span></td><td>01/10/2026 06:00</td><td>en cours</td><td>Abonnement échu le 31/10/2026, lecture seule le 30/11/2026</td></tr>
+          <tr><td><span class="pill neutral">Tablettes</span></td><td>14/09/2026 09:15</td><td>16/09/2026 07:30</td><td>1 tablette muette depuis 3 jours</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ FACTURES -->
+<section class="screen" data-screen="factures">
+  <div class="stack" style="gap:20px">
+    <div class="head">
+      <div><h1>Factures</h1><p class="sub">Exercice 2026 · numérotation F2026-0001 et suivantes, avoirs AV2026-…</p></div>
+      <div class="actions"><button class="btn outline">Saisir un paiement</button><button class="btn primary"><svg><use href="#i-plus"/></svg>Nouvelle facture</button></div>
+    </div>
+    <div class="banner info"><svg><use href="#i-info"/></svg><div><b>2 brouillons de renouvellement</b> attendent votre validation. Une fois validée, une facture n’est plus modifiable : on la corrige par un avoir. Son e-mail est préparé dans la boîte d’envoi.<div style="margin-top:8px"><button class="btn primary sm">Valider les 2 brouillons</button></div></div></div>
+    <div class="chips"><button class="chip" aria-pressed="true">Toutes</button><button class="chip" aria-pressed="false">Brouillons · 2</button><button class="chip" aria-pressed="false">À envoyer · 1</button><button class="chip" aria-pressed="false">En retard · 3</button><button class="chip" aria-pressed="false">Payées</button><button class="chip" aria-pressed="false">Avoirs</button></div>
+    <div class="split">
+      <div class="card" style="padding:8px"><div class="table-wrap">
+        <table>
+          <thead><tr><th>Numéro</th><th>Client</th><th>Objet</th><th>Émise</th><th>Échéance</th><th class="num">TTC</th><th class="num">Reste dû</th><th>État</th></tr></thead>
+          <tbody>
+            <tr class="link"><td class="small">brouillon</td><td>Crèche Tiare</td><td>Abonnement 2027</td><td>—</td><td>01/01/2027</td><td class="num">219 780 F</td><td class="num">—</td><td><span class="pill neutral">Brouillon</span></td></tr>
+            <tr class="link"><td class="small">brouillon</td><td>Port Autonome</td><td>Abonnement 2027</td><td>—</td><td>15/01/2027</td><td class="num">486 180 F</td><td class="num">—</td><td><span class="pill neutral">Brouillon</span></td></tr>
+            <tr class="link" style="background:var(--lagon-50)"><td><b>F2026-0047</b></td><td>Lagon Bleu</td><td>Abonnement 11/2026 – 10/2027</td><td>17/10/2026</td><td>24/10/2026</td><td class="num">179 820 F</td><td class="num"><b>174 960 F</b></td><td><span class="pill bad">Retard 16 j</span></td></tr>
+            <tr class="link"><td><b>F2026-0046</b></td><td>Kids Club Bourail</td><td>Mise en route + formation</td><td>05/11/2026</td><td>05/12/2026</td><td class="num">66 600 F</td><td class="num">66 600 F</td><td><span class="pill info">À envoyer</span></td></tr>
+            <tr class="link"><td><b>F2026-0044</b></td><td>Païta (commune)</td><td>PC supplémentaire, prorata</td><td>08/09/2026</td><td>08/10/2026</td><td class="num">11 520 F</td><td class="num"><b>11 520 F</b></td><td><span class="pill bad">Retard 32 j</span></td></tr>
+            <tr class="link"><td><b>F2026-0043</b></td><td>Les P’tits Cagous</td><td>Formation équipe</td><td>02/10/2026</td><td>01/11/2026</td><td class="num">16 650 F</td><td class="num">16 650 F</td><td><span class="pill warn">Retard 8 j</span></td></tr>
+            <tr class="link"><td><b>F2026-0041</b></td><td>Ô Ti’Loup</td><td>Abonnement 06/2026 – 05/2027</td><td>15/05/2026</td><td>31/05/2026</td><td class="num">219 780 F</td><td class="num">0 F</td><td><span class="pill ok">Payée</span></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+      <div class="stack">
+        <div class="paper" aria-label="Aperçu de la facture F2026-0047">
+          <div class="ph"><div><b class="logo">Ti’Cagou</b><div class="small">Jordan Moniot, éditeur<br>RIDET 1 234 567.001 · Nouméa</div></div><div style="text-align:right"><b>Facture F2026-0047</b><br>Émise le 17/10/2026<br>Échéance le 24/10/2026</div></div>
+          <p><b>Micro-crèche Lagon Bleu</b><br>12 rue des Flamboyants, 98809 Mont-Dore</p>
+          <table style="margin-top:14px">
+            <thead><tr><th>Désignation</th><th class="num">Qté</th><th class="num">Montant HT</th></tr></thead>
+            <tr><td>Gestion Micro, 01/11/2026 – 31/10/2027</td><td class="num">12</td><td class="num">138 000 F</td></tr>
+            <tr><td>Module Repas</td><td class="num">12</td><td class="num">24 000 F</td></tr>
+            <tr><td>Total HT</td><td></td><td class="num">162 000 F</td></tr>
+            <tr><td>TGC 11 %</td><td></td><td class="num">17 820 F</td></tr>
+            <tr class="tot"><td>Total TTC</td><td></td><td class="num">179 820 F</td></tr>
+          </table>
+          <p class="small" style="margin-top:12px">Déjà réglé : 4 860 F · Reste dû : 174 960 F<br>Virement : BCI · IBAN NC.. · référence F2026-0047</p>
+        </div>
+        <div class="row"><button class="btn outline sm"><svg><use href="#i-download"/></svg>PDF</button><button class="btn outline sm">Saisir un paiement</button><button class="btn outline sm">Avoir…</button><span class="spacer"></span><button class="btn ghost sm">Suspendre les relances</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ BOÎTE D'ENVOI -->
+<section class="screen" data-screen="envoi">
+  <div class="stack" style="gap:20px">
+    <div class="head">
+      <div><h1>Boîte d’envoi</h1><p class="sub">Rien ne part sans votre clic. Les relances sont préparées chaque jour ouvré à 06:00.</p></div>
+      <div class="actions"><button class="btn outline">Écarter la sélection</button><button class="btn primary"><svg><use href="#i-send"/></svg>Envoyer la sélection (3)</button></div>
+    </div>
+    <div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)">
+      <div class="card" style="padding:8px">
+        <div class="mail-list" role="listbox" aria-label="Messages préparés">
+          <div class="mail" role="option" aria-selected="false"><input type="checkbox" checked aria-label="Sélectionner"><div style="min-width:0"><div class="t">Païta (commune) · <span class="pill bad">Relance 3</span></div><div class="p">Dernière relance avant suspension — facture F2026-0044</div></div><span class="small">06:00</span></div>
+          <div class="mail" role="option" aria-selected="true"><input type="checkbox" checked aria-label="Sélectionner"><div style="min-width:0"><div class="t">Lagon Bleu · <span class="pill bad">Relance 2</span></div><div class="p">Deuxième relance — facture F2026-0047, 174 960 F</div></div><span class="small">06:00</span></div>
+          <div class="mail" role="option" aria-selected="false"><input type="checkbox" checked aria-label="Sélectionner"><div style="min-width:0"><div class="t">Les P’tits Cagous · <span class="pill warn">Relance 1</span></div><div class="p">Rappel de paiement — facture F2026-0043</div></div><span class="small">06:00</span></div>
+          <div class="mail" role="option" aria-selected="false"><input type="checkbox" aria-label="Sélectionner"><div style="min-width:0"><div class="t">Kids Club Bourail · <span class="pill info">Facture</span></div><div class="p">Votre facture F2026-0046</div></div><span class="small">05/11</span></div>
+        </div>
+      </div>
+      <div class="card stack">
+        <div class="row"><h2>Deuxième relance</h2><span class="pill bad">J+16</span><span class="spacer"></span><span class="small">Préparé le 09/11/2026 à 06:00 · règle « Relance 2 »</span></div>
+        <div class="field"><label for="m-to">À</label><input id="m-to" class="input" value="direction@lagonbleu.nc"></div>
+        <div class="field"><label for="m-cc">Copie</label><input id="m-cc" class="input" value="facturation@ticagou.nc"></div>
+        <div class="field"><label for="m-obj">Objet</label><input id="m-obj" class="input" value="Deuxième relance — facture F2026-0047"></div>
+        <div class="field"><label for="m-txt">Message</label><textarea id="m-txt" class="input">Bonjour Madame Wamytan,
+
+Sauf erreur de notre part, la facture F2026-0047 du 17/10/2026, échue le 24/10/2026, reste due pour 174 960 F.
+
+Votre abonnement est arrivé à échéance le 31/10/2026 : Ti’Cagou fonctionne normalement jusqu’au 30/11/2026, puis passera en lecture seule.
+
+Vous pouvez régler par virement (référence F2026-0047). Si le paiement est en cours, merci d’ignorer ce message.
+
+Bien cordialement,
+Jordan Moniot — Ti’Cagou</textarea></div>
+        <div class="row"><span class="attach"><svg><use href="#i-file"/></svg>F2026-0047.pdf · 38 Ko</span></div>
+        <div class="row"><button class="btn ghost">Écarter…</button><span class="spacer"></span><button class="btn outline">Enregistrer</button><button class="btn primary"><svg><use href="#i-send"/></svg>Envoyer</button></div>
+        <p class="small">Au clic, la facture est vérifiée : si elle a été soldée entre-temps, le message n’est pas envoyé.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ ORDRES -->
+<section class="screen" data-screen="ordres">
+  <div class="stack" style="gap:20px">
+    <div class="head">
+      <div><h1>Ordres aux instances</h1><p class="sub">Exécutés sur le serveur par <code>creche.sh appliquer</code>, chaque minute. La console ne touche jamais Docker.</p></div>
+      <div class="actions"><button class="btn primary"><svg><use href="#i-plus"/></svg>Nouvel ordre</button></div>
+    </div>
+    <div class="card" style="padding:8px"><div class="table-wrap">
+      <table>
+        <thead><tr><th>Demandé</th><th>Crèche</th><th>Ordre</th><th>Paramètres</th><th>État</th><th></th></tr></thead>
+        <tr><td>09/11/2026 06:00</td><td>Ô Ti’Loup</td><td>Abonnement</td><td class="small">Gestion Structure, 18 places, jusqu’au 31/05/2028 · après paiement F2026-0041</td><td><span class="pill info">À confirmer</span></td><td class="num"><button class="btn primary sm">Confirmer (code)</button></td></tr>
+        <tr><td>04/11/2026 19:02</td><td>Toutes (9)</td><td>Mise à jour</td><td class="small">1.5.0, Ô Ti’Loup d’abord</td><td><span class="pill warn">Faite 7/9</span></td><td class="num"><button class="btn outline sm">Voir la sortie</button></td></tr>
+        <tr><td>01/11/2026 08:10</td><td>Kids Club Bourail</td><td>Abonnement</td><td class="small">Évaluation prolongée au 14/11/2026</td><td><span class="pill ok">Fait</span></td><td></td></tr>
+        <tr><td>12/10/2026 10:30</td><td>Les Niaoulis</td><td>Reprendre</td><td class="small">—</td><td><span class="pill ok">Fait</span></td><td></td></tr>
+      </table>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============================================================ REPORTING -->
+<section class="screen" data-screen="reporting">
+  <div class="stack" style="gap:20px">
+    <div class="head">
+      <div><h1>Reporting</h1><p class="sub">Du 01/01/2026 au 09/11/2026 · montants en francs CFP</p></div>
+      <div class="actions"><select class="input" style="width:auto"><option>Exercice 2026</option><option>12 derniers mois</option><option>Trimestre en cours</option></select><button class="btn outline"><svg><use href="#i-download"/></svg>Journal des ventes</button><button class="btn outline"><svg><use href="#i-download"/></svg>Excel</button></div>
+    </div>
+    <div class="grid g4">
+      <div class="card kpi"><div class="label">Chiffre d’affaires HT</div><div class="value">1 846 000 F</div><div class="hint">abonnements 82 % · prestations 18 %</div></div>
+      <div class="card kpi"><div class="label">Encaissé</div><div class="value">1 638 250 F</div><div class="hint">TTC, sur la période</div></div>
+      <div class="card kpi"><div class="label">TGC collectée</div><div class="value">203 060 F</div><div class="hint">à déclarer · 11 %</div></div>
+      <div class="card kpi"><div class="label">Taux de départ</div><div class="value">0 %</div><div class="hint">0 résiliation sur 12 mois</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h2>Balance âgée</h2>
+        <table class="aging">
+          <thead><tr><th>Client</th><th class="num">Non échu</th><th class="num">0–30 j</th><th class="num">31–60 j</th><th class="num">61–90 j</th><th class="num">+ 90 j</th></tr></thead>
+          <tr><td>Lagon Bleu</td><td class="num">—</td><td class="num late">174 960</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr><td>Païta (commune)</td><td class="num">—</td><td class="num">—</td><td class="num late">11 520</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr><td>Les P’tits Cagous</td><td class="num">—</td><td class="num late">16 650</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr><td>Kids Club Bourail</td><td class="num">66 600</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr class="tot"><td><b>Total</b></td><td class="num"><b>66 600</b></td><td class="num"><b>191 610</b></td><td class="num"><b>11 520</b></td><td class="num"><b>0</b></td><td class="num"><b>0</b></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Revenu mensuel par formule</h2>
+        <table>
+          <tr><td>Complet</td><td style="width:50%"><div class="meter"><span style="width:52%"></span></div></td><td class="num">89 500 F</td></tr>
+          <tr><td>Gestion</td><td><div class="meter"><span style="width:33%"></span></div></td><td class="num">56 500 F</td></tr>
+          <tr><td>Essentiel</td><td><div class="meter"><span style="width:9%"></span></div></td><td class="num">16 000 F</td></tr>
+          <tr><td>Modules à la carte</td><td><div class="meter"><span style="width:5%"></span></div></td><td class="num">9 000 F</td></tr>
+        </table>
+        <p class="small" style="margin-top:10px">Vente additionnelle possible : Païta utilise 3 PC pour 2 au contrat (+ 1 500 F/mois).</p>
+      </div>
+      <div class="card">
+        <h2>Risque de départ</h2>
+        <ul class="todo">
+          <li><span class="ico warn"><svg><use href="#i-clock"/></svg></span><div class="txt"><b>Les Petits Bancouliers</b> : aucune connexion direction depuis 19 jours</div></li>
+          <li><span class="ico bad"><svg><use href="#i-receipt"/></svg></span><div class="txt"><b>Lagon Bleu</b> : 2 retards de paiement sur 12 mois</div></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Rentabilité par crèche</h2>
+        <table>
+          <thead><tr><th>Crèche</th><th class="num">Revenu / mois</th><th class="num">Support saisi</th><th class="num">Marge estimée</th></tr></thead>
+          <tr><td>Port Autonome</td><td class="num">36 500 F</td><td class="num">0,5 h</td><td class="num">30 800 F</td></tr>
+          <tr><td>Les P’tits Cagous</td><td class="num">9 500 F</td><td class="num">1,5 h</td><td class="num" style="color:var(--danger-700)">− 5 200 F</td></tr>
+        </table>
+        <p class="small" style="margin-top:10px">Support à 9 000 F de l’heure, hébergement réparti : 1 200 F par crèche (réglable).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ PARAMÈTRES -->
+<section class="screen" data-screen="parametres">
+  <div class="stack" style="gap:20px">
+    <div class="head"><div><h1>Paramètres</h1><p class="sub">Barème, règles de relance, mentions de l’éditeur, comptes de la console.</p></div></div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="false">Barème</button><button role="tab" aria-selected="true">Relances</button><button role="tab" aria-selected="false">Éditeur et TGC</button><button role="tab" aria-selected="false">Modèles d’e-mails</button><button role="tab" aria-selected="false">Comptes</button><button role="tab" aria-selected="false">Journal</button></div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-head"><h2>Règles de relance</h2><button class="btn outline sm"><svg><use href="#i-plus"/></svg>Version au…</button></div>
+        <p class="small" style="margin-bottom:10px">En vigueur depuis le 01/11/2026. Les relances sont préparées, jamais envoyées seules.</p>
+        <table>
+          <thead><tr><th>Niveau</th><th class="num">Délai</th><th>Objet</th><th>Copie à moi</th><th>Actif</th></tr></thead>
+          <tr><td>Rappel courtois</td><td class="num">J−3</td><td class="small">Votre facture … arrive à échéance</td><td>non</td><td><span class="pill neutral">non</span></td></tr>
+          <tr><td>Relance 1</td><td class="num">J+7</td><td class="small">Rappel de paiement — facture …</td><td>non</td><td><span class="pill ok">oui</span></td></tr>
+          <tr><td>Relance 2</td><td class="num">J+15</td><td class="small">Deuxième relance — facture …</td><td>oui</td><td><span class="pill ok">oui</span></td></tr>
+          <tr><td>Relance 3</td><td class="num">J+30</td><td class="small">Dernière relance avant suspension</td><td>oui</td><td><span class="pill ok">oui</span></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Règles par client</h2><button class="btn outline sm"><svg><use href="#i-plus"/></svg>Ajouter</button></div>
+        <table>
+          <thead><tr><th>Client</th><th>Délai de paiement</th><th>Relances</th><th>Motif</th></tr></thead>
+          <tr><td>Païta (commune)</td><td>45 jours</td><td>décalées de 15 j</td><td class="small">Mandat administratif</td></tr>
+          <tr><td>Port Autonome</td><td>30 jours</td><td><span class="pill warn">suspendues</span></td><td class="small">Échéancier accordé jusqu’au 15/12</td></tr>
+        </table>
+        <div class="banner warn" style="margin-top:14px"><svg><use href="#i-shield"/></svg><div>La console ne suspend jamais une crèche seule : après la relance 3, elle vous propose un ordre « Suspendre », à confirmer avec votre code.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+    </main></div>
+  </div>
+</div>
+
+<div class="screens-nav" aria-label="Écrans de la maquette">Maquette<button data-go="connexion">Connexion</button><button data-go="accueil">Console</button></div>
+
+<script>
+  const shell = document.getElementById("shell");
+  function go(name) {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.dataset.screen === name));
+    shell.style.display = name === "connexion" ? "none" : "";
+    const nav = name === "fiche" ? "parc" : name;
+    document.querySelectorAll("nav.side a").forEach((a) => { if (a.dataset.go !== nav) a.removeAttribute("aria-current"); else a.setAttribute("aria-current", "page"); });
+    document.querySelector(".scroll").scrollTop = 0;
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-go]");
+    if (t) { e.preventDefault(); go(t.dataset.go); }
+    const chip = e.target.closest(".chip");
+    if (chip) chip.parentElement.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
+    const tab = e.target.closest('[role="tab"]');
+    if (tab) tab.parentElement.querySelectorAll('[role="tab"]').forEach((c) => c.setAttribute("aria-selected", String(c === tab)));
+    const mail = e.target.closest(".mail");
+    if (mail && e.target.type !== "checkbox") mail.parentElement.querySelectorAll(".mail").forEach((m) => m.setAttribute("aria-selected", String(m === mail)));
+  });
+  go(location.hash ? location.hash.slice(1) : "accueil");
+</script>
+</body>
+</html>

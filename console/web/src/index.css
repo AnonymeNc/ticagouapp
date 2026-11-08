@@ -1,0 +1,231 @@
+/*
+ * Design system Ti’Cagou, copie de web/src/index.css (maquette docs/design/Ti’Cagou — Console éditeur.html).
+ * Tailwind v4 : la configuration du thème vit ici (@theme), il n'y a plus de tailwind.config.js.
+ * Polices embarquées (fonctionnement hors ligne, pas de Google Fonts).
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/source-sans-3";
+@import "@fontsource-variable/fraunces";
+
+/* Thème clair uniquement pour l'instant : les variantes dark: de shadcn ne s'activent qu'avec la classe .dark. */
+@custom-variant dark (&:is(.dark *));
+
+/* ---------- Tokens bruts du design system ---------- */
+:root {
+  /* Palette */
+  --lagon-700: #08585c;
+  --lagon-600: #0b6e72;
+  --lagon-100: #dcefee;
+  --lagon-50: #eef7f6;
+  --niaouli-700: #3f5a26;
+  --niaouli-100: #e7eedb;
+  --terre-600: #b5532a;
+
+  /* Surfaces & texte */
+  --tc-bg: #fbf8f3;
+  --tc-surface: #ffffff;
+  --tc-surface-sunken: #f4eee4;
+  --tc-border-subtle: #ebe2d4;
+  --tc-border: #d9cdbb;
+  --tc-border-control: #968a78;
+  --tc-ink: #2b2620;
+  --tc-ink-muted: #665b4e;
+  --tc-on-primary: #ffffff;
+  --tc-focus: #0b6e72;
+  --tc-overlay: #2b26207a;
+
+  /* États */
+  --success-700: #1d6a43;
+  --success-600: #1f7a4d;
+  --success-100: #e1f1e7;
+  --warning-700: #7f4a00;
+  --warning-500: #e7a53e;
+  --warning-100: #fcefd6;
+  --danger-700: #a3231b;
+  --danger-600: #b3261e;
+  --danger-100: #fbe4e1;
+  --info-700: #23529a;
+  --info-100: #e3ecf8;
+
+  /* Sections */
+  --section-bebes: #9e2f66;
+  --section-bebes-soft: #fae6ef;
+  --section-moyens: #924510;
+  --section-moyens-soft: #fbe9da;
+  --section-grands: #3d479b;
+  --section-grands-soft: #e7e9f8;
+
+  /* ---------- Sémantique shadcn/ui → tokens Ti'Cagou ---------- */
+  --radius: 10px;
+  --background: var(--tc-bg);
+  --foreground: var(--tc-ink);
+  --card: var(--tc-surface);
+  --card-foreground: var(--tc-ink);
+  --popover: var(--tc-surface);
+  --popover-foreground: var(--tc-ink);
+  --primary: var(--lagon-600);
+  --primary-foreground: var(--tc-on-primary);
+  --secondary: var(--lagon-100);
+  --secondary-foreground: var(--lagon-700);
+  --muted: var(--tc-surface-sunken);
+  --muted-foreground: var(--tc-ink-muted);
+  --accent: var(--lagon-100);
+  --accent-foreground: var(--lagon-600);
+  --destructive: var(--danger-600);
+  --border: var(--tc-border);
+  --input: var(--tc-border-control);
+  --ring: var(--tc-focus);
+  --sidebar: var(--tc-surface-sunken);
+  --sidebar-foreground: var(--tc-ink);
+  --sidebar-primary: var(--lagon-600);
+  --sidebar-primary-foreground: var(--tc-on-primary);
+  --sidebar-accent: var(--lagon-100);
+  --sidebar-accent-foreground: var(--lagon-600);
+  --sidebar-border: var(--tc-border-subtle);
+  --sidebar-ring: var(--tc-focus);
+}
+
+@theme inline {
+  /* Couleurs shadcn */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Couleurs Ti'Cagou (bg-lagon-600, text-ink-muted, border-border-subtle…) */
+  --color-lagon-700: var(--lagon-700);
+  --color-lagon-600: var(--lagon-600);
+  --color-lagon-100: var(--lagon-100);
+  --color-lagon-50: var(--lagon-50);
+  --color-niaouli-700: var(--niaouli-700);
+  --color-niaouli-100: var(--niaouli-100);
+  --color-terre-600: var(--terre-600);
+  --color-surface: var(--tc-surface);
+  --color-surface-sunken: var(--tc-surface-sunken);
+  --color-border-subtle: var(--tc-border-subtle);
+  --color-border-control: var(--tc-border-control);
+  --color-ink: var(--tc-ink);
+  --color-ink-muted: var(--tc-ink-muted);
+  --color-overlay: var(--tc-overlay);
+  --color-success-700: var(--success-700);
+  --color-success-600: var(--success-600);
+  --color-success-100: var(--success-100);
+  --color-warning-700: var(--warning-700);
+  --color-warning-500: var(--warning-500);
+  --color-warning-100: var(--warning-100);
+  --color-danger-700: var(--danger-700);
+  --color-danger-600: var(--danger-600);
+  --color-danger-100: var(--danger-100);
+  --color-info-700: var(--info-700);
+  --color-info-100: var(--info-100);
+  --color-section-bebes: var(--section-bebes);
+  --color-section-bebes-soft: var(--section-bebes-soft);
+  --color-section-moyens: var(--section-moyens);
+  --color-section-moyens-soft: var(--section-moyens-soft);
+  --color-section-grands: var(--section-grands);
+  --color-section-grands-soft: var(--section-grands-soft);
+}
+
+@theme {
+  /* Typographie */
+  --font-sans: "Source Sans 3 Variable", "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Fraunces Variable", Fraunces, Georgia, "Times New Roman", serif;
+
+  /* Échelle typo (les tailles « display » et « title-1 » s'utilisent avec font-display) */
+  --text-display: 32px;
+  --text-display--line-height: 38px;
+  --text-display--font-weight: 600;
+  --text-title-1: 24px;
+  --text-title-1--line-height: 30px;
+  --text-title-1--font-weight: 600;
+  --text-title-2: 20px;
+  --text-title-2--line-height: 26px;
+  --text-title-2--font-weight: 600;
+  --text-title-3: 17px;
+  --text-title-3--line-height: 24px;
+  --text-title-3--font-weight: 600;
+  --text-body: 15px;
+  --text-body--line-height: 22px;
+  --text-label: 14px;
+  --text-label--line-height: 20px;
+  --text-label--font-weight: 600;
+  --text-small: 13px;
+  --text-small--line-height: 18px;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-caption--font-weight: 600;
+  --text-numeric-lg: 32px;
+  --text-numeric-lg--line-height: 36px;
+  --text-numeric-lg--font-weight: 600;
+  /* Tablette (kiosque) */
+  --text-touch-title: 28px;
+  --text-touch-title--line-height: 34px;
+  --text-touch-title--font-weight: 700;
+  --text-touch-body: 20px;
+  --text-touch-body--line-height: 28px;
+  --text-touch-body--font-weight: 500;
+  --text-touch-label: 18px;
+  --text-touch-label--line-height: 24px;
+  --text-touch-label--font-weight: 600;
+
+  /* Rayons (rounded-sm / rounded-md / rounded-lg / rounded-full) */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Ombres (shadow-1 / shadow-2 / shadow-3) */
+  --shadow-1: 0 1px 2px rgba(43, 38, 32, 0.08);
+  --shadow-2: 0 6px 18px rgba(43, 38, 32, 0.12);
+  --shadow-3: 0 18px 48px rgba(43, 38, 32, 0.22);
+
+  /* Dimensions de mise en page (w-sidebar, h-topbar, h-control, h-touch…).
+     L'échelle d'espacement par défaut de Tailwind (pas de 4px) correspond à --space-1…12. */
+  --spacing-sidebar: 240px;
+  --spacing-topbar: 60px;
+  --spacing-control: 36px;
+  --spacing-row: 36px;
+  --spacing-touch: 56px;
+  --spacing-touch-lg: 72px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background font-sans text-body text-foreground antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--tc-focus);
+    outline-offset: 2px;
+  }
+}
+

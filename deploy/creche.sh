@@ -64,23 +64,56 @@ ecrire_site() {
     socle exec -T caddy caddy reload --config /etc/caddy/Caddyfile
 }
 
+# Rôle et base d'un service du socle (portail, console), créés une seule fois.
+base_de_service() {
+    sql_admin -d postgres -c "SELECT 1 FROM pg_roles WHERE rolname = '$1'" | grep -q 1 \
+        || sql_admin -d postgres -c "CREATE ROLE $1 LOGIN PASSWORD '$(echappe "$2")'"
+    sql_admin -d postgres -c "SELECT 1 FROM pg_database WHERE datname = '$1'" | grep -q 1 \
+        || sql_admin -d postgres -c "CREATE DATABASE $1 OWNER $1"
+    fermer_base "$1"
+}
+
+# Site de la console : seulement pour les adresses autorisées ; sans liste, pas de site (tunnel SSH).
+ecrire_site_console() {
+    if [ -z "${CONSOLE_DOMAIN:-}" ] || [ -z "${CONSOLE_ADRESSES_AUTORISEES:-}" ]; then
+        rm -f "$SITES/console.caddy"
+        echo "Console sans site public : ssh -L 8095:127.0.0.1:8095 <serveur>, puis http://localhost:8095"
+        return
+    fi
+    {
+        echo "$CONSOLE_DOMAIN {"
+        [ "${TLS_INTERNE:-}" = 1 ] && printf '\ttls internal\n'
+        printf '\timport securite\n\t@refuse not remote_ip %s\n\trespond @refuse 404\n\treverse_proxy console:8095\n}\n' "$CONSOLE_ADRESSES_AUTORISEES"
+    } >"$SITES/console.caddy"
+}
+
+# socle [--portail] [--console]
 cmd_socle() {
     mkdir -p "$CRECHES" "$SITES"
     chmod 700 "$TICAGOU_DONNEES"
     profil=""
-    if [ "${1:-}" = --portail ]; then
-        : "${PORTAL_DOMAIN:?Renseignez PORTAL_DOMAIN dans socle.env}"
-        : "${PORTAL_DB_PASSWORD:?Renseignez PORTAL_DB_PASSWORD dans socle.env}"
-        profil="--profile portail"
-        printf '%s {\n\timport securite\n\treverse_proxy portail:8090\n}\n' "$PORTAL_DOMAIN" >"$SITES/portail.caddy"
-    fi
+    for option in "$@"; do
+        case $option in
+            --portail)
+                : "${PORTAL_DOMAIN:?Renseignez PORTAL_DOMAIN dans socle.env}"
+                : "${PORTAL_DB_PASSWORD:?Renseignez PORTAL_DB_PASSWORD dans socle.env}"
+                profil="$profil --profile portail"
+                printf '%s {\n\timport securite\n\treverse_proxy portail:8090\n}\n' "$PORTAL_DOMAIN" >"$SITES/portail.caddy"
+                ;;
+            --console)
+                : "${CONSOLE_DB_PASSWORD:?Renseignez CONSOLE_DB_PASSWORD dans socle.env}"
+                : "${CONSOLE_SECRET_KEY:?Renseignez CONSOLE_SECRET_KEY dans socle.env (openssl rand -base64 32)}"
+                profil="$profil --profile console"
+                ecrire_site_console
+                ;;
+            *) echo "Option inconnue : $option" >&2; exit 1 ;;
+        esac
+    done
     socle up -d db caddy
     until socle exec -T db pg_isready -q -U ticagou_admin -d postgres; do sleep 2; done
     if [ -n "$profil" ]; then
-        sql_admin -d postgres -c "SELECT 1 FROM pg_roles WHERE rolname = 'portail'" | grep -q 1 \
-            || sql_admin -d postgres -c "CREATE ROLE portail LOGIN PASSWORD '$(echappe "$PORTAL_DB_PASSWORD")'"
-        sql_admin -d postgres -c "SELECT 1 FROM pg_database WHERE datname = 'portail'" | grep -q 1 \
-            || sql_admin -d postgres -c "CREATE DATABASE portail OWNER portail"
+        case $profil in *portail*) base_de_service portail "$PORTAL_DB_PASSWORD" ;; esac
+        case $profil in *console*) base_de_service console "$CONSOLE_DB_PASSWORD" ;; esac
         # shellcheck disable=SC2086
         socle $profil up -d --build
     fi
@@ -243,6 +276,30 @@ cmd_telephone_perdu() {
     echo "Double authentification réinitialisée : à refaire à la prochaine connexion."
 }
 
+# sauvegarder-console : base de la console (factures de l'éditeur), chiffrée avec CONSOLE_SECRET_KEY, 30 jours gardés.
+#   cron : 30 0 * * * /opt/ticagou/ticagou-web/deploy/creche.sh sauvegarder-console
+#   relire : openssl enc -d -aes-256-cbc -pbkdf2 -pass env:CONSOLE_SECRET_KEY -in <fichier> | pg_restore ...
+cmd_sauvegarder_console() {
+    : "${CONSOLE_SECRET_KEY:?Renseignez CONSOLE_SECRET_KEY dans socle.env}"
+    dossier="$TICAGOU_DONNEES/console-sauvegardes"
+    mkdir -p "$dossier"
+    chmod 700 "$dossier"
+    fichier="$dossier/console-$(date +%Y%m%d-%H%M).dump.enc"
+    socle exec -T db pg_dump -U ticagou_admin -Fc console \
+        | openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:CONSOLE_SECRET_KEY -out "$fichier"
+    [ -s "$fichier" ] || { echo "Sauvegarde de la console vide : $fichier" >&2; exit 1; }
+    find "$dossier" -name 'console-*.dump.enc' -mtime +30 -delete
+    echo "Console sauvegardée : $fichier"
+}
+
+# console-telephone-perdu <identifiant> : compte de la console de l'éditeur ; le QR code se réaffiche à la connexion
+cmd_console_telephone_perdu() {
+    login=${1:?Usage : console-telephone-perdu <identifiant>}
+    sql_admin -d console -c "UPDATE operator SET totp_secret = NULL, totp_enabled_at = NULL, totp_last_step = NULL WHERE lower(login) = lower('$(echappe "$login")')"
+    sql_admin -d console -c "INSERT INTO audit_event (at, operator_login, action, target) VALUES (now(), NULL, 'TOTP_REINITIALISE', '$(echappe "$login")')"
+    echo "Double authentification de la console réinitialisée pour $login : à refaire à la prochaine connexion."
+}
+
 portail_admin() {
     socle exec -T portail wget -qO- --header "Authorization: Bearer $PORTAL_ADMIN_TOKEN" \
         --header "Content-Type: application/json" --post-data "$2" "http://localhost:8090/admin/v1/$1"
@@ -273,7 +330,7 @@ cmd_supprimer() {
 
 aide() {
     cat <<FIN
-socle [--portail]              démarre PostgreSQL, Caddy et, en option, le portail
+socle [--portail] [--console]  démarre PostgreSQL, Caddy et, en option, le portail et la console
 construire [version]           construit l'image de l'application
 creer <crèche> [--domaine n]   crée une instance et donne le lien de démarrage
 abonnement <crèche> ...        --numero --offre --places --jusqu-au [--pc --tablettes --modules A,B]
@@ -284,6 +341,8 @@ reprendre <crèche>
 restaurer <crèche> <archive>   remplace les données par une sauvegarde
 telephone-perdu <crèche> <identifiant>
 code-portail <libellé>         code d'activation du portail parents
+sauvegarder-console            sauvegarde chiffrée de la base de la console (cron, chaque nuit)
+console-telephone-perdu <identifiant>   double authentification de la console à refaire
 supprimer <crèche>             efface tout, après restitution des données
 FIN
 }
@@ -302,6 +361,8 @@ case $commande in
     restaurer) cmd_restaurer "$@" ;;
     telephone-perdu) cmd_telephone_perdu "$@" ;;
     code-portail) cmd_code_portail "$@" ;;
+    sauvegarder-console) cmd_sauvegarder_console ;;
+    console-telephone-perdu) cmd_console_telephone_perdu "$@" ;;
     supprimer) cmd_supprimer "$@" ;;
     *) aide ;;
 esac

@@ -17,6 +17,8 @@ desktop.ini
 # --- server/ (Maven) ---
 server/target/
 parents-portal/server/target/
+console/server/target/
+console/web/dist/
 !server/.mvn/wrapper/maven-wrapper.jar
 
 # --- web/ (Node, Vite) ---
