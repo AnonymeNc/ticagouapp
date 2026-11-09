@@ -30,13 +30,14 @@ familles, qui existent déjà dans le module `FACTURATION`. Une relance par e-ma
 
 **Avancement** : phase 1 livrée le 08/11/2026 (`console/`, [ADR 0017](adr/0017-console-editeur.md)) ; phase 2 livrée le
 08/11/2026 (parc, fiche crèche, tableau de bord, recherche, heure des lectures en bas de la barre latérale) ; phase 3
-livrée le 09/11/2026 (barème, TGC et mentions, contrats, factures et avoirs, paiements, boîte d'envoi, indicateurs).
+livrée le 09/11/2026 (barème, TGC et mentions, contrats, factures et avoirs, paiements, boîte d'envoi, indicateurs) ;
+phase 4 livrée le 09/11/2026 (relances préparées chaque jour ouvré, règles datées, règles par client, fériés, modèles).
 
 Écarts encore assumés avec la maquette :
 - fiche crèche : « Suspendre… » présent mais désactivé jusqu'aux ordres (phase 5) ; la ligne « Contrat : aligné » de
   la carte Santé est remplacée par l'état du portail parents ; l'alignement avec le contrat est dans l'onglet Abonnement ;
-- boîte d'envoi : factures et avoirs seulement ; les relances et leurs règles (Paramètres › Relances, Modèles
-  d'e-mails) arrivent avec la phase 4 ;
+- relance 3 : la suspension est proposée sur le tableau de bord (« Décider »), elle s'exécutera par ordre en phase 5 ;
+- l'e-mail d'une facture validée suit un texte fixe (modifiable message par message dans la boîte d'envoi) ;
 - tableau de bord : pas encore de variation du revenu récurrent d'un mois sur l'autre (« + 13 500 F depuis
   octobre ») ; elle viendra avec le reporting (phase 6).
 
@@ -50,6 +51,13 @@ Choix de la phase 3 :
   facturée, le complément est préparé en brouillon et ce qui est à rendre est indiqué pour un avoir ;
 - le délai de préparation des renouvellements (45 jours, 10 pour le mensuel) est un réglage de l'application ;
 - les remises s'additionnent, calculées chacune sur le sous-total de l'abonnement.
+
+Choix de la phase 4 :
+- une relance groupée prend le ton du niveau le plus élevé de ses factures ; chaque facture garde son niveau ;
+- après un arrêt, on rattrape au niveau le plus élevé atteint, sans envoyer les niveaux intermédiaires ;
+- le décalage propre à un client ne touche pas le rappel courtois (avant échéance) ;
+- une relance écartée à la main n'est pas préparée à nouveau ; une relance retirée parce qu'une facture a été soldée
+  l'est pour les factures encore dues.
 
 Choix de la phase 2 :
 - le statut commercial n'a que trois valeurs saisies (prospect, client, résilié) ; évaluation, grâce, lecture seule et

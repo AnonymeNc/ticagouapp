@@ -366,6 +366,16 @@ function History({ detail: d }: { detail: InvoiceDetail }) {
   }
   d.allocations.forEach((a) => items.push({ at: `${a.receivedOn}T12:00:00Z`, text: `Paiement ${methodLabels[a.method] ?? a.method} ${a.reference ? `(${a.reference}) ` : ""}: ${xpf(a.amount)}` }));
   d.credits.forEach((c) => items.push({ at: c.issuedOn ? `${c.issuedOn}T12:00:00Z` : "", text: `Avoir ${c.number} : ${xpf(c.totalTtc)}` }));
+  d.reminders.forEach((r) =>
+    items.push({
+      at: r.sentAt ?? `${r.preparedOn}T12:00:00Z`,
+      text: `${r.label} (J+${r.daysLate}) : ${r.messageStatus === "ENVOYE" ? "envoyée" : r.messageStatus === "ECARTE" ? "écartée" : "préparée, en attente"}`,
+    }),
+  );
+  if (d.nextReminderOn) {
+    // 01:00 UTC = midi à Nouméa : la date affichée reste celle du jour prévu.
+    items.push({ at: `${d.nextReminderOn}T01:00:00Z`, text: `Prochaine relance prévue le ${formatDay(d.nextReminderOn)}${d.summary.remindersPaused ? " (suspendues)" : ""}` });
+  }
   d.messages.forEach((m) =>
     items.push({
       at: m.sentAt ?? m.createdAt,

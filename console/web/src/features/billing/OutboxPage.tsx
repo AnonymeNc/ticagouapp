@@ -12,7 +12,13 @@ import { cn } from "@/lib/utils";
 import { billingApi, useBillingWrite, useOutbox, type OutboxMessage } from "./api";
 import { xpf } from "./labels";
 
-const kindPill = { FACTURE: { tone: "info", label: "Facture" }, AVOIR: { tone: "lagon", label: "Avoir" }, RELANCE: { tone: "bad", label: "Relance" } } as const;
+/** Pastille d'un message : nature, et niveau pour une relance (maquette : « Relance 2 » en rouge). */
+function kindPill(m: Pick<OutboxMessage, "kind" | "reminderLevel">): { tone: "info" | "lagon" | "bad" | "warn" | "neutral"; label: string } {
+  if (m.kind === "RELANCE") {
+    return m.reminderLevel === 0 ? { tone: "neutral", label: "Rappel" } : { tone: (m.reminderLevel ?? 1) >= 2 ? "bad" : "warn", label: `Relance ${m.reminderLevel ?? ""}`.trim() };
+  }
+  return m.kind === "FACTURE" ? { tone: "info", label: "Facture" } : { tone: "lagon", label: "Avoir" };
+}
 
 /**
  * Boîte d'envoi (maquette) : rien ne part sans votre clic. Chaque message se relit et se corrige, puis part seul ou
@@ -25,6 +31,7 @@ export function OutboxPage() {
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const send = useBillingWrite((ids: string[]) => billingApi.send(ids));
   const discard = useBillingWrite((input: { ids: string[]; reason: string | null }) => billingApi.discard(input.ids, input.reason));
+  const prepare = useBillingWrite(() => billingApi.prepareReminders());
 
   const all = query.data?.messages ?? [];
   const messages = all.filter((m) => (view === "attente" ? m.status === "PREPARE" : m.status !== "PREPARE"));
@@ -42,10 +49,13 @@ export function OutboxPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="m-0 font-display text-display">Boîte d’envoi</h1>
-          <p className="mt-1 text-muted-foreground">Rien ne part sans votre clic. Les factures validées y préparent leur e-mail ; les relances viendront avec la phase 4.</p>
+          <p className="mt-1 text-muted-foreground">Rien ne part sans votre clic. Les relances sont préparées chaque jour ouvré à 06:00 ; les factures validées y préparent leur e-mail.</p>
         </div>
         {view === "attente" && (
           <div className="flex gap-2">
+            <Button variant="ghost" disabled={prepare.isPending} onClick={() => prepare.mutate(undefined)}>
+              Préparer les relances maintenant
+            </Button>
             <Button variant="outline" disabled={checked.size === 0 || discard.isPending} onClick={() => discard.mutate({ ids: [...checked], reason: null })}>
               Écarter la sélection
             </Button>
@@ -62,6 +72,11 @@ export function OutboxPage() {
           {sentCount > 0 && `${sentCount} message${sentCount > 1 ? "s envoyés" : " envoyé"}. `}
           {failures.map((f) => f.error).filter(Boolean).join(" ")}
         </div>
+      )}
+      {prepare.data && (
+        <p role="status" className="m-0 text-muted-foreground">
+          {prepare.data.messages === 0 ? "Aucune relance due aujourd’hui." : `${prepare.data.messages} relance${prepare.data.messages > 1 ? "s préparées" : " préparée"}.`}
+        </p>
       )}
       {(send.isError || discard.isError) && (
         <p role="alert" className="m-0 text-danger-700">
@@ -117,7 +132,7 @@ export function OutboxPage() {
                   )}
                   <div className="min-w-0">
                     <div className="font-semibold">
-                      {m.crecheName ?? m.clientName} · <Pill tone={kindPill[m.kind].tone}>{kindPill[m.kind].label}</Pill>
+                      {m.crecheName ?? m.clientName} · <Pill tone={kindPill(m).tone}>{kindPill(m).label}</Pill>
                     </div>
                     <div className="truncate text-small text-muted-foreground">{m.subject}</div>
                     {m.lastError && m.status === "PREPARE" && <div className="text-small text-danger-700">Échec : {m.lastError}</div>}
@@ -156,8 +171,9 @@ function MessageEditor({ message, onSent }: { message: OutboxMessage; onSent: ()
   return (
     <section className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="m-0 font-display text-title-2">{message.kind === "FACTURE" ? "Facture" : message.kind === "AVOIR" ? "Avoir" : "Relance"}</h2>
-        {message.invoiceNumber && <Pill tone="neutral">{message.invoiceNumber} · {xpf(message.invoiceTotal)}</Pill>}
+        <h2 className="m-0 font-display text-title-2">{message.kind === "FACTURE" ? "Facture" : message.kind === "AVOIR" ? "Avoir" : message.subject.split(" — ")[0]}</h2>
+        {message.kind === "RELANCE" && <Pill tone={kindPill(message).tone}>{kindPill(message).label}</Pill>}
+        {message.invoiceNumber && message.kind !== "RELANCE" && <Pill tone="neutral">{message.invoiceNumber} · {xpf(message.invoiceTotal)}</Pill>}
         <span className="ml-auto text-small text-muted-foreground">
           {message.status === "ENVOYE"
             ? `Envoyé le ${formatDateTime(new Date(message.sentAt!))} par ${message.sentBy}`
@@ -182,20 +198,24 @@ function MessageEditor({ message, onSent }: { message: OutboxMessage; onSent: ()
         <Label htmlFor="m-txt">Message</Label>
         <textarea id="m-txt" rows={11} value={body} disabled={!editable} onChange={(e) => setBody(e.target.value)} className="w-full rounded-md border border-input bg-card px-3 py-2 leading-[22px]" />
       </div>
-      {message.attachmentName && (
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5 text-label">
+      <div className="flex flex-wrap items-center gap-2">
+        {message.attachments.map((name, i) => (
+          <span key={name} className="inline-flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5 text-label">
             <FileText aria-hidden className="size-4 text-danger-700" />
-            <a href={`/api/v1/factures/${message.invoiceId}/pdf`} target="_blank" rel="noreferrer" className="hover:underline">
-              {message.attachmentName}
+            <a href={`/api/v1/factures/${message.invoiceIds[i]}/pdf`} target="_blank" rel="noreferrer" className="hover:underline">
+              {name}
             </a>
           </span>
-          {message.crecheSlug && (
-            <Link to={`/factures?id=${message.invoiceId}`} className="text-small text-lagon-600 hover:underline">
-              Voir la facture
-            </Link>
-          )}
-        </div>
+        ))}
+        {message.attachments.length === 0 && message.kind === "RELANCE" && <span className="text-small text-muted-foreground">Sans pièce jointe (règle du niveau).</span>}
+        {message.invoiceIds.map((id, i) => (
+          <Link key={id} to={`/factures?id=${id}`} className="text-small text-lagon-600 hover:underline">
+            Voir {message.invoiceNumbers[i]}
+          </Link>
+        ))}
+      </div>
+      {message.kind === "RELANCE" && editable && (
+        <p className="m-0 text-small text-muted-foreground">Au clic, les factures sont vérifiées : si l’une a été soldée entre-temps, la relance n’est pas envoyée et se retire.</p>
       )}
       {error && (
         <p role="alert" className="m-0 text-danger-700">

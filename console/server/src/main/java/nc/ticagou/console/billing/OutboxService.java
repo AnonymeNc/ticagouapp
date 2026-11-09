@@ -28,13 +28,15 @@ public class OutboxService {
 
     public record View(UUID id, String kind, UUID invoiceId, String invoiceNumber, long invoiceTotal, String clientName, String crecheSlug,
                        String crecheName, String to, String cc, String subject, String body, String attachmentName, String status,
-                       Instant createdAt, Instant sentAt, String sentBy, String lastError, Instant discardedAt, String discardReason) {
+                       Instant createdAt, Instant sentAt, String sentBy, String lastError, Instant discardedAt, String discardReason,
+                       Integer reminderLevel, List<String> attachments, List<String> invoiceNumbers, List<UUID> invoiceIds) {
     }
 
     public record Result(UUID id, boolean sent, String error) {
     }
 
     private final OutboxRepository repository;
+    private final ReminderRepository reminders;
     private final InvoiceRepository invoices;
     private final ParcRepository parc;
     private final Mailer mailer;
@@ -42,9 +44,10 @@ public class OutboxService {
     private final TransactionTemplate transactions;
     private final Clock clock;
 
-    public OutboxService(OutboxRepository repository, InvoiceRepository invoices, ParcRepository parc, Mailer mailer, AuditService audit,
+    public OutboxService(OutboxRepository repository, ReminderRepository reminders, InvoiceRepository invoices, ParcRepository parc, Mailer mailer, AuditService audit,
                          TransactionTemplate transactions, Clock clock) {
         this.repository = repository;
+        this.reminders = reminders;
         this.invoices = invoices;
         this.parc = parc;
         this.mailer = mailer;
@@ -91,7 +94,7 @@ public class OutboxService {
         var now = clock.instant();
         repository.insert(new Message(UUID.randomUUID(), invoice.credit() ? "AVOIR" : "FACTURE", invoice.id(), invoice.clientId(),
                 invoice.crecheId(), to, blankToNull(issuer.copyEmail()), subject, text.replace("\n\n\n", "\n\n"), "PREPARE", now, now,
-                null, null, null, null, null, null));
+                null, null, null, null, null, null, null, true));
     }
 
     // --- Lecture
@@ -112,10 +115,24 @@ public class OutboxService {
         var invoice = m.invoiceId() == null ? null : invoices.find(m.invoiceId()).orElse(null);
         var client = parc.client(m.clientId());
         var creche = m.crecheId() == null ? null : parc.findById(m.crecheId()).orElse(null);
+        var numbers = linkedInvoices(m).stream().map(Invoice::number).toList();
+        var attachments = m.attachPdf() ? numbers.stream().map(n -> n + ".pdf").toList() : List.<String>of();
         return new View(m.id(), m.kind(), m.invoiceId(), invoice == null ? null : invoice.number(), invoice == null ? 0 : invoice.totalTtc(),
                 client.name(), creche == null ? null : creche.slug(), creche == null ? null : creche.name(), m.to(), m.cc(), m.subject(),
-                m.body(), invoice == null ? null : invoice.number() + ".pdf", m.status(), m.createdAt(), m.sentAt(), m.sentBy(),
-                m.lastError(), m.discardedAt(), m.discardReason());
+                m.body(), attachments.isEmpty() ? null : attachments.getFirst(), m.status(), m.createdAt(), m.sentAt(), m.sentBy(),
+                m.lastError(), m.discardedAt(), m.discardReason(), m.reminderLevel(), attachments, numbers,
+                linkedInvoices(m).stream().map(Invoice::id).toList());
+    }
+
+    /** Factures d'un message : celle de la facture ou de l'avoir, ou toutes celles d'une relance groupée. */
+    private List<Invoice> linkedInvoices(Message m) {
+        if ("RELANCE".equals(m.kind())) {
+            var ids = reminders.invoicesOf(m.id());
+            if (!ids.isEmpty()) {
+                return ids.stream().map(invoices::find).flatMap(java.util.Optional::stream).toList();
+            }
+        }
+        return m.invoiceId() == null ? List.of() : invoices.find(m.invoiceId()).stream().toList();
     }
 
     // --- Actions
@@ -145,19 +162,32 @@ public class OutboxService {
             return new Result(id, false, "Ce message n’est plus en attente.");
         }
         var now = clock.instant();
-        byte[] pdf = null;
-        String name = null;
-        if (message.invoiceId() != null) {
-            var invoice = invoices.find(message.invoiceId()).orElse(null);
-            if (invoice == null || invoice.draft()) {
-                repository.failed(id, "La facture n’est pas validée.", now);
-                return new Result(id, false, "La facture n’est pas validée.");
-            }
-            pdf = invoices.pdf(invoice.id());
-            name = invoice.number() + ".pdf";
+        var linked = linkedInvoices(message);
+        if (linked.stream().anyMatch(Invoice::draft)) {
+            repository.failed(id, "La facture n’est pas validée.", now);
+            return new Result(id, false, "La facture n’est pas validée.");
         }
+        if ("RELANCE".equals(message.kind())) {
+            // Vérification au clic : une facture soldée entre-temps n'est jamais relancée.
+            var settled = linked.stream().filter(i -> {
+                var s = invoices.settlement(i.id());
+                return i.totalTtc() - s.paid() - s.credited() <= 0;
+            }).toList();
+            if (!settled.isEmpty()) {
+                var stillDue = linked.stream().filter(i -> !settled.contains(i)).map(Invoice::id).toList();
+                reminders.forget(id, stillDue);
+                var reason = "Soldée entre-temps : " + String.join(", ", settled.stream().map(Invoice::number).toList()) + ". Relance retirée"
+                        + (stillDue.isEmpty() ? "." : " ; les autres factures seront relancées à la prochaine préparation.");
+                repository.discard(id, operator, reason, now);
+                audit.record("RELANCE_RETIREE", target(message), Map.of("motif", reason));
+                return new Result(id, false, reason);
+            }
+        }
+        var attachments = message.attachPdf()
+                ? linked.stream().map(i -> new Mailer.Attachment(i.number() + ".pdf", invoices.pdf(i.id()))).toList()
+                : List.<Mailer.Attachment>of();
         try {
-            mailer.send(message.to(), message.cc(), message.subject(), message.body(), name, pdf);
+            mailer.send(message.to(), message.cc(), message.subject(), message.body(), attachments);
         } catch (Mailer.MailFailure e) {
             repository.failed(id, e.getMessage(), now);
             audit.record("ENVOI_ECHEC", target(message), Map.of("erreur", e.getMessage()));

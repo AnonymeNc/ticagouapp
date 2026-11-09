@@ -23,8 +23,11 @@ prospects, recherche, tableau de bord « À faire aujourd'hui ».
 des prix, remises et prorata (`Pricing`, `Totals`, `Xpf`, testés seuls), contrats et avenants, renouvellements préparés en
 brouillon (`ContractService`), validation avec code (numéro continu, PDF `templates/facture.html` et son empreinte,
 `InvoiceService`), avoirs, paiements (`PaymentService`), boîte d'envoi (`OutboxService`, `Mailer` : envoi au clic),
-indicateurs (`BillingStats`). Une facture validée est protégée par un trigger (`V3__facturation.sql`). Les autres écrans
-annoncent leur phase.
+indicateurs (`BillingStats`). Une facture validée est protégée par un trigger (`V3__facturation.sql`).
+
+**Livré (phase 4)** : relances (`ReminderPlanner` pour le calendrier, testé seul ; `ReminderService` pour la préparation de
+6 h, regroupée par client ; `ReminderRepository`) ; règles datées, fériés et règles par client dans Paramètres ; au clic,
+une facture soldée entre-temps retire la relance (`OutboxService`). Les autres écrans annoncent leur phase.
 
 ## Lancer en développement
 

@@ -61,12 +61,14 @@ public class InvoiceService {
 
     public record Detail(Summary summary, List<Line> lines, List<Totals.RateTotal> rates, String note, JsonNode client, JsonNode issuer,
                          List<Summary> credits, List<PaymentRepository.Allocation> allocations, List<OutboxService.View> messages,
-                         List<CreditableLine> creditable, String pdfSha256, Instant validatedAt, String validatedBy) {
+                         List<CreditableLine> creditable, String pdfSha256, Instant validatedAt, String validatedBy,
+                         List<ReminderRepository.Sent> reminders, LocalDate nextReminderOn) {
     }
 
     private final InvoiceRepository invoices;
     private final CatalogueRepository catalogue;
     private final PaymentRepository payments;
+    private final ReminderRepository reminders;
     private final ParcRepository parc;
     private final OutboxService outbox;
     private final InvoicePdf pdf;
@@ -74,11 +76,13 @@ public class InvoiceService {
     private final ObjectMapper json;
     private final Clock clock;
 
-    public InvoiceService(InvoiceRepository invoices, CatalogueRepository catalogue, PaymentRepository payments, ParcRepository parc,
+    public InvoiceService(InvoiceRepository invoices, CatalogueRepository catalogue, PaymentRepository payments, ReminderRepository reminders,
+                          ParcRepository parc,
                           OutboxService outbox, InvoicePdf pdf, AuditService audit, ObjectMapper json, Clock clock) {
         this.invoices = invoices;
         this.catalogue = catalogue;
         this.payments = payments;
+        this.reminders = reminders;
         this.parc = parc;
         this.outbox = outbox;
         this.pdf = pdf;
@@ -132,7 +136,21 @@ public class InvoiceService {
                 invoice.clientSnapshot() != null ? invoice.clientSnapshot() : clientSnapshot(invoice),
                 invoice.issuerSnapshot() != null ? invoice.issuerSnapshot() : json.valueToTree(catalogue.issuer()),
                 credits, invoice.credit() ? List.of() : payments.allocationsOf(invoice.id()), outbox.forInvoice(invoice.id()), creditable,
-                invoice.pdfSha256(), invoice.validatedAt(), invoice.validatedBy());
+                invoice.pdfSha256(), invoice.validatedAt(), invoice.validatedBy(), invoice.credit() || invoice.draft() ? List.of()
+                : reminders.forInvoice(invoice.id()), nextReminder(invoice, summary));
+    }
+
+    /** Prochaine relance prévue, selon les règles du jour, le délai propre du client et les jours ouvrés. */
+    private LocalDate nextReminder(Invoice invoice, Summary summary) {
+        if (invoice.draft() || invoice.credit() || summary.remaining() <= 0) {
+            return null;
+        }
+        var client = reminders.clientRules().stream().filter(c -> c.clientId().equals(invoice.clientId())).findFirst().orElse(null);
+        var done = new java.util.HashSet<Integer>();
+        reminders.forInvoice(invoice.id()).forEach(r -> done.add(r.level()));
+        return ReminderPlanner.next(new ReminderPlanner.Candidate(invoice.dueOn(), summary.remaining(), invoice.remindersPaused(),
+                client != null && client.paused(), client == null ? 0 : client.shiftDays(), done),
+                reminders.rulesAt(LocalDate.now(clock)), reminders.holidayDays()).orElse(null);
     }
 
     static Summary summary(Invoice i, Settlement s, String clientName, ParcRepository.Creche creche, String correctsNumber, LocalDate today) {

@@ -28,22 +28,26 @@ public class BillingStats {
     }
 
     public record Board(long mrr, long arr, long outstanding, long overdue, int overdueCount, Integer dso, int drafts, int renewalDrafts,
-                        int pendingMessages, List<Month> months, List<InvoiceService.Summary> late, List<InvoiceService.Summary> draftList) {
+                        int pendingMessages, List<Month> months, List<InvoiceService.Summary> late, List<InvoiceService.Summary> draftList,
+                        List<InvoiceService.Summary> suspensions) {
     }
 
     private final InvoiceService invoices;
     private final ContractRepository contracts;
     private final CatalogueRepository catalogue;
     private final OutboxRepository outbox;
+    private final ReminderRepository reminders;
     private final JdbcTemplate jdbc;
     private final Clock clock;
 
     public BillingStats(InvoiceService invoices, ContractRepository contracts, CatalogueRepository catalogue, OutboxRepository outbox,
+                        ReminderRepository reminders,
                         JdbcTemplate jdbc, Clock clock) {
         this.invoices = invoices;
         this.contracts = contracts;
         this.catalogue = catalogue;
         this.outbox = outbox;
+        this.reminders = reminders;
         this.jdbc = jdbc;
         this.clock = clock;
     }
@@ -104,7 +108,13 @@ public class BillingStats {
         }
         late.sort((a, b) -> Long.compare(b.daysLate(), a.daysLate()));
         return new Board(mrr, mrr * 12, outstanding, overdue, overdueCount, dso(today), drafts.size(),
-                (int) drafts.stream().filter(d -> "ABONNEMENT".equals(d.kind())).count(), outbox.pending(), months(today), late, drafts);
+                (int) drafts.stream().filter(d -> "ABONNEMENT".equals(d.kind())).count(), outbox.pending(), months(today), late, drafts, suspensions(all));
+    }
+
+    /** Dernière relance partie et facture toujours due : la console propose la suspension, l'éditeur décide (phase 5). */
+    private List<InvoiceService.Summary> suspensions(List<InvoiceService.Summary> all) {
+        var ids = new java.util.HashSet<>(reminders.suspensionCandidates());
+        return all.stream().filter(s -> ids.contains(s.id()) && s.remaining() > 0).toList();
     }
 
     /**
