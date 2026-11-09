@@ -18,12 +18,15 @@ public final class OrderRules {
     private OrderRules() {
     }
 
-    public static final List<String> TYPES = List.of("CREER", "DEMO", "SUPPRIMER_DEMO", "ABONNEMENT", "SUSPENDRE", "REPRENDRE", "METTRE_A_JOUR");
+    public static final List<String> TYPES = List.of("CREER", "DEMO", "SUPPRIMER_DEMO", "ABONNEMENT", "SUSPENDRE", "REPRENDRE", "METTRE_A_JOUR",
+            "EXPORTER", "SUPPRIMER");
 
     public static final Pattern SLUG = Pattern.compile("^[a-z0-9][a-z0-9-]{1,40}$");
     private static final Pattern DOMAIN = Pattern.compile("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$");
     private static final Pattern NUMBER = Pattern.compile("^[A-Za-z0-9-]{1,20}$");
     private static final Pattern VERSION = Pattern.compile("^[0-9A-Za-z][0-9A-Za-z._-]{0,29}$");
+    /** Export d'une crèche écrit par {@code creche.sh exporter} : {@code <slug>-AAAAMMJJ-HHMM.tar.gz.enc}. */
+    public static final Pattern EXPORT_FILE = Pattern.compile("^([a-z0-9][a-z0-9-]{1,40})-\\d{8}-\\d{4}\\.tar\\.gz\\.enc$");
     private static final Set<String> OFFERS = Set.of("essentiel", "gestion", "complet");
     private static final Set<String> FORMULAS = Set.of("Essentiel", "Gestion", "Complet");
     private static final Set<String> MODULES = Set.of("INSCRIPTIONS", "FACTURATION", "COMPTABILITE", "PERSONNEL", "REPAS", "PORTAIL_PARENTS");
@@ -82,6 +85,24 @@ public final class OrderRules {
                 out.put("modules", modules);
             }
             case "METTRE_A_JOUR" -> out.put("version", required(p, "version", VERSION, "Version invalide."));
+            case "EXPORTER" -> {
+                var suite = p.getOrDefault("suite", "");
+                if (!suite.isEmpty() && !"supprimer".equals(suite)) {
+                    throw new Invalid("Suite de l’export : rien ou « supprimer ».");
+                }
+                if (!suite.isEmpty()) {
+                    out.put("suite", suite);
+                }
+            }
+            case "SUPPRIMER" -> {
+                // L'export téléchargé, que l'hôte revérifie avant d'effacer quoi que ce soit.
+                var export = p.get("export");
+                var matcher = export == null ? null : EXPORT_FILE.matcher(export);
+                if (matcher == null || !matcher.matches() || !matcher.group(1).equals(slug)) {
+                    throw new Invalid("Suppression sans export de cette crèche : refusée.");
+                }
+                out.put("export", export);
+            }
             default -> {
                 // SUSPENDRE, REPRENDRE, SUPPRIMER_DEMO : pas de paramètre.
             }

@@ -40,6 +40,23 @@ class OrderRulesTest {
     }
 
     @Test
+    void exportPuisSuppressionNommantLExportDeLaMemeCreche() {
+        assertThat(OrderRules.check("EXPORTER", "niaoulis", Map.of("suite", "supprimer", "confirmation", "niaoulis")))
+                .as("la confirmation ne part pas à l'hôte").containsExactly(Map.entry("suite", "supprimer"));
+        assertThat(OrderRules.check("EXPORTER", "niaoulis", null)).isEmpty();
+        assertThatThrownBy(() -> OrderRules.check("EXPORTER", "niaoulis", Map.of("suite", "reboot"))).hasMessageContaining("Suite");
+        assertThat(OrderRules.check("SUPPRIMER", "niaoulis", Map.of("export", "niaoulis-20261109-1030.tar.gz.enc")))
+                .containsExactly(Map.entry("export", "niaoulis-20261109-1030.tar.gz.enc"));
+        assertThatThrownBy(() -> OrderRules.check("SUPPRIMER", "niaoulis", Map.of())).hasMessageContaining("sans export");
+        assertThatThrownBy(() -> OrderRules.check("SUPPRIMER", "niaoulis", Map.of("export", "tiare-20261109-1030.tar.gz.enc")))
+                .as("l'export d'une autre crèche").hasMessageContaining("sans export");
+        assertThatThrownBy(() -> OrderRules.check("SUPPRIMER", "ab", Map.of("export", "ab-cd-20261109-1030.tar.gz.enc")))
+                .as("préfixe d'une autre crèche").hasMessageContaining("sans export");
+        assertThatThrownBy(() -> OrderRules.check("SUPPRIMER", "niaoulis", Map.of("export", "../niaoulis-20261109-1030.tar.gz.enc")))
+                .hasMessageContaining("sans export");
+    }
+
+    @Test
     void ordresSansParametre() {
         assertThat(OrderRules.check("SUSPENDRE", "niaoulis", Map.of("bruit", "x"))).isEmpty();
         assertThat(OrderRules.check("DEMO", "demo-1", null)).containsExactly(Map.entry("formule", "Complet"));

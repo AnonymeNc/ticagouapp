@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +49,7 @@ import nc.ticagou.console.parc.ParcRepository;
 @Import(BillingIT.Config.class)
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {"console.scheduling=false", "console.secret-key=AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
-        "console.mail-from=Ti'Cagou <facturation@ticagou.nc>", "console.host-token=jeton-hote"})
+        "console.mail-from=Ti'Cagou <facturation@ticagou.nc>", "console.host-token=jeton-hote", "console.exports-dir=target/exports-test"})
 class OrderIT {
 
     @Autowired MockMvc mvc;
@@ -160,6 +162,69 @@ class OrderIT {
     }
 
     @Test
+    void supprimerUneCrecheSeulementApresLExportTelecharge() throws Exception {
+        var exports = Path.of("target/exports-test");
+        Files.createDirectories(exports);
+        var file = "niaoulis-20261108-0900.tar.gz.enc";
+        Files.deleteIfExists(exports.resolve(file));
+        parc.ensure("niaoulis", "Les Niaoulis", "CLIENT", clock.instant());
+        confirmed();
+        var order = new HashMap<String, Object>(Map.of("type", "EXPORTER", "slug", "niaoulis", "params", Map.of("suite", "supprimer", "confirmation", "niaouli")));
+        assertThat(problem(post("/api/v1/ordres"), order, 422).get("code").asText()).isEqualTo("pas_d_instance");
+        jdbc.update("UPDATE creche SET host = '{\"container\":\"healthy\"}'::jsonb");
+        assertThat(problem(post("/api/v1/ordres"), order, 422).get("code").asText()).as("identifiant mal retapé").isEqualTo("confirmation_identifiant");
+        assertThat(problem(post("/api/v1/ordres"), Map.of("type", "SUPPRIMER", "slug", "niaoulis", "params", Map.of("export", file)), 422)
+                .get("code").asText()).as("jamais directement").isEqualTo("export_d_abord");
+
+        order.put("params", Map.of("suite", "supprimer", "confirmation", "niaoulis"));
+        var given = ok(post("/api/v1/ordres"), order);
+        var id = given.get("id").asText();
+        assertThat(given.get("params").toString()).doesNotContain("confirmation");
+        assertThat(host(get("/interne/v1/ordres")).getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .isEqualTo(id + "\tEXPORTER\tniaoulis\tsuite=supprimer\n");
+        host(post("/interne/v1/ordres/" + id + "/debut"));
+        host(post("/interne/v1/ordres/" + id + "/fin").param("ok", "true").content("Export prêt : " + file + " (4 octets)\n"));
+        var done = ok(get("/api/v1/parc/niaoulis/ordres"), null).get(0);
+        assertThat(done.at("/result/exportFile").asText()).isEqualTo(file);
+        assertThat(done.at("/result/size").asLong()).isEqualTo(4);
+
+        assertThat(problem(get("/api/v1/ordres/" + id + "/export"), null, 410).get("code").asText()).isEqualTo("export_absent");
+        Files.writeString(exports.resolve(file), "abcd");
+        assertThat(problem(post("/api/v1/ordres/" + id + "/export/recu"), null, 422).get("code").asText())
+                .as("pas reçu sans avoir été lu en entier").isEqualTo("export_non_lu");
+        assertThat(host(get("/interne/v1/ordres")).getResponse().getContentAsString(StandardCharsets.UTF_8)).as("rien à supprimer encore").isEmpty();
+
+        var download = call(get("/api/v1/ordres/" + id + "/export"), null).getResponse();
+        assertThat(download.getStatus()).isEqualTo(200);
+        assertThat(download.getContentAsString()).isEqualTo("abcd");
+        assertThat(download.getHeader("Content-Disposition")).contains(file);
+        var received = ok(post("/api/v1/ordres/" + id + "/export/recu"), null);
+        var deletion = received.at("/result/deletionOrder").asText();
+        assertThat(host(get("/interne/v1/ordres")).getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .isEqualTo(deletion + "\tSUPPRIMER\tniaoulis\texport=" + file + "\n");
+        ok(post("/api/v1/ordres/" + id + "/export/recu"), null);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM instance_order WHERE type = 'SUPPRIMER'", Integer.class)).as("une seule fois").isEqualTo(1);
+
+        host(post("/interne/v1/ordres/" + deletion + "/debut"));
+        host(post("/interne/v1/ordres/" + deletion + "/fin").param("ok", "true").content("niaoulis supprimée"));
+        assertThat(jdbc.queryForObject("SELECT lifecycle FROM creche WHERE slug = 'niaoulis'", String.class)).isEqualTo("RESILIE");
+        assertThat(jdbc.queryForList("SELECT action FROM audit_event", String.class)).contains("EXPORT_TELECHARGE", "ORDRE_FAIT");
+
+        // Export seul (restitution) : téléchargé, sans suite.
+        var plain = ok(post("/api/v1/ordres"), Map.of("type", "EXPORTER", "slug", "niaoulis")).get("id").asText();
+        host(post("/interne/v1/ordres/" + plain + "/debut"));
+        host(post("/interne/v1/ordres/" + plain + "/fin").param("ok", "true").content("Export prêt : " + file + " (4 octets)\n"));
+        call(get("/api/v1/ordres/" + plain + "/export"), null);
+        assertThat(ok(post("/api/v1/ordres/" + plain + "/export/recu"), null).at("/result/deletionOrder").isMissingNode()).isTrue();
+
+        // Compte rendu sans export de cette crèche : échec.
+        var wrong = ok(post("/api/v1/ordres"), Map.of("type", "EXPORTER", "slug", "niaoulis")).get("id").asText();
+        host(post("/interne/v1/ordres/" + wrong + "/debut"));
+        host(post("/interne/v1/ordres/" + wrong + "/fin").param("ok", "true").content("Export prêt : tiare-20261108-0900.tar.gz.enc (4 octets)\n"));
+        assertThat(jdbc.queryForObject("SELECT status FROM instance_order WHERE id = ?::uuid", String.class, wrong)).isEqualTo("ECHEC");
+    }
+
+    @Test
     void paiementDeLAbonnementProposeLOrdreAConfirmer() throws Exception {
         parc.ensure("lagon-bleu", "Lagon Bleu", "PROSPECT", clock.instant());
         var contract = new HashMap<String, Object>(Map.of("plan", "GESTION", "places", 12, "modules", List.of("REPAS"), "extraDesktops", 0,
@@ -205,7 +270,7 @@ class OrderIT {
     void ordresRefusesOuInconnus() throws Exception {
         confirmed();
         parc.ensure("niaoulis", "Les Niaoulis", "CLIENT", clock.instant());
-        assertThat(problem(post("/api/v1/ordres"), Map.of("type", "SUPPRIMER", "slug", "niaoulis"), 422).get("detail").asText())
+        assertThat(problem(post("/api/v1/ordres"), Map.of("type", "DETRUIRE", "slug", "niaoulis"), 422).get("detail").asText())
                 .contains("Ordre inconnu");
         assertThat(problem(post("/api/v1/ordres"), Map.of("type", "METTRE_A_JOUR", "slug", "niaoulis", "params", Map.of("version", "1.5; reboot")), 422)
                 .get("detail").asText()).contains("Version");

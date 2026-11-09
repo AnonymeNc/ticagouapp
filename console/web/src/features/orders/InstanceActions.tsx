@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import type { Row } from "@/features/parc/api";
 import { errorMessage } from "@/lib/api";
 import { ordersApi, useCrecheOrders, useOrderAction, type OrderType } from "./api";
+import { DeleteCreche } from "./DeleteCreche";
 import { OrdersTable } from "./OrdersPage";
 
 /**
@@ -19,6 +20,9 @@ export function InstanceActions({ row }: { row: Row }) {
   const error = give.isError ? <span role="alert" className="text-small text-danger-700">{errorMessage(give.error)}</span> : null;
   const sent = give.isSuccess ? <span role="status" className="text-small text-success-700">Ordre transmis : l’hôte l’exécute dans la minute.</span> : null;
 
+  if (row.lifecycle === "RESILIE" && !hasInstance) {
+    return null;
+  }
   if (!hasInstance && row.lifecycle !== "DEMO") {
     return (
       <>
@@ -67,6 +71,34 @@ export function InstanceActions({ row }: { row: Row }) {
       <Button type="button" variant="ghost" onClick={() => setSuspending(false)}>Annuler</Button>
       {error}
     </form>
+  );
+}
+
+/**
+ * Données de la crèche (onglet Abonnement) : export complet à remettre à la crèche, ou suppression, qui exporte et fait
+ * télécharger d'abord. Pas pour une démonstration (supprimée sans export) ni sans instance.
+ */
+export function CrecheData({ row }: { row: Row }) {
+  const give = useOrderAction(() => ordersApi.give({ type: "EXPORTER", slug: row.slug }));
+  const hasInstance = !!row.container && row.container !== "absent";
+  if (row.lifecycle === "DEMO" || !hasInstance) {
+    return null;
+  }
+  return (
+    <section className="flex flex-col gap-3 rounded-lg border border-danger-100 bg-card p-5 shadow-1">
+      <div>
+        <h2 className="m-0 font-display text-title-3">Données de la crèche</h2>
+        <p className="m-0 mt-1 text-small text-muted-foreground">
+          Export complet et chiffré (base, documents, clés), à télécharger depuis les ordres ; la suppression commence toujours par lui.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" disabled={give.isPending} onClick={() => give.mutate(undefined)}>Exporter les données</Button>
+        <DeleteCreche row={row} />
+        {give.isError && <span role="alert" className="text-small text-danger-700">{errorMessage(give.error)}</span>}
+        {give.isSuccess && <span role="status" className="text-small text-success-700">Export demandé : il apparaît dans les ordres d’ici 1 à 3 minutes.</span>}
+      </div>
+    </section>
   );
 }
 

@@ -18,7 +18,8 @@ COPY --from=web /web/dist web/dist
 RUN cd server && ./mvnw -q -B package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
-RUN addgroup -S console && adduser -S console -G console
+# Identifiant fixe : creche.sh exporter donne les exports à l'utilisateur 1001, qui les lit sur /exports.
+RUN addgroup -S -g 1001 console && adduser -S -u 1001 console -G console
 WORKDIR /app
 COPY --from=server /build/server/target/ticagou-console-*.jar app.jar
 USER console
