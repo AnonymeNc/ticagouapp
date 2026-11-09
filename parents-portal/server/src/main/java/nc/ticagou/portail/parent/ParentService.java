@@ -325,6 +325,69 @@ public class ParentService {
         return row(id, "ABSENCE", Timestamp.from(now), write(payload), false);
     }
 
+    // --- Demandes d'accueil et retards (lot 2) ------------------------------------------------
+
+    /**
+     * Demande d'accueil occasionnel : remontée à la crèche, qui accepte ou refuse ; sa réponse remplace cet élément
+     * (même identifiant). Les règles de délai sont celles de la crèche : le portail ne calcule rien.
+     */
+    @Transactional
+    public Map<String, Object> requestBooking(String email, UUID structureId, UUID childId, LocalDate day,
+                                              java.time.LocalTime arrives, java.time.LocalTime leaves, String note) {
+        var access = childAccess(email, structureId, childId);
+        var today = LocalDate.now(clock.withZone(TimeConfig.NOUMEA));
+        if (day.isBefore(today) || day.isAfter(today.plusDays(365))) {
+            throw ApiException.rule("booking_day", "Choisissez un jour à venir.");
+        }
+        if (!arrives.isBefore(leaves)) {
+            throw ApiException.rule("booking_hours", "L’heure de départ doit suivre l’heure d’arrivée.");
+        }
+        var id = UUID.randomUUID();
+        var now = clock.instant();
+        var clean = note == null || note.isBlank() ? null : note.strip();
+        var inbox = new LinkedHashMap<String, Object>();
+        inbox.put("childId", childId);
+        inbox.put("guardianId", access.guardianId());
+        inbox.put("kind", "RESERVATION");
+        inbox.put("day", day);
+        inbox.put("arrivesAt", arrives);
+        inbox.put("leavesAt", leaves);
+        inbox.put("note", clean);
+        inbox.put("requestedAt", now);
+        sync.deposit(structureId, id, "BOOKING", access.familyId(), inbox);
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("kind", "RESERVATION");
+        payload.put("childId", childId.toString());
+        payload.put("day", day.toString());
+        payload.put("arrivesAt", arrives.toString());
+        payload.put("leavesAt", leaves.toString());
+        payload.put("note", clean);
+        payload.put("status", "DEMANDEE");
+        store(structureId, id, "BOOKING", day, now, payload, day.plusDays(60), List.of(access.familyId()), List.of(childId));
+        return row(id, "BOOKING", Timestamp.from(now), write(payload), false);
+    }
+
+    /** Retard annoncé pour aujourd'hui : affiché à l'équipe sur la tablette, sans réponse attendue. */
+    @Transactional
+    public Map<String, Object> reportLate(String email, UUID structureId, UUID childId, java.time.LocalTime at, String note) {
+        var access = childAccess(email, structureId, childId);
+        var today = LocalDate.now(clock.withZone(TimeConfig.NOUMEA));
+        var now = clock.instant();
+        var clean = note == null || note.isBlank() ? null : note.strip();
+        var inbox = new LinkedHashMap<String, Object>();
+        inbox.put("childId", childId);
+        inbox.put("guardianId", access.guardianId());
+        inbox.put("kind", "RETARD");
+        inbox.put("day", today);
+        inbox.put("arrivesAt", null);
+        inbox.put("leavesAt", at);
+        inbox.put("note", clean);
+        inbox.put("requestedAt", now);
+        var id = UUID.randomUUID();
+        sync.deposit(structureId, id, "BOOKING", access.familyId(), inbox);
+        return Map.of("id", id, "day", today, "at", at);
+    }
+
     // --- Outils -------------------------------------------------------------------------------
 
     private void store(UUID structureId, UUID id, String type, LocalDate day, Instant at, Map<String, ?> payload,

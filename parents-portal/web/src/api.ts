@@ -100,6 +100,10 @@ export type MessageData = { author: string; body: string; sentAt: string; fromFa
 export type NewsData = { title: string; body: string; author: string; publishedAt: string; expiresOn: string | null; fileName?: string | null };
 export type NewsItem = Item<NewsData> & { fileType: string | null };
 
+/** Demande d'accueil en plus (lot 2) ; la réponse de la crèche remplace la demande. */
+export type BookingData = { childId: string; day: string; arrivesAt: string; leavesAt: string; note?: string | null;
+  status: "DEMANDEE" | "ACCEPTEE" | "REFUSEE" | "ANNULEE"; answer?: string | null };
+
 export type AbsenceData = { childId: string; fromDay: string; toDay: string; reason: string | null; reportedAt: string };
 
 // --- Appels --------------------------------------------------------------------------------
@@ -121,6 +125,11 @@ export const portal = {
   subscribePush: (body: { endpoint: string; p256dh: string; auth: string; categories: string[] }) =>
     call<void>("/me/push", { method: "POST", body }),
   unsubscribePush: (endpoint: string) => call<void>("/me/push/unsubscribe", { method: "POST", body: { endpoint } }),
+  bookings: (signal?: AbortSignal) => call<Item<BookingData>[]>("/me/bookings", { signal }),
+  requestBooking: (body: { structureId: string; childId: string; day: string; arrivesAt: string; leavesAt: string; note: string | null }) =>
+    call<Item<BookingData>>("/me/bookings", { method: "POST", body }),
+  reportLate: (body: { structureId: string; childId: string; at: string; note: string | null }) =>
+    call<{ id: string }>("/me/late", { method: "POST", body }),
   invoices: (signal?: AbortSignal) => call<Item<InvoiceData>[]>("/me/invoices", { signal }),
   documents: (signal?: AbortSignal) => call<Item<DocumentData>[]>("/me/documents", { signal }),
   absences: (signal?: AbortSignal) => call<Item<AbsenceData>[]>("/me/absences", { signal }),

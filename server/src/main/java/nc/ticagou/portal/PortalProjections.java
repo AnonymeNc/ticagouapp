@@ -31,6 +31,7 @@ import nc.ticagou.family.GuardianRepository;
 import nc.ticagou.journal.DailyEntry;
 import nc.ticagou.journal.DailyEntryRepository;
 import nc.ticagou.portal.SyncDtos.AttendancePayload;
+import nc.ticagou.portal.SyncDtos.BookingPayload;
 import nc.ticagou.portal.SyncDtos.ChildPayload;
 import nc.ticagou.portal.SyncDtos.DocumentPayload;
 import nc.ticagou.portal.SyncDtos.EntryPayload;
@@ -90,6 +91,7 @@ public class PortalProjections {
     private final LicenseService licenses;
     private final StructureNewsRepository news;
     private final Clock clock;
+    private final BookingRequestRepository bookings;
 
     public PortalProjections(StructureRepository structures, GuardianRepository guardians,
                              GuardianPortalAccessRepository accesses, ChildRepository children,
@@ -99,7 +101,8 @@ public class PortalProjections {
                              InvoiceLineRepository invoiceLines, CreditNoteLineRepository creditNoteLines,
                              BillingDocuments billingDocuments, PortalDocumentRepository documents,
                              FamilyMessageRepository messages, EncryptedFileStore fileStore, StoredFileRepository files,
-                             LicenseService licenses, StructureNewsRepository news, Clock clock) {
+                             LicenseService licenses, StructureNewsRepository news, Clock clock,
+                             BookingRequestRepository bookings) {
         this.structures = structures;
         this.guardians = guardians;
         this.accesses = accesses;
@@ -122,6 +125,7 @@ public class PortalProjections {
         this.licenses = licenses;
         this.news = news;
         this.clock = clock;
+        this.bookings = bookings;
     }
 
     @Transactional(readOnly = true)
@@ -137,6 +141,7 @@ public class PortalProjections {
             case DOCUMENT -> settings.isShareDocuments() ? document(structureId, id) : Projection.delete();
             case MESSAGE -> settings.isShareMessages() ? message(structureId, id) : Projection.delete();
             case NEWS -> settings.isShareMessages() ? news(structureId, id) : Projection.delete();
+            case BOOKING -> booking(structureId, id);
             case PURGE_FAMILY, PURGE_STRUCTURE -> Projection.delete();
         };
     }
@@ -303,6 +308,14 @@ public class PortalProjections {
         }
         return Projection.of(new NewsPayload(families, n.getTitle(), n.getBody(), firstName(n.getPublishedBy()),
                 n.getPublishedAt(), n.getExpiresOn(), file, fileType, file == null ? null : n.getFileName()));
+    }
+
+    private Projection booking(UUID structureId, UUID id) {
+        return bookings.findByIdAndStructureId(id, structureId)
+                .filter(b -> b.getKind() == BookingRequest.Kind.RESERVATION && hasAccess(b.getFamilyId()))
+                .map(b -> Projection.of(new BookingPayload(b.getFamilyId(), b.getChildId(), b.getDay(), b.getArrivesAt(),
+                        b.getLeavesAt(), b.getStatus().name(), b.getAnswer())))
+                .orElseGet(Projection::delete);
     }
 
     List<UUID> newsFamilies(StructureNews n) {

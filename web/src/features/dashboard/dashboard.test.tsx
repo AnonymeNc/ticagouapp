@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { director, healthUp, installed, mockApi, renderAt, session, structure } from "@/test/render";
 import type { Me } from "@/features/auth/types";
 import { todayIso } from "@/lib/age";
@@ -189,5 +190,40 @@ describe("tableau de bord de la direction", () => {
     expect(screen.queryByRole("link", { name: "Pointer" })).not.toBeInTheDocument();
     expect(calls.some((c) => c.key === "GET /dashboard/today")).toBe(false);
     expect(calls.some((c) => c.key === "GET /kiosk/today")).toBe(false);
+  });
+});
+
+describe("demandes des parents sur le tableau de bord", () => {
+  const booking = (extra: Record<string, unknown>) => ({
+    id: "b-1", childId: "c-1", childName: "Noa Wahéo", familyId: "f-1", kind: "RESERVATION", day: "2026-11-20",
+    arrivesAt: "08:00:00", leavesAt: "12:00:00", note: "Rendez-vous", guardianName: "Sandrine Wahéo",
+    requestedAt: "2026-11-10T00:00:00Z", status: "DEMANDEE", answer: null, overCapacity: false, freePlaces: 3, ...extra,
+  });
+
+  it("accepte une demande, et exige un motif quand la section est complète", async () => {
+    const { calls } = server(director, {
+      "GET /portal/reported-absences": { body: [] },
+      "GET /bookings": { body: [
+        booking({}),
+        booking({ id: "b-2", childName: "Léa Kaouma", freePlaces: 0 }),
+        booking({ id: "l-1", childName: "Kenzo Lefèvre", kind: "RETARD", arrivesAt: null, leavesAt: "17:45:00", note: null }),
+      ] },
+      "POST /bookings/b-1/accept": { body: booking({ status: "ACCEPTEE" }) },
+      "POST /bookings/b-2/accept": { body: booking({ id: "b-2", status: "ACCEPTEE", overCapacity: true }) },
+    });
+    renderAt("/");
+    const card = (await screen.findByRole("heading", { name: "Demandes des parents" })).closest("section")!;
+    expect(within(card).getByText(/récupéré vers 17:45/)).toBeInTheDocument();
+    expect(within(card).getByText("3 places libres")).toBeInTheDocument();
+    expect(within(card).getByText("Section complète")).toBeInTheDocument();
+    const [first, second] = within(card).getAllByRole("listitem").filter((li) => li.textContent?.includes("le 20/11/2026"));
+    await userEvent.click(within(first).getByRole("button", { name: "Accepter" }));
+    await waitFor(() => expect(calls.find((c) => c.key === "POST /bookings/b-1/accept")?.body).toEqual({ overrideReason: null }));
+    await userEvent.click(within(second).getByRole("button", { name: /Accepter malgré tout/ }));
+    const accept = within(second).getByRole("button", { name: "Accepter" });
+    expect(accept).toBeDisabled();
+    await userEvent.type(within(second).getByLabelText("Motif pour Léa Kaouma"), "Renfort ce matin-là");
+    await userEvent.click(accept);
+    await waitFor(() => expect(calls.find((c) => c.key === "POST /bookings/b-2/accept")?.body).toEqual({ overrideReason: "Renfort ce matin-là" }));
   });
 });

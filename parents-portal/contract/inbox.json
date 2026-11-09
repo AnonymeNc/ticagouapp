@@ -39,6 +39,38 @@
         "ip": "203.0.113.24",
         "sha256": "0d1f9a8a1d1c1b8c4f6a1d3b0e2c5a7e9f0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"
       }
+    },
+    {
+      "seq": 4,
+      "type": "BOOKING",
+      "id": "7c2e5d10-0000-4000-8000-000000000004",
+      "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+      "payload": {
+        "childId": "0b9a3c1e-0000-4000-8000-000000001000",
+        "guardianId": "0b9a3c1e-0000-4000-8000-000000000010",
+        "kind": "RESERVATION",
+        "day": "2026-11-12",
+        "arrivesAt": "08:00:00",
+        "leavesAt": "12:00:00",
+        "note": "Rendez-vous médical le matin",
+        "requestedAt": "2026-11-04T19:10:00Z"
+      }
+    },
+    {
+      "seq": 5,
+      "type": "BOOKING",
+      "id": "7c2e5d10-0000-4000-8000-000000000005",
+      "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+      "payload": {
+        "childId": "0b9a3c1e-0000-4000-8000-000000001000",
+        "guardianId": "0b9a3c1e-0000-4000-8000-000000000010",
+        "kind": "RETARD",
+        "day": "2026-11-05",
+        "arrivesAt": null,
+        "leavesAt": "17:45:00",
+        "note": "Bouchons à la sortie de Nouméa",
+        "requestedAt": "2026-11-05T05:30:00Z"
+      }
     }
   ]
 }

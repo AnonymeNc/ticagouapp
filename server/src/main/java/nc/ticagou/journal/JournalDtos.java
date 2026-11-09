@@ -51,6 +51,11 @@ public final class JournalDtos {
     }
 
     /** Ce qu'affiche l'onglet « Journée » de la tablette. */
-    public record KioskJournal(List<EntryDto> entries, List<UUID> photoConsents, List<ReportedAbsenceRef> reportedAbsences) {
+    /** Retard annoncé par un parent : heure à laquelle il viendra chercher l'enfant (lot 2). */
+    public record LateNoticeRef(UUID childId, java.time.LocalTime at, String guardianName, String note) {
+    }
+
+    public record KioskJournal(List<EntryDto> entries, List<UUID> photoConsents, List<ReportedAbsenceRef> reportedAbsences,
+                               List<LateNoticeRef> lateNotices) {
     }
 }

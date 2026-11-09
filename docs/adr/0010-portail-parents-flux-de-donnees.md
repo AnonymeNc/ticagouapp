@@ -52,6 +52,7 @@ au moment de l'envoi à partir de l'état courant :
 | `MESSAGE` | message de l'équipe : prénom de l'auteur, texte ; un message « à plusieurs familles » part comme un message dans le fil de chacune |
 | `NEWS` | actualité de la crèche : titre, texte, prénom de l'auteur, date de publication et de fin, pièce jointe facultative (PDF ou image, 5 Mo au plus), familles visées (toutes les familles invitées, ou celles qui ont un enfant inscrit dans la section) |
 | `STRUCTURE` | nom, téléphone, coordonnées de virement, heure limite pour signaler une absence sans repas facturé (vide si la crèche ne le pratique pas : les parents n’en sont pas informés) |
+| `BOOKING` | réponse à une demande d'accueil (lot 2) : jour, heures, ACCEPTEE ou REFUSEE, motif ; même identifiant que la demande du parent, qu'elle remplace |
 | `PURGE_FAMILY`, `PURGE_STRUCTURE` | ordre d'effacement |
 
 - **Santé** :
@@ -70,6 +71,7 @@ au moment de l'envoi à partir de l'état courant :
 |---|---|
 | `ABSENCE` | absence signalée, à confirmer par la direction ; elle devient alors une absence de facturation avec son motif |
 | `MESSAGE` | message dans le fil de la famille |
+| `BOOKING` | demande d'accueil occasionnel (jour, heures, mot) ou retard annoncé (heure) : la direction accepte ou refuse la demande, hors délai elle est refusée d'office ; un retard s'affiche sur la tablette |
 | `SIGNATURE` | signature électronique simple : réponse (une autorisation peut être refusée, un contrat non), nom du compte du parent, date, IP, empreinte SHA-256 du PDF servi. Le tracé au doigt sert de geste de validation et n’est pas conservé. La direction enregistre la réponse, qui signe la version du contrat ou accorde (ou refuse) l’autorisation |
 
 Le portail ne calcule rien. Une donnée remontée ne modifie jamais directement une facture, un contrat ou la santé :

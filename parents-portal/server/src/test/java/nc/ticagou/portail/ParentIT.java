@@ -18,6 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import jakarta.servlet.http.Cookie;
 import nc.ticagou.portail.common.Hashes;
 
@@ -39,12 +41,12 @@ class ParentIT extends PortalTest {
         batch(creche, fixture("batch.json"));
         var pdf = "%PDF-1.4 autorisation".getBytes(StandardCharsets.US_ASCII);
         batch(creche, Map.of("items", List.of(
-                Map.of("seq", 12, "type", "GUARDIAN", "id", UUID.randomUUID(), "deleted", false, "payload",
+                Map.of("seq", 13, "type", "GUARDIAN", "id", UUID.randomUUID(), "deleted", false, "payload",
                         Map.of("familyId", OTHER_FAMILY, "firstName", "Paul", "lastName", "Naisseline", "email", "paul@example.nc")),
-                Map.of("seq", 13, "type", "CHILD", "id", OTHER_CHILD, "deleted", false, "payload",
+                Map.of("seq", 14, "type", "CHILD", "id", OTHER_CHILD, "deleted", false, "payload",
                         Map.of("familyId", OTHER_FAMILY, "firstName", "Tom", "lastInitial", "N", "section", "Grands",
                                 "sharedHealth", List.of())),
-                Map.of("seq", 14, "type", "DOCUMENT", "id", UUID.fromString("0b9a3c1e-0000-4000-8000-000000005001"),
+                Map.of("seq", 15, "type", "DOCUMENT", "id", UUID.fromString("0b9a3c1e-0000-4000-8000-000000005001"),
                         "deleted", false, "payload", Map.of("familyId", FAMILY, "childId", CHILD, "kind", "AUTORISATION",
                                 "title", "Autorisation de sorties — Léa", "pdf", Base64.getEncoder().encodeToString(pdf),
                                 "sha256", Hashes.sha256(pdf), "status", "A_SIGNER")))));
@@ -283,6 +285,43 @@ class ParentIT extends PortalTest {
         // Retirée par la crèche : effacée.
         batch(creche, Map.of("items", List.of(Map.of("seq", 24, "type", "NEWS", "id", mine, "deleted", true))));
         assertThat(body(call(get("/api/v1/me/news"), cookie, null))).isEmpty();
+    }
+
+    @Test
+    void demandeDAccueilPuisReponseDeLaCrecheEtRetard() throws Exception {
+        var cookie = login(MARIE);
+        var day = LocalDate.now(ZoneId.of("Pacific/Noumea")).plusDays(5);
+        var created = call(post("/api/v1/me/bookings"), cookie, Map.of("structureId", creche.id(), "childId", CHILD,
+                "day", day.toString(), "arrivesAt", "08:00", "leavesAt", "12:00", "note", "Rendez-vous"));
+        assertThat(status(created)).as(created.getResponse().getContentAsString()).isEqualTo(201);
+        var id = body(created).get("id").asText();
+        assertThat(body(call(post("/api/v1/me/bookings"), cookie, Map.of("structureId", creche.id(), "childId", CHILD,
+                "day", day.toString(), "arrivesAt", "12:00", "leavesAt", "08:00"))).get("code").asText()).isEqualTo("booking_hours");
+        assertThat(status(call(post("/api/v1/me/bookings"), cookie, Map.of("structureId", creche.id(), "childId", OTHER_CHILD,
+                "day", day.toString(), "arrivesAt", "08:00", "leavesAt", "12:00")))).isEqualTo(404);
+        assertThat(status(call(post("/api/v1/me/late"), cookie, Map.of("structureId", creche.id(), "childId", CHILD,
+                "at", "17:45", "note", "Bouchons")))).isEqualTo(201);
+
+        // Remontées à la crèche ; la demande garde son identifiant, pour que la réponse la remplace.
+        var inbox = body(signed(creche, "GET", "/sync/v1/inbox?after=0", new byte[0], java.time.Instant.now())).get("items");
+        var bookings = new java.util.ArrayList<JsonNode>();
+        inbox.forEach(i -> {
+            if (i.get("type").asText().equals("BOOKING")) {
+                bookings.add(i);
+            }
+        });
+        assertThat(bookings).extracting(b -> b.at("/payload/kind").asText()).containsExactly("RESERVATION", "RETARD");
+        assertThat(bookings.getFirst().get("id").asText()).isEqualTo(id);
+        assertThat(bookings.get(1).at("/payload/leavesAt").asText()).startsWith("17:45");
+        var mine = body(call(get("/api/v1/me/bookings"), cookie, null));
+        assertThat(mine).filteredOn(b -> b.get("id").asText().equals(id)).singleElement()
+                .matches(b -> b.at("/data/status").asText().equals("DEMANDEE"));
+
+        batch(creche, Map.of("items", List.of(Map.of("seq", 30, "type", "BOOKING", "id", id, "deleted", false, "payload",
+                Map.of("familyId", FAMILY, "childId", CHILD, "day", day.toString(), "arrivesAt", "08:00:00",
+                        "leavesAt", "12:00:00", "status", "ACCEPTEE")))));
+        assertThat(body(call(get("/api/v1/me/bookings"), cookie, null))).filteredOn(b -> b.get("id").asText().equals(id))
+                .singleElement().matches(b -> b.at("/data/status").asText().equals("ACCEPTEE"));
     }
 
     @Test

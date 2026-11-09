@@ -40,6 +40,17 @@ public class ParentController {
                                  @NotBlank(message = "Écrivez votre message") @Size(max = 2000) String body) {
     }
 
+    /** Demande d'accueil occasionnel (lot 2). */
+    public record BookingRequest(@NotNull UUID structureId, @NotNull UUID childId, @NotNull LocalDate day,
+                                 @NotNull java.time.LocalTime arrivesAt, @NotNull java.time.LocalTime leavesAt,
+                                 @Size(max = 300) String note) {
+    }
+
+    /** Retard annoncé : heure à laquelle le parent viendra chercher l'enfant aujourd'hui. */
+    public record LateRequest(@NotNull UUID structureId, @NotNull UUID childId, @NotNull java.time.LocalTime at,
+                              @Size(max = 300) String note) {
+    }
+
     public record AbsenceRequest(@NotNull UUID structureId, @NotNull UUID childId, @NotNull LocalDate fromDay,
                                  @NotNull LocalDate toDay, @Size(max = 300) String reason) {
     }
@@ -110,6 +121,26 @@ public class ParentController {
     @GetMapping("/documents")
     public List<Map<String, Object>> documents(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email) {
         return parents.items(email, "DOCUMENT");
+    }
+
+    @GetMapping("/bookings")
+    public List<Map<String, Object>> bookings(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email) {
+        return parents.items(email, "BOOKING");
+    }
+
+    @PostMapping("/bookings")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Map<String, Object> requestBooking(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                                              @Valid @RequestBody BookingRequest request) {
+        return parents.requestBooking(email, request.structureId(), request.childId(), request.day(), request.arrivesAt(),
+                request.leavesAt(), request.note());
+    }
+
+    @PostMapping("/late")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Map<String, Object> reportLate(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                                          @Valid @RequestBody LateRequest request) {
+        return parents.reportLate(email, request.structureId(), request.childId(), request.at(), request.note());
     }
 
     @GetMapping("/absences")

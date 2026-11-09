@@ -221,3 +221,26 @@ describe("signature", () => {
     expect(screen.getByRole("button", { name: "Envoyer mon refus" })).toBeDisabled();
   });
 });
+
+describe("demandes à la crèche", () => {
+  it("demande un accueil en plus et montre la réponse de la crèche", async () => {
+    const calls = mockApi({
+      "GET /me": { body: me(family()) },
+      "GET /me/bookings": { body: [
+        { id: "b-1", type: "BOOKING", at: null, hasFile: false, structureId: "s-1", familyId: "f-1",
+          data: { childId: "c-1", day: "2026-11-20", arrivesAt: "08:00:00", leavesAt: "12:00:00", status: "REFUSEE", answer: "Section complète ce jour-là." } },
+      ] },
+      "POST /me/bookings": { status: 201, body: {} },
+      "POST /me/late": { status: 201, body: { id: "l-1" } },
+    });
+    renderAt("/demandes");
+    expect(await screen.findByText("Refusée")).toBeInTheDocument();
+    expect(screen.getByText("Section complète ce jour-là.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer la demande" }));
+    expect(await screen.findByText(/Demande envoyée/)).toBeInTheDocument();
+    expect(calls.find((c) => c.key === "POST /me/bookings")?.body).toMatchObject({ structureId: "s-1", childId: "c-1", arrivesAt: "08:00", leavesAt: "12:00" });
+    await userEvent.click(screen.getByRole("button", { name: "Prévenir l’équipe" }));
+    expect(await screen.findByText(/vous viendrez vers 17:45/)).toBeInTheDocument();
+    expect(calls.find((c) => c.key === "POST /me/late")?.body).toMatchObject({ childId: "c-1", at: "17:45" });
+  });
+});

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Baby, CalendarX2, IdCard, NotebookPen, Pill, Plus } from "lucide-react";
+import { Baby, CalendarX2, Clock, IdCard, NotebookPen, Pill, Plus } from "lucide-react";
 import { useModules } from "@/features/license/useModules";
 import { useNow } from "@/hooks/useNow";
 import { cn } from "@/lib/utils";
@@ -90,6 +90,7 @@ function Grid({
   // Absences signalées sur le portail parents (rien quand le portail n'est pas activé).
   const journal = useQuery({ queryKey: JOURNAL_KEY, queryFn: ({ signal }) => kioskApi.journal(signal), enabled: online, refetchInterval: 60_000 });
   const reported = journal.data?.reportedAbsences ?? [];
+  const lates = journal.data?.lateNotices ?? [];
   const nowMinutes = (() => {
     const [h, m] = hm(now().toISOString()).split(":").map(Number);
     return h * 60 + m;
@@ -175,6 +176,18 @@ function Grid({
             <strong className="font-semibold">Absence signalée par les parents :</strong>{" "}
             {reported
               .map((a) => `${today!.children.find((c) => c.id === a.childId)?.firstName ?? "un enfant"}${a.reason ? ` (${a.reason})` : ""}`)
+              .join(", ")}
+          </span>
+        </div>
+      )}
+
+      {lates.length > 0 && (
+        <div role="status" aria-label="Retards annoncés" className="flex items-start gap-3 rounded-lg bg-info-100 px-5 py-3 text-info-700">
+          <Clock aria-hidden className="mt-1 size-6 shrink-0" />
+          <span className="text-touch-label font-normal">
+            <strong className="font-semibold">Retard annoncé par les parents :</strong>{" "}
+            {lates
+              .map((l) => `${today!.children.find((c) => c.id === l.childId)?.firstName ?? "un enfant"} vers ${l.at.slice(0, 5)}`)
               .join(", ")}
           </span>
         </div>

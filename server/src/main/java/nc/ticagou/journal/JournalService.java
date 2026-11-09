@@ -62,12 +62,15 @@ public class JournalService {
     private final ApplicationEventPublisher events;
     private final ConsentRepository consents;
     private final ReportedAbsenceRepository reportedAbsences;
+    private final nc.ticagou.portal.BookingRequestRepository bookings;
     private final Clock clock;
 
     public JournalService(DailyEntryRepository entries, ChildRepository children, EncryptedFileStore fileStore,
                           StoredFileRepository files, AuditService audit, ChildAccessLogger accessLogger,
                           ApplicationEventPublisher events, ConsentRepository consents,
-                          ReportedAbsenceRepository reportedAbsences, Clock clock, LicenseService licenses) {
+                          ReportedAbsenceRepository reportedAbsences, Clock clock, LicenseService licenses,
+                          nc.ticagou.portal.BookingRequestRepository bookings) {
+        this.bookings = bookings;
         this.licenses = licenses;
         this.entries = entries;
         this.children = children;
@@ -141,7 +144,10 @@ public class JournalService {
         var found = toDtos(structureId, entries.findByStructureIdAndDayOrderByOccurredAtAsc(structureId, today));
         var absences = reportedAbsences.findCovering(structureId, today).stream()
                 .map(r -> new ReportedAbsenceRef(r.getChildId(), r.getReason(), r.getGuardianName())).toList();
-        return new KioskJournal(found, consents.grantedChildIds(structureId, Consent.Type.PHOTOS), absences);
+        var lates = bookings.findByStructureIdAndDayAndStatus(structureId, today, nc.ticagou.portal.BookingRequest.Status.ACCEPTEE)
+                .stream().filter(b -> b.getKind() == nc.ticagou.portal.BookingRequest.Kind.RETARD)
+                .map(b -> new JournalDtos.LateNoticeRef(b.getChildId(), b.getLeavesAt(), b.getGuardianName(), b.getNote())).toList();
+        return new KioskJournal(found, consents.grantedChildIds(structureId, Consent.Type.PHOTOS), absences, lates);
     }
 
     @Transactional

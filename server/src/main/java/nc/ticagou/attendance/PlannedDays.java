@@ -18,7 +18,9 @@ import nc.ticagou.contract.ContractVersionRepository;
 
 /**
  * Enfants attendus un jour donné, d'après la version signée en vigueur de leur contrat. Un planning variable
- * n'annonce pas d'heure : l'enfant n'est pas « attendu », mais son accueil n'est pas « hors planning ».
+ * n'annonce pas d'heure : l'enfant n'est pas « attendu », mais son accueil n'est pas « hors planning ». Un accueil
+ * occasionnel accepté (lot 2) rend l'enfant attendu ce jour-là, sans changer sa facturation : le temps passé hors
+ * du planning du contrat reste facturé en heures complémentaires.
  */
 @Component
 public class PlannedDays {
@@ -32,10 +34,13 @@ public class PlannedDays {
 
     private final ContractRepository contracts;
     private final ContractVersionRepository versions;
+    private final nc.ticagou.portal.BookingRequestRepository bookings;
 
-    public PlannedDays(ContractRepository contracts, ContractVersionRepository versions) {
+    public PlannedDays(ContractRepository contracts, ContractVersionRepository versions,
+                       nc.ticagou.portal.BookingRequestRepository bookings) {
         this.contracts = contracts;
         this.versions = versions;
+        this.bookings = bookings;
     }
 
     @Transactional(readOnly = true)
@@ -61,6 +66,21 @@ public class PlannedDays {
             version.getDays().stream().filter(d -> d.dayOfWeek() == day.getDayOfWeek().getValue()).findFirst()
                     .ifPresent(d -> result.put(contract.getChildId(), new Planned(d.arrivesAt(), d.leavesAt(), false)));
         }
+        for (var b : bookings.findByStructureIdAndDayAndStatus(structureId, day, nc.ticagou.portal.BookingRequest.Status.ACCEPTEE)) {
+            if (b.getKind() == nc.ticagou.portal.BookingRequest.Kind.RESERVATION) {
+                result.merge(b.getChildId(), new Planned(b.getArrivesAt(), b.getLeavesAt(), false), (contract, booked) ->
+                        contract.variable() ? booked : new Planned(min(contract.arrivesAt(), booked.arrivesAt()),
+                                max(contract.leavesAt(), booked.leavesAt()), false));
+            }
+        }
         return result;
+    }
+
+    private static LocalTime min(LocalTime a, LocalTime b) {
+        return a.isBefore(b) ? a : b;
+    }
+
+    private static LocalTime max(LocalTime a, LocalTime b) {
+        return a.isAfter(b) ? a : b;
     }
 }

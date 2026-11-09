@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import nc.ticagou.child.ChildRepository;
 import nc.ticagou.family.GuardianRepository;
 import nc.ticagou.portal.SyncDtos.AbsenceIn;
+import nc.ticagou.portal.SyncDtos.BookingIn;
 import nc.ticagou.portal.SyncDtos.InboxItem;
 import nc.ticagou.portal.SyncDtos.MessageIn;
 import nc.ticagou.portal.SyncDtos.SignatureIn;
@@ -43,12 +44,13 @@ public class InboxProcessor {
     private final ObjectMapper json;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final BookingService bookings;
 
     public InboxProcessor(PortalClient client, PortalSettingsRepository settingsRepository,
                           ReportedAbsenceRepository absences, FamilyMessageRepository messages,
                           PortalDocumentRepository documents, ChildRepository children, GuardianRepository guardians,
                           GuardianPortalAccessRepository accesses, ObjectMapper json,
-                          PlatformTransactionManager transactionManager, Clock clock) {
+                          PlatformTransactionManager transactionManager, Clock clock, BookingService bookings) {
         this.client = client;
         this.settingsRepository = settingsRepository;
         this.absences = absences;
@@ -60,6 +62,7 @@ public class InboxProcessor {
         this.json = json;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
+        this.bookings = bookings;
     }
 
     /** Lit, applique et acquitte la boîte de réception ; renvoie le nombre d'éléments appliqués. */
@@ -93,6 +96,11 @@ public class InboxProcessor {
                 case ABSENCE -> absence(settings, item, json.treeToValue(item.payload(), AbsenceIn.class));
                 case MESSAGE -> message(settings, item, json.treeToValue(item.payload(), MessageIn.class));
                 case SIGNATURE -> signature(settings, item, json.treeToValue(item.payload(), SignatureIn.class));
+                case BOOKING -> {
+                    var in = json.treeToValue(item.payload(), BookingIn.class);
+                    yield bookings.received(settings.getStructureId(), item.id(), item.familyId(), in,
+                            guardianName(settings, item, in.guardianId()));
+                }
             };
         } catch (JsonProcessingException | IllegalArgumentException e) {
             log.warn("Élément du portail illisible ignoré : {} {}", item.type(), item.id());
