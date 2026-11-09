@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Link } from "react-router";
+import { CalendarPlus, Check, ChevronRight } from "lucide-react";
 import { errorMessage, portal } from "../api";
 import { Banner, ChildAvatar, Page, TouchButton, cn } from "../components";
 import { addDays, dateFr, todayIso, weekdayDate } from "../format";
@@ -69,6 +70,11 @@ export function AbsencePage() {
 
   return (
     <Page title="Signaler une absence" subtitle="L’équipe sera prévenue tout de suite.">
+      <Link to="/demandes" className="flex min-h-14 items-center gap-3 rounded-lg border border-border-subtle bg-surface px-4 text-[16px] font-semibold text-ink no-underline">
+        <CalendarPlus aria-hidden className="size-5 text-lagon-700" />
+        <span className="grow">Un accueil en plus, un retard ?</span>
+        <ChevronRight aria-hidden className="size-5 text-ink-muted" />
+      </Link>
       {sent ? (
         <>
           <Banner tone="success">C’est envoyé : la crèche est prévenue de l’absence de {child.firstName} {sent}.</Banner>

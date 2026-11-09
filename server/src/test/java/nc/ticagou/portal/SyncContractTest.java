@@ -42,7 +42,8 @@ class SyncContractTest {
             PortalItemType.INVOICE, SyncDtos.InvoicePayload.class,
             PortalItemType.DOCUMENT, SyncDtos.DocumentPayload.class,
             PortalItemType.MESSAGE, SyncDtos.MessagePayload.class,
-            PortalItemType.NEWS, SyncDtos.NewsPayload.class);
+            PortalItemType.NEWS, SyncDtos.NewsPayload.class,
+            PortalItemType.BOOKING, SyncDtos.BookingPayload.class);
 
     private static JsonNode read(String name) throws IOException {
         return JSON.readTree(Files.readAllBytes(CONTRACT.resolve(name)));
@@ -64,14 +65,18 @@ class SyncContractTest {
             assertThat(JSON.valueToTree(payload).toString()).as(item.type().name()).isEqualTo(node.get("payload").toString());
         }
         assertThat(types).containsAll(PAYLOADS.keySet()).contains(PortalItemType.PURGE_FAMILY);
-        assertThat(read("batch-response.json").get("acceptedUpTo").asLong()).isEqualTo(11);
+        assertThat(read("batch-response.json").get("acceptedUpTo").asLong()).isEqualTo(12);
     }
 
     @Test
     void remonteeConformeAuContrat() throws IOException {
         var inbox = JSON.treeToValue(read("inbox.json"), SyncDtos.Inbox.class);
         assertThat(inbox.items()).extracting(SyncDtos.InboxItem::type)
-                .containsExactly(SyncDtos.InboxType.ABSENCE, SyncDtos.InboxType.MESSAGE, SyncDtos.InboxType.SIGNATURE);
+                .containsExactly(SyncDtos.InboxType.ABSENCE, SyncDtos.InboxType.MESSAGE, SyncDtos.InboxType.SIGNATURE,
+                        SyncDtos.InboxType.BOOKING, SyncDtos.InboxType.BOOKING);
+        var booking = JSON.treeToValue(inbox.items().get(3).payload(), SyncDtos.BookingIn.class);
+        assertThat(booking.arrivesAt()).isBefore(booking.leavesAt());
+        assertThat(JSON.treeToValue(inbox.items().get(4).payload(), SyncDtos.BookingIn.class).kind()).isEqualTo("RETARD");
         var absence = JSON.treeToValue(inbox.items().get(0).payload(), AbsenceIn.class);
         assertThat(absence.toDay()).isAfter(absence.fromDay());
         assertThat(JSON.treeToValue(inbox.items().get(1).payload(), MessageIn.class).body()).isNotBlank();

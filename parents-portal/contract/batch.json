@@ -38,7 +38,10 @@
         "photo": "/9j/4AAQSkZJRgABAQ==",
         "photoType": "image/jpeg",
         "sharedHealth": [
-          { "label": "Allergie", "text": "Arachide : PAI en place, trousse dans la section" }
+          {
+            "label": "Allergie",
+            "text": "Arachide : PAI en place, trousse dans la section"
+          }
         ]
       }
     },
@@ -61,13 +64,19 @@
       "id": "0b9a3c1e-0000-4000-8000-000000003000",
       "deleted": false,
       "payload": {
-        "familyIds": ["0b9a3c1e-0000-4000-8000-000000000100"],
-        "childIds": ["0b9a3c1e-0000-4000-8000-000000001000"],
+        "familyIds": [
+          "0b9a3c1e-0000-4000-8000-000000000100"
+        ],
+        "childIds": [
+          "0b9a3c1e-0000-4000-8000-000000001000"
+        ],
         "day": "2026-11-02",
         "at": "2026-11-02T00:15:00Z",
         "kind": "REPAS",
         "text": "Purée de patate douce, poisson",
-        "details": { "quantity": "BIEN" },
+        "details": {
+          "quantity": "BIEN"
+        },
         "photo": null,
         "photoType": null
       }
@@ -87,7 +96,10 @@
         "total": 23400,
         "remaining": 23400,
         "lines": [
-          { "label": "Accueil octobre 2026 (au réel)", "amount": 23400 }
+          {
+            "label": "Accueil octobre 2026 (au réel)",
+            "amount": 23400
+          }
         ],
         "pdf": "JVBERi0xLjQK"
       }
@@ -139,7 +151,9 @@
       "id": "0b9a3c1e-0000-4000-8000-000000007000",
       "deleted": false,
       "payload": {
-        "familyIds": ["0b9a3c1e-0000-4000-8000-000000000100"],
+        "familyIds": [
+          "0b9a3c1e-0000-4000-8000-000000000100"
+        ],
         "title": "Menu de la semaine",
         "body": "Le menu de la semaine du 02/11 est en pièce jointe. Bon appétit !",
         "author": "Sandrine",
@@ -148,6 +162,21 @@
         "file": "JVBERi0xLjQK",
         "fileType": "application/pdf",
         "fileName": "menu-semaine-45.pdf"
+      }
+    },
+    {
+      "seq": 12,
+      "type": "BOOKING",
+      "id": "7c2e5d10-0000-4000-8000-000000000004",
+      "deleted": false,
+      "payload": {
+        "familyId": "0b9a3c1e-0000-4000-8000-000000000100",
+        "childId": "0b9a3c1e-0000-4000-8000-000000001000",
+        "day": "2026-11-12",
+        "arrivesAt": "08:00:00",
+        "leavesAt": "12:00:00",
+        "status": "ACCEPTEE",
+        "answer": null
       }
     }
   ]

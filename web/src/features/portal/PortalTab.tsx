@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/api";
 import { formatDate, formatTime } from "@/lib/datetime";
 import { portalApi, portalKeys, type Shares } from "./api";
 import { SignaturesToRecord } from "./SignaturesToRecord";
+import { BookingRulesSection } from "./BookingRulesSection";
 
 const stamp = (iso: string | null) => (iso ? `${formatDate(new Date(iso))} · ${formatTime(new Date(iso))}` : "—");
 
@@ -167,6 +168,8 @@ export function PortalTab() {
           Enregistrer
         </Button>
       </section>
+
+      {data.state === "ACTIF" && <BookingRulesSection />}
 
       {data.state === "ACTIF" && <SignaturesToRecord />}
 

@@ -80,6 +80,11 @@ public final class SyncDtos {
     public record MessagePayload(UUID familyId, String author, String body, Instant sentAt) {
     }
 
+    /** Réponse de la crèche à une demande d'accueil : remplace la demande du parent sur le portail (même identifiant). */
+    public record BookingPayload(UUID familyId, UUID childId, LocalDate day, java.time.LocalTime arrivesAt,
+                                 java.time.LocalTime leavesAt, String status, String answer) {
+    }
+
     /**
      * Actualité de la crèche, pour les familles visées (toute la crèche ou une section). {@code expiresOn} : dernier
      * jour d'affichage, vide pour la durée de conservation du portail. Pièce jointe facultative (PDF ou image).
@@ -90,7 +95,7 @@ public final class SyncDtos {
 
     // --- Remontée -----------------------------------------------------------------------------
 
-    public enum InboxType { ABSENCE, MESSAGE, SIGNATURE }
+    public enum InboxType { ABSENCE, MESSAGE, SIGNATURE, BOOKING }
 
     public record InboxItem(long seq, InboxType type, UUID id, UUID familyId, JsonNode payload) {
     }
@@ -106,6 +111,11 @@ public final class SyncDtos {
     }
 
     public record MessageIn(UUID guardianId, String body, Instant sentAt) {
+    }
+
+    /** Demande d'accueil occasionnel ({@code kind} RESERVATION) ou retard annoncé (RETARD, {@code leavesAt} : heure d'arrivée annoncée du parent). */
+    public record BookingIn(UUID childId, UUID guardianId, String kind, LocalDate day, java.time.LocalTime arrivesAt,
+                            java.time.LocalTime leavesAt, String note, Instant requestedAt) {
     }
 
     /** {@code decision} : ACCEPTE ou REFUSE (une autorisation peut être refusée ; un contrat se signe ou non). */

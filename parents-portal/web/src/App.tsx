@@ -7,6 +7,7 @@ import { AbsencePage } from "./screens/AbsencePage";
 import { ActualitesPage } from "./screens/ActualitesPage";
 import { AlbumPage } from "./screens/AlbumPage";
 import { DocumentsPage } from "./screens/DocumentsPage";
+import { DemandesPage } from "./screens/DemandesPage";
 import { FacturesPage } from "./screens/FacturesPage";
 import { JourneePage } from "./screens/JourneePage";
 import { LoginPage } from "./screens/LoginPage";
@@ -62,6 +63,7 @@ export const routes: RouteObject[] = [
       { path: "messages", element: <MessagesPage /> },
       { path: "notifications", element: <NotificationsPage /> },
       { path: "absence", element: <AbsencePage /> },
+      { path: "demandes", element: <DemandesPage /> },
       { path: "factures", element: <FacturesPage /> },
       { path: "documents", element: <DocumentsPage /> },
       { path: "documents/:structureId/:documentId", element: <SignaturePage /> },

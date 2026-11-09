@@ -94,6 +94,27 @@ public final class PortalDtos {
     public record BroadcastResult(int families) {
     }
 
+    // --- Demandes des parents (lot 2) ---------------------------------------------------------
+
+    /** {@code freePlaces} : places libres de la section sur le créneau (demande en attente seulement). */
+    public record BookingDto(UUID id, UUID childId, String childName, UUID familyId, BookingRequest.Kind kind,
+                             LocalDate day, java.time.LocalTime arrivesAt, java.time.LocalTime leavesAt, String note,
+                             String guardianName, Instant requestedAt, BookingRequest.Status status, String answer,
+                             boolean overCapacity, Integer freePlaces) {
+    }
+
+    public record AcceptBooking(@Size(max = 300) String overrideReason) {
+    }
+
+    public record RefuseBooking(@NotBlank @Size(max = 300) String reason) {
+    }
+
+    /** Délai minimum (heures) et horizon (jours) des demandes ; {@code validFrom} vide : règles par défaut. */
+    public record BookingRules(@jakarta.validation.constraints.Min(0) @jakarta.validation.constraints.Max(336) int minNoticeHours,
+                               @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(365) int maxDaysAhead,
+                               LocalDate validFrom) {
+    }
+
     // --- Actualités ---------------------------------------------------------------------------
 
     /** {@code status} : PUBLIEE, EXPIREE ou RETIREE ; {@code families} : familles qui la voient (publiée seulement). */

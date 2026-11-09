@@ -205,6 +205,8 @@ export type KioskJournal = {
   /** Enfants dont l'autorisation de photographier est accordée. */
   photoConsents: string[];
   reportedAbsences: { childId: string; reason: string | null; guardianName: string | null }[];
+  /** Retards annoncés par les parents pour aujourd'hui (lot 2) : heure à laquelle ils viendront. */
+  lateNotices?: { childId: string; at: string; guardianName: string | null; note: string | null }[];
 };
 
 export const kioskApi = {

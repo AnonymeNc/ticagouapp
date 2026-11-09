@@ -114,7 +114,7 @@ public class SyncService {
                 case "STRUCTURE" -> structure(structureId, payload);
                 case "GUARDIAN" -> guardian(structureId, id, deleted, payload);
                 case "CHILD" -> child(structureId, id, deleted, payload);
-                case "ATTENDANCE", "ENTRY", "INVOICE", "DOCUMENT", "MESSAGE", "NEWS" -> item(structureId, type, id, deleted, payload);
+                case "ATTENDANCE", "ENTRY", "INVOICE", "DOCUMENT", "MESSAGE", "NEWS", "BOOKING" -> item(structureId, type, id, deleted, payload);
                 case "PURGE_FAMILY" -> purgeFamily(structureId, id);
                 default -> throw ApiException.rule("unknown_type", "Type inconnu : " + type);
             }
@@ -221,6 +221,14 @@ public class SyncService {
                 fileType = "application/pdf";
                 expires = today.plus(BILLING_RETENTION);
             }
+            case "BOOKING" -> {
+                // Réponse de la crèche à une demande d'accueil : remplace la demande du parent (même identifiant).
+                day = LocalDate.parse(text(p, "day"));
+                families.add(uuid(p, "familyId"));
+                children.add(uuid(p, "childId"));
+                stored.put("kind", "RESERVATION");
+                expires = day.plus(DAILY_RETENTION);
+            }
             case "NEWS" -> {
                 // Actualité : affichée jusqu'à sa date de fin, sinon au plus 12 mois.
                 at = instant(p, "publishedAt");
@@ -301,9 +309,14 @@ public class SyncService {
 
     /** Dépose un élément envoyé par un parent, lu par le serveur de la crèche à sa prochaine synchronisation. */
     public void deposit(UUID structureId, String type, UUID familyId, Object payload) {
+        deposit(structureId, UUID.randomUUID(), type, familyId, payload);
+    }
+
+    /** Idem, avec l'identifiant que la crèche reprendra dans sa réponse (demande d'accueil). */
+    public void deposit(UUID structureId, UUID id, String type, UUID familyId, Object payload) {
         try {
             jdbc.update("INSERT INTO inbox (structure_id, id, type, family_id, payload, created_at) VALUES (?, ?, ?, ?, ?::jsonb, ?)",
-                    structureId, UUID.randomUUID(), type, familyId, json.writeValueAsString(payload),
+                    structureId, id, type, familyId, json.writeValueAsString(payload),
                     Timestamp.from(clock.instant()));
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new IllegalStateException(e);

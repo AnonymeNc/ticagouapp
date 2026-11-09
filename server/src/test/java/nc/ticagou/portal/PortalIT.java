@@ -275,6 +275,78 @@ class PortalIT extends IntegrationTest {
         assertThat(auditCount("PORTAL_SIGNATURE_RECORDED")).isEqualTo(1);
     }
 
+    private Map<String, Object> bookingItem(long seq, UUID id, String child, String family, String kind, LocalDate day,
+                                           String arrives, String leaves) {
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("childId", child);
+        payload.put("guardianId", guardianId);
+        payload.put("kind", kind);
+        payload.put("day", day.toString());
+        payload.put("arrivesAt", arrives);
+        payload.put("leavesAt", leaves);
+        payload.put("note", "Merci");
+        payload.put("requestedAt", Instant.now().toString());
+        return Map.of("seq", seq, "type", "BOOKING", "id", id, "familyId", family, "payload", payload);
+    }
+
+    @Test
+    void demandesDAccueilEtRetardsDesParents() throws Exception {
+        activate();
+        perform(post("/api/v1/guardians/" + guardianId + "/portal-access"), director, null);
+        assertThat(body(perform(put("/api/v1/booking-rules"), director, Map.of("minNoticeHours", 48, "maxDaysAhead", 30)))
+                .get("minNoticeHours").asInt()).isEqualTo(48);
+        var otherFamily = jdbc.queryForObject("SELECT family_id::text FROM child WHERE id = ?::uuid", String.class, otherChildId);
+        jdbc.update("UPDATE section SET capacity = 1 WHERE id = (SELECT section_id FROM child WHERE id = ?::uuid)", childId);
+        var day = TODAY.plusDays(5);
+        var lea = UUID.randomUUID();
+        var kenzo = UUID.randomUUID();
+        var late = UUID.randomUUID();
+        var tooSoon = UUID.randomUUID();
+        portal.inbox.add(json.valueToTree(bookingItem(1, kenzo, otherChildId, otherFamily, "RESERVATION", day, "08:00", "12:00")));
+        portal.inbox.add(json.valueToTree(bookingItem(2, lea, childId, familyId, "RESERVATION", day, "09:00", "11:30")));
+        portal.inbox.add(json.valueToTree(bookingItem(3, tooSoon, childId, familyId, "RESERVATION", TODAY.plusDays(1), "08:00", "12:00")));
+        portal.inbox.add(json.valueToTree(bookingItem(4, late, childId, familyId, "RETARD", TODAY, null, "17:45")));
+        sync();
+        // Les réponses partent à la synchronisation suivante (envoi, puis lecture des demandes).
+        sync();
+
+        // Hors délai : refusée d'office, la réponse repart vers la famille.
+        var refused = received("BOOKING").stream().filter(b -> b.get("id").asText().equals(tooSoon.toString())).findFirst().orElseThrow();
+        assertThat(refused.at("/payload/status").asText()).isEqualTo("REFUSEE");
+        assertThat(refused.at("/payload/answer").asText()).contains("48 h");
+        var open = body(getAs(director, "/api/v1/bookings"));
+        assertThat(open).extracting(b -> b.get("id").asText()).containsExactlyInAnyOrder(kenzo.toString(), lea.toString(), late.toString());
+
+        // Une place dans la section : la première demande passe, la seconde exige un motif tracé.
+        assertThat(status(perform(post("/api/v1/bookings/" + kenzo + "/accept"), director, Map.of()))).isEqualTo(200);
+        assertThat(body(perform(post("/api/v1/bookings/" + lea + "/accept"), director, Map.of())).get("code").asText())
+                .isEqualTo("over_capacity");
+        var accepted = body(perform(post("/api/v1/bookings/" + lea + "/accept"), director,
+                Map.of("overrideReason", "Deux éducatrices de plus ce matin-là")));
+        assertThat(accepted.get("overCapacity").asBoolean()).isTrue();
+        assertThat(auditCount("BOOKING_ACCEPTED")).isEqualTo(2);
+        assertThat(body(perform(post("/api/v1/bookings/" + lea + "/refuse"), director, Map.of("reason", "x"))).get("code").asText())
+                .isEqualTo("booking_handled");
+
+        // Acceptée : l'enfant est attendu ce jour-là ; la réponse part au portail.
+        var structureId = jdbc.queryForObject("SELECT structure_id FROM child WHERE id = ?::uuid", UUID.class, childId);
+        var planned = plannedDays.forDay(structureId, day).get(UUID.fromString(childId));
+        assertThat(planned.arrivesAt()).hasToString("09:00");
+        portal.batches.clear();
+        sync();
+        assertThat(received("BOOKING")).filteredOn(b -> b.get("id").asText().equals(lea.toString()))
+                .singleElement().matches(b -> b.at("/payload/status").asText().equals("ACCEPTEE"));
+
+        // Retard annoncé : sur la tablette, sans réponse à donner.
+        var journal = body(perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/kiosk/journal"),
+                tablet.token(), null));
+        assertThat(journal.at("/lateNotices/0/at").asText()).startsWith("17:45");
+        assertThat(journal.at("/lateNotices/0/childId").asText()).isEqualTo(childId);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private nc.ticagou.attendance.PlannedDays plannedDays;
+
     /** Début d'un fichier MP4 (boîte « ftyp »). */
     private static final byte[] MP4 = {0, 0, 0, 0x18, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm', 0, 0, 2, 0};
 

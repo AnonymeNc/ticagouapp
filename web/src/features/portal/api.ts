@@ -104,6 +104,27 @@ export type JournalEntryDto = {
   updatedAt: string;
 };
 
+export type Booking = {
+  id: string;
+  childId: string;
+  childName: string | null;
+  familyId: string;
+  kind: "RESERVATION" | "RETARD";
+  day: string;
+  arrivesAt: string | null;
+  leavesAt: string;
+  note: string | null;
+  guardianName: string | null;
+  requestedAt: string;
+  status: "DEMANDEE" | "ACCEPTEE" | "REFUSEE" | "ANNULEE";
+  answer: string | null;
+  overCapacity: boolean;
+  /** Places libres de la section sur le créneau (demande en attente) ; null : enfant sans section. */
+  freePlaces: number | null;
+};
+
+export type BookingRules = { minNoticeHours: number; maxDaysAhead: number; validFrom: string | null };
+
 export type News = {
   id: string;
   sectionId: string | null;
@@ -124,6 +145,8 @@ export type NewsInput = { title: string; body: string; sectionId: string | null;
 
 export const portalKeys = {
   news: ["portal", "news"] as const,
+  bookings: ["portal", "bookings"] as const,
+  bookingRules: ["portal", "booking-rules"] as const,
   status: ["portal"] as const,
   family: (familyId: string) => ["portal", "family", familyId] as const,
   healthShares: (childId: string) => ["portal", "health", childId] as const,
@@ -165,6 +188,14 @@ export const portalApi = {
   unread: (signal?: AbortSignal) => api<number>("/messages/unread", { signal }),
   thread: (familyId: string, signal?: AbortSignal) => api<Thread>(`/families/${familyId}/messages`, { signal }),
   send: (familyId: string, body: string) => api<Thread>(`/families/${familyId}/messages`, { method: "POST", body: { body } }),
+
+  bookings: (signal?: AbortSignal) => api<Booking[]>("/bookings", { signal }),
+  acceptBooking: (id: string, overrideReason: string | null) =>
+    api<Booking>(`/bookings/${id}/accept`, { method: "POST", body: { overrideReason } }),
+  refuseBooking: (id: string, reason: string) => api<Booking>(`/bookings/${id}/refuse`, { method: "POST", body: { reason } }),
+  bookingRules: (signal?: AbortSignal) => api<BookingRules>("/booking-rules", { signal }),
+  updateBookingRules: (rules: { minNoticeHours: number; maxDaysAhead: number }) =>
+    api<BookingRules>("/booking-rules", { method: "PUT", body: rules }),
 
   broadcast: (sectionId: string | null, body: string) =>
     api<{ families: number }>("/messages/broadcast", { method: "POST", body: { sectionId, body } }),
