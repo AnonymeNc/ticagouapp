@@ -144,6 +144,8 @@ export type Payment = { payment: { id: string; clientId: string; receivedOn: str
 
 export type Board = {
   mrr: number;
+  /** Revenu récurrent au dernier jour du mois précédent. */
+  mrrPrevious: number;
   arr: number;
   outstanding: number;
   overdue: number;

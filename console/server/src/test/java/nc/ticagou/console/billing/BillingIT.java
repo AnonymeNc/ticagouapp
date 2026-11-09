@@ -547,4 +547,94 @@ public class BillingIT {
         assertThat(draft.summary().totalTgc()).as("13 % de 30 000 F").isEqualTo(3_900);
         assertThat(jdbc.queryForList("SELECT action FROM audit_event", String.class)).contains("BAREME_VERSION", "TGC_TAUX");
     }
+
+    // --- Reporting (phase 6)
+
+    JsonNode report(String from, String to) throws Exception {
+        return ok(get("/api/v1/reporting").param("du", from).param("au", to), null);
+    }
+
+    @Test
+    void reportingChiffreDAffairesTgcBalanceAgeeRentabiliteEtExports() throws Exception {
+        var invoice = subscribedAndInvoiced();
+        var id = invoice.at("/summary/id").asText();
+        var repas = invoice.at("/lines/1/id").asText();
+        ok(post("/api/v1/factures/" + id + "/avoir"), Map.of("lines", List.of(Map.of("lineId", repas, "amount", 24_000)), "reason", "Repas"));
+        ok(post("/api/v1/parc/lagon-bleu/notes"), Map.of("kind", "APPEL", "text", "Formation à la facturation", "minutes", 90));
+        clock.on("2026-11-20");
+        ok(post("/api/v1/paiements"), Map.of("crecheSlug", "lagon-bleu", "receivedOn", "2026-11-20", "amount", 4_860, "method", "VIREMENT"));
+
+        var report = report("2026-01-01", "2026-12-31");
+        long tgcOfInvoices = jdbc.queryForObject(
+                "SELECT sum(CASE WHEN type = 'AVOIR' THEN -total_tgc ELSE total_tgc END) FROM invoice WHERE status = 'VALIDEE'", Long.class);
+        assertThat(report.at("/kpis/tgc").asLong()).as("TGC égale aux factures moins avoirs").isEqualTo(tgcOfInvoices).isEqualTo(17_820 - 2_640);
+        long byRate = 0;
+        for (var rate : report.get("tgc")) {
+            byRate += rate.get("tgc").asLong();
+        }
+        assertThat(byRate).isEqualTo(tgcOfInvoices);
+        assertThat(report.at("/tgc/0/rate").asInt()).isEqualTo(110);
+        assertThat(report.at("/tgc/0/base").asLong()).isEqualTo(162_000 - 24_000);
+        assertThat(report.at("/kpis/revenueHt").asLong()).isEqualTo(138_000);
+        assertThat(report.at("/kpis/subscriptionsHt").asLong()).isEqualTo(138_000);
+        assertThat(report.at("/kpis/collected").asLong()).isEqualTo(4_860);
+        assertThat(report.at("/kpis/mrr").asLong()).as("abonnement annuel ramené au mois").isEqualTo(13_500);
+        assertThat(report.get("months").size()).isEqualTo(12);
+        assertThat(report.at("/months/10/month").asText()).isEqualTo("2026-11");
+        assertThat(report.at("/months/10/ht").asLong()).isEqualTo(138_000);
+        assertThat(report.at("/months/10/collected").asLong()).isEqualTo(4_860);
+        assertThat(report.get("mrrByPlan").toString()).contains("\"key\":\"GESTION\"", "\"key\":\"MODULES\"");
+        long planTotal = 0;
+        for (var p : report.get("mrrByPlan")) {
+            planTotal += p.get("monthly").asLong();
+        }
+        assertThat(planTotal).isEqualTo(13_500);
+        assertThat(report.at("/kpis/departures").asInt()).isZero();
+        assertThat(report.at("/kpis/churnTenths").asInt()).isZero();
+        assertThat(ok(get("/api/v1/tableau"), null).get("mrrPrevious").asLong()).as("contrat commencé en novembre").isZero();
+
+        // Rentabilité : 90 min sur 12 mois à 9 000 F de l'heure, plus 1 200 F d'hébergement.
+        assertThat(report.at("/profitMonths").asInt()).isEqualTo(12);
+        assertThat(report.at("/profitability/0/revenue").asLong()).isEqualTo(13_500);
+        assertThat(report.at("/profitability/0/cost").asLong()).isEqualTo(1_125 + 1_200);
+        assertThat(report.at("/profitability/0/margin").asLong()).isEqualTo(13_500 - 2_325);
+        ok(put("/api/v1/reporting/reglages"), Map.of("supportHourlyRate", 12_000, "hostingPerCreche", 1_500));
+        assertThat(report("2026-01-01", "2026-12-31").at("/profitability/0/cost").asLong()).isEqualTo(1_500 + 1_500);
+
+        // Balance âgée aux bornes : échéance le 08/12/2026, reste 179 820 − 26 640 − 4 860.
+        long remaining = 148_320;
+        assertThat(report.at("/aging/0/notDue").asLong()).isEqualTo(remaining);
+        var bounds = new String[][] {{"2026-12-08", "notDue"}, {"2026-12-09", "d30"}, {"2027-01-07", "d30"}, {"2027-01-08", "d60"},
+                {"2027-02-06", "d60"}, {"2027-02-07", "d90"}, {"2027-03-08", "d90"}, {"2027-03-09", "over"}};
+        for (var c : bounds) {
+            clock.on(c[0]);
+            var aging = report("2026-01-01", "2026-12-31").at("/aging/0");
+            assertThat(aging.get(c[1]).asLong()).as(c[0]).isEqualTo(remaining);
+            assertThat(aging.get("total").asLong()).isEqualTo(remaining);
+        }
+        assertThat(report("2026-01-01", "2026-12-31").at("/agingTotal/over").asLong()).isEqualTo(remaining);
+        assertThat(report("2026-01-01", "2026-12-31").get("risks").toString()).as("un seul retard").doesNotContain("PAIEMENT");
+
+        // Filtres : une autre formule ne voit rien de cette crèche.
+        var other = ok(get("/api/v1/reporting").param("du", "2026-01-01").param("au", "2026-12-31").param("formule", "COMPLET"), null);
+        assertThat(other.at("/kpis/revenueHt").asLong()).isZero();
+        assertThat(other.get("aging").size()).isZero();
+        problem(get("/api/v1/reporting").param("du", "2026-12-31").param("au", "2026-01-01"), null, 422);
+
+        // Exports pour le comptable.
+        var csv = call(get("/api/v1/reporting/journal-ventes.csv").param("du", "2026-01-01").param("au", "2026-12-31"), null).getResponse();
+        var text = csv.getContentAsString(StandardCharsets.UTF_8);
+        assertThat(text).startsWith("﻿Date;Pièce;Type;Client;RIDET;Crèche;Formule;Objet;Échéance;Total HT;TGC;Total TTC;Base HT 11 %;TGC 11 %\r\n");
+        assertThat(text).contains("08/11/2026;F2026-0001;Facture;", ";Gestion;", ";08/12/2026;162000;17820;179820;162000;17820\r\n");
+        assertThat(text).contains(";AV2026-0001;Avoir;", ";-24000;-2640;-26640;-24000;-2640\r\n");
+        assertThat(csv.getHeader("Content-Disposition")).contains("journal-ventes-2026-01-01-2026-12-31.csv");
+        var receipts = call(get("/api/v1/reporting/encaissements.csv").param("du", "2026-01-01").param("au", "2026-12-31"), null)
+                .getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(receipts).contains("20/11/2026;SARL Lagon Bleu;4860;Virement;;F2026-0001\r\n");
+        var excel = call(get("/api/v1/reporting/reporting.xlsx").param("du", "2026-01-01").param("au", "2026-12-31"), null).getResponse();
+        assertThat(excel.getStatus()).isEqualTo(200);
+        assertThat(new String(excel.getContentAsByteArray(), 0, 2, StandardCharsets.ISO_8859_1)).as("classeur zip").isEqualTo("PK");
+        assertThat(jdbc.queryForList("SELECT target FROM audit_event WHERE action = 'EXPORT_COMPTABLE'", String.class))
+                .containsExactly("journal-ventes", "encaissements", "reporting-excel");
+    }
 }

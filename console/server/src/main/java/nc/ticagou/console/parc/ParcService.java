@@ -150,10 +150,10 @@ public class ParcService {
     }
 
     @Transactional
-    public Detail note(String slug, String kind, String text) {
+    public Detail note(String slug, String kind, String text, Integer minutes) {
         var creche = repository.find(slug).orElseThrow(() -> ApiException.notFound("creche_inconnue", "Crèche inconnue : " + slug));
         var operator = CurrentOperator.get();
-        repository.note(creche.id(), clock.instant(), operator.login(), kind, text.strip());
+        repository.note(creche.id(), clock.instant(), operator.login(), kind, text.strip(), minutes);
         audit.record("APPEL".equals(kind) ? "APPEL_NOTE" : "NOTE_AJOUTEE", target(slug), Map.of());
         return detail(slug);
     }

@@ -13,6 +13,7 @@ import { OutboxPage } from "@/features/billing/OutboxPage";
 import { OrdersPage } from "@/features/orders/OrdersPage";
 import { CrechePage } from "@/features/parc/CrechePage";
 import { ParcPage } from "@/features/parc/ParcPage";
+import { ReportingPage } from "@/features/reporting/ReportingPage";
 
 /** Console de l'éditeur : connexion (mot de passe + code), puis la coquille et ses écrans. */
 export default function App() {
@@ -38,8 +39,9 @@ function Gate({ state }: { state: AuthState }) {
         <Route path="envoi" element={<OutboxPage />} />
         <Route path="ordres" element={<OrdersPage />} />
         <Route path="parametres" element={<SettingsPage />} />
+        <Route path="reporting" element={<ReportingPage />} />
         {navItems
-          .filter((item) => item.phase > 5 && item.path !== "/parametres")
+          .filter((item) => item.phase > 6 && item.path !== "/parametres")
           .map((item) => (
             <Route key={item.path} path={item.path.slice(1)} element={<PlannedPage item={item} />} />
           ))}

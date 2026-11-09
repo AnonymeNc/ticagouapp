@@ -39,7 +39,8 @@ public class ParcRepository {
     public record Snapshot(Instant at, JsonNode data) {
     }
 
-    public record Note(long id, Instant at, String operatorLogin, String kind, String text) {
+    /** {@code minutes} : temps de support passé (appel, intervention), pour la rentabilité. */
+    public record Note(long id, Instant at, String operatorLogin, String kind, String text, Integer minutes) {
     }
 
     public record Collector(String source, Instant lastAttemptAt, Instant lastSuccessAt, String lastError, Instant cursorAt,
@@ -221,15 +222,15 @@ public class ParcRepository {
 
     // --- Notes
 
-    public void note(UUID crecheId, Instant at, String login, String kind, String text) {
-        jdbc.update("INSERT INTO creche_note (creche_id, at, operator_login, kind, text) VALUES (?, ?, ?, ?, ?)",
-                crecheId, Timestamp.from(at), login, kind, text);
+    public void note(UUID crecheId, Instant at, String login, String kind, String text, Integer minutes) {
+        jdbc.update("INSERT INTO creche_note (creche_id, at, operator_login, kind, text, minutes) VALUES (?, ?, ?, ?, ?, ?)",
+                crecheId, Timestamp.from(at), login, kind, text, minutes);
     }
 
     public List<Note> notes(UUID crecheId) {
         return jdbc.query("SELECT * FROM creche_note WHERE creche_id = ? ORDER BY at DESC, id DESC LIMIT 200",
                 (rs, i) -> new Note(rs.getLong("id"), rs.getTimestamp("at").toInstant(), rs.getString("operator_login"),
-                        rs.getString("kind"), rs.getString("text")), crecheId);
+                        rs.getString("kind"), rs.getString("text"), (Integer) rs.getObject("minutes")), crecheId);
     }
 
     public Map<UUID, Instant> lastCalls() {

@@ -27,7 +27,8 @@ public class BillingStats {
     public record Month(String month, long invoiced, long collected) {
     }
 
-    public record Board(long mrr, long arr, long outstanding, long overdue, int overdueCount, Integer dso, int drafts, int renewalDrafts,
+    /** {@code mrrPrevious} : revenu récurrent au dernier jour du mois précédent, pour la variation. */
+    public record Board(long mrr, long mrrPrevious, long arr, long outstanding, long overdue, int overdueCount, Integer dso, int drafts, int renewalDrafts,
                         int pendingMessages, List<Month> months, List<InvoiceService.Summary> late, List<InvoiceService.Summary> draftList,
                         List<InvoiceService.Summary> suspensions) {
     }
@@ -74,12 +75,12 @@ public class BillingStats {
         return byId;
     }
 
+    /** Revenu mensuel récurrent HT ce jour-là : contrats qui couvrent ce jour, au prix de leur barème. */
     @Transactional(readOnly = true)
-    public Board board() {
-        var today = LocalDate.now(clock);
+    public long mrrAt(LocalDate day) {
         long mrr = 0;
-        for (var contract : contracts.running(today)) {
-            if (!contract.covers(today)) {
+        for (var contract : contracts.running(day)) {
+            if (!contract.covers(day)) {
                 continue;
             }
             try {
@@ -88,6 +89,14 @@ public class BillingStats {
                 // Contrat que le barème ne sait plus chiffrer : il apparaît sur sa fiche, pas dans le total.
             }
         }
+        return mrr;
+    }
+
+    @Transactional(readOnly = true)
+    public Board board() {
+        var today = LocalDate.now(clock);
+        long mrr = mrrAt(today);
+        long mrrPrevious = mrrAt(YearMonth.from(today).minusMonths(1).atEndOfMonth());
         var all = invoices.list();
         long outstanding = 0;
         long overdue = 0;
@@ -107,7 +116,7 @@ public class BillingStats {
             }
         }
         late.sort((a, b) -> Long.compare(b.daysLate(), a.daysLate()));
-        return new Board(mrr, mrr * 12, outstanding, overdue, overdueCount, dso(today), drafts.size(),
+        return new Board(mrr, mrrPrevious, mrr * 12, outstanding, overdue, overdueCount, dso(today), drafts.size(),
                 (int) drafts.stream().filter(d -> "ABONNEMENT".equals(d.kind())).count(), outbox.pending(), months(today), late, drafts, suspensions(all));
     }
 
