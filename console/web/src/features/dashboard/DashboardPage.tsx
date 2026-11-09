@@ -306,6 +306,17 @@ function billingTodos(board: Board): Todo[] {
       action: "Valider",
     });
   }
+  for (const s of board.suspensions) {
+    todos.push({
+      key: `suspension-${s.id}`,
+      tone: "bad",
+      icon: icon(AlertTriangle),
+      title: <><b>{s.crecheName ?? s.clientName}</b> : dernière relance partie, facture {s.number} toujours due</>,
+      hint: `${xpf(s.remaining)} restent dus · suspension à décider (rien n’est suspendu sans vous)`,
+      to: s.crecheSlug ? `/parc/${s.crecheSlug}` : `/factures?id=${s.id}`,
+      action: "Décider",
+    });
+  }
   for (const s of board.late.slice(0, 3)) {
     todos.push({
       key: `retard-${s.id}`,

@@ -59,6 +59,10 @@ export type OutboxMessage = {
   lastError: string | null;
   discardedAt: string | null;
   discardReason: string | null;
+  reminderLevel: number | null;
+  attachments: string[];
+  invoiceNumbers: string[];
+  invoiceIds: string[];
 };
 
 export type InvoiceDetail = {
@@ -75,7 +79,11 @@ export type InvoiceDetail = {
   pdfSha256: string | null;
   validatedAt: string | null;
   validatedBy: string | null;
+  reminders: SentReminder[];
+  nextReminderOn: string | null;
 };
+
+export type SentReminder = { invoiceId: string; level: number; label: string; preparedOn: string; daysLate: number; messageId: string | null; messageStatus: "PREPARE" | "ENVOYE" | "ECARTE" | null; sentAt: string | null };
 
 export type Issuer = {
   name: string | null;
@@ -147,6 +155,16 @@ export type Board = {
   months: { month: string; invoiced: number; collected: number }[];
   late: InvoiceSummary[];
   draftList: InvoiceSummary[];
+  suspensions: InvoiceSummary[];
+};
+
+export type ReminderRule = { level: number; label: string; days: number; active: boolean; subject: string; body: string; copyToIssuer: boolean; attachPdf: boolean; proposeSuspension: boolean };
+export type ReminderSettings = {
+  sets: { id: string; label: string; validFrom: string; validTo: string | null }[];
+  rules: Record<string, ReminderRule[]>;
+  holidays: { day: string; label: string }[];
+  clients: { clientId: string; clientName: string; crecheSlug: string | null; crecheName: string | null; paymentDays: number; shiftDays: number; paused: boolean; note: string | null }[];
+  variables: string[];
 };
 
 export type LineInput = { label: string; detail: string | null; quantity: number; unitPrice: number; tgcNature: TgcNature };
@@ -160,6 +178,7 @@ export const billingKeys = {
   board: ["tableau"] as const,
   payments: ["paiements"] as const,
   contract: (slug: string) => ["contrat", slug] as const,
+  reminders: ["relances"] as const,
 };
 
 export const useInvoices = () => useQuery({ queryKey: billingKeys.invoices, queryFn: ({ signal }) => api<InvoiceSummary[]>("/factures", { signal }) });
@@ -170,6 +189,7 @@ export const useOutbox = () =>
 export const useBillingSettings = () => useQuery({ queryKey: billingKeys.settings, queryFn: ({ signal }) => api<BillingSettings>("/bareme", { signal }) });
 export const useBoard = () => useQuery({ queryKey: billingKeys.board, queryFn: ({ signal }) => api<Board>("/tableau", { signal }), refetchInterval: 60_000 });
 export const usePayments = () => useQuery({ queryKey: billingKeys.payments, queryFn: ({ signal }) => api<Payment[]>("/paiements", { signal }) });
+export const useReminderSettings = () => useQuery({ queryKey: billingKeys.reminders, queryFn: ({ signal }) => api<ReminderSettings>("/relances", { signal }) });
 export const useContract = (slug: string) =>
   useQuery({ queryKey: billingKeys.contract(slug), queryFn: ({ signal }) => api<ContractView>(`/parc/${encodeURIComponent(slug)}/contrat`, { signal }) });
 
@@ -179,7 +199,7 @@ export function useBillingWrite<I, O>(write: (input: I) => Promise<O>) {
   return useMutation({
     mutationFn: write,
     onSuccess: () => {
-      for (const key of [["factures"], ["envoi"], ["tableau"], ["parc"], ["paiements"], ["contrat"], ["bareme"]]) {
+      for (const key of [["factures"], ["envoi"], ["tableau"], ["parc"], ["paiements"], ["contrat"], ["bareme"], ["relances"]]) {
         void client.invalidateQueries({ queryKey: key });
       }
     },
@@ -208,4 +228,9 @@ export const billingApi = {
   newPriceList: (input: Omit<PriceList, "id" | "validTo"> & { items: PriceItem[] }) => api<BillingSettings>("/bareme", { method: "POST", body: input }),
   newRate: (input: { nature: TgcNature; rate: number; validFrom: string; note: string | null }) => api<BillingSettings>("/tgc", { method: "POST", body: input }),
   saveIssuer: (issuer: Issuer) => api<BillingSettings>("/editeur", { method: "PUT", body: issuer }),
+  newReminderVersion: (input: { label: string; validFrom: string; rules: ReminderRule[] }) => api<ReminderSettings>("/relances", { method: "POST", body: input }),
+  saveClientRule: (clientId: string, rule: { shiftDays: number; paused: boolean; note: string | null }) => api<ReminderSettings>(`/relances/clients/${clientId}`, { method: "PUT", body: rule }),
+  addHoliday: (day: string, label: string) => api<ReminderSettings>("/relances/feries", { method: "POST", body: { day, label } }),
+  removeHoliday: (day: string) => api<ReminderSettings>(`/relances/feries/${day}`, { method: "DELETE" }),
+  prepareReminders: () => api<{ messages: number }>("/relances/preparer", { method: "POST" }),
 };

@@ -36,14 +36,21 @@ public class Mailer {
         this.properties = properties;
     }
 
+    public record Attachment(String name, byte[] bytes) {
+    }
+
     public void send(String to, String cc, String subject, String body, String attachmentName, byte[] attachment) {
+        send(to, cc, subject, body, attachment == null ? List.of() : List.of(new Attachment(attachmentName, attachment)));
+    }
+
+    public void send(String to, String cc, String subject, String body, List<Attachment> attachments) {
         var from = properties.mailFrom();
         if (from == null || from.isBlank()) {
             throw new MailFailure("Adresse d’expédition absente (CONSOLE_MAIL_FROM).");
         }
         try {
             var message = sender.createMimeMessage();
-            var helper = new MimeMessageHelper(message, attachment != null, StandardCharsets.UTF_8.name());
+            var helper = new MimeMessageHelper(message, !attachments.isEmpty(), StandardCharsets.UTF_8.name());
             helper.setFrom(from);
             helper.setTo(addresses(to, "destinataire"));
             if (cc != null && !cc.isBlank()) {
@@ -51,8 +58,8 @@ public class Mailer {
             }
             helper.setSubject(subject);
             helper.setText(body, false);
-            if (attachment != null) {
-                helper.addAttachment(attachmentName, new ByteArrayResource(attachment), "application/pdf");
+            for (var a : attachments) {
+                helper.addAttachment(a.name(), new ByteArrayResource(a.bytes()), "application/pdf");
             }
             sender.send(message);
         } catch (MessagingException | MailException e) {

@@ -17,7 +17,7 @@ public class OutboxRepository {
 
     public record Message(UUID id, String kind, UUID invoiceId, UUID clientId, UUID crecheId, String to, String cc, String subject, String body,
                           String status, Instant createdAt, Instant updatedAt, Instant sentAt, String sentBy, String lastError,
-                          Instant discardedAt, String discardedBy, String discardReason) {
+                          Instant discardedAt, String discardedBy, String discardReason, Integer reminderLevel, boolean attachPdf) {
     }
 
     private final JdbcTemplate jdbc;
@@ -48,9 +48,9 @@ public class OutboxRepository {
     public void insert(Message m) {
         jdbc.update("""
                 INSERT INTO outbox_message (id, kind, invoice_id, client_id, creche_id, to_address, cc_address, subject, body, status,
-                    created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PREPARE', ?, ?)""", m.id(), m.kind(), m.invoiceId(),
-                m.clientId(), m.crecheId(), m.to(), m.cc(), m.subject(), m.body(), Timestamp.from(m.createdAt()),
-                Timestamp.from(m.createdAt()));
+                    created_at, updated_at, reminder_level, attach_pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PREPARE', ?, ?, ?, ?)""", m.id(), m.kind(),
+                m.invoiceId(), m.clientId(), m.crecheId(), m.to(), m.cc(), m.subject(), m.body(), Timestamp.from(m.createdAt()),
+                Timestamp.from(m.createdAt()), m.reminderLevel(), m.attachPdf());
     }
 
     public void edit(UUID id, String to, String cc, String subject, String body, Instant now) {
@@ -82,7 +82,7 @@ public class OutboxRepository {
                 rs.getString("cc_address"), rs.getString("subject"), rs.getString("body"), rs.getString("status"),
                 rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(), instant(rs, "sent_at"),
                 rs.getString("sent_by"), rs.getString("last_error"), instant(rs, "discarded_at"), rs.getString("discarded_by"),
-                rs.getString("discard_reason"));
+                rs.getString("discard_reason"), (Integer) rs.getObject("reminder_level"), rs.getBoolean("attach_pdf"));
     }
 
     private static Instant instant(ResultSet rs, String column) throws SQLException {

@@ -46,6 +46,8 @@ function detail(s: InvoiceSummary): InvoiceDetail {
     pdfSha256: s.status === "VALIDEE" ? "abcdef0123456789" : null,
     validatedAt: null,
     validatedBy: null,
+    reminders: [],
+    nextReminderOn: null,
   };
 }
 
@@ -166,6 +168,7 @@ describe("facturation de l'éditeur", () => {
       id: "m1", kind: "FACTURE", invoiceId: "f1", invoiceNumber: "F2026-0001", invoiceTotal: 179_820, clientName: "SARL Lagon Bleu", crecheSlug: "lagon-bleu",
       crecheName: "Lagon Bleu", to: "compta@lagon-bleu.nc", cc: "facturation@ticagou.nc", subject: "Votre facture F2026-0001", body: "Bonjour,\n\nVoici la facture.",
       attachmentName: "F2026-0001.pdf", status: "PREPARE", createdAt: "2026-11-08T00:00:00Z", sentAt: null, sentBy: null, lastError: null, discardedAt: null, discardReason: null,
+      reminderLevel: null, attachments: ["F2026-0001.pdf"], invoiceNumbers: ["F2026-0001"], invoiceIds: ["f1"],
     };
     let refuse = true;
     const calls = mockServer({
@@ -239,6 +242,7 @@ describe("facturation de l'éditeur", () => {
       months: ["2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11"].map((month) => ({ month, invoiced: 100_000, collected: 80_000 })),
       late: [summary({ status: "VALIDEE", state: "RETARD", daysLate: 16, number: "F2026-0047", remaining: 174_960, dueOn: "2026-10-24" })],
       draftList: [summary({}), summary({ id: "f2", crecheName: "Crèche Tiare" })],
+      suspensions: [],
     };
     mockServer({ ...base, "GET /tableau": () => ({ body: board }) });
     renderApp("/");

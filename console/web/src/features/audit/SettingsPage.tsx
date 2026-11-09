@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { IssuerTab, PriceListTab } from "@/features/billing/SettingsTabs";
+import { RemindersTab, TemplatesTab } from "@/features/billing/ReminderTabs";
 
 type AuditEvent = { id: number; at: string; operatorLogin: string | null; action: string; target: string | null; detail: string | null; ip: string | null };
 
@@ -49,6 +50,14 @@ const actionLabels: Record<string, string> = {
   BAREME_VERSION: "Nouvelle version du barème",
   TGC_TAUX: "Nouveau taux de TGC",
   EDITEUR_MODIFIE: "Mentions de l’éditeur modifiées",
+  RELANCE_PREPAREE: "Relance préparée",
+  RELANCE_RETIREE: "Relance retirée (facture soldée)",
+  RELANCES_PREPAREES: "Relances préparées à la demande",
+  RELANCES_VERSION: "Nouvelles règles de relance",
+  RELANCES_CLIENT: "Règle de relance d’un client",
+  RELANCES_CLIENT_SUSPENDUES: "Relances d’un client suspendues",
+  FERIE_AJOUTE: "Jour férié ajouté",
+  FERIE_RETIRE: "Jour férié retiré",
 };
 
 /** Paramètres (maquette) : onglets du plan ; le journal est disponible dès la phase 1. */
@@ -80,6 +89,10 @@ export function SettingsPage() {
       </div>
       {tab === "bareme" ? (
         <PriceListTab />
+      ) : tab === "relances" ? (
+        <RemindersTab />
+      ) : tab === "modeles" ? (
+        <TemplatesTab />
       ) : tab === "editeur" ? (
         <IssuerTab />
       ) : tab === "journal" ? (
