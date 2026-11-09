@@ -7,6 +7,7 @@ import { roleLabels } from "@/features/auth/types";
 import { useStructure } from "@/features/structure/useStructure";
 import { useNow } from "@/hooks/useNow";
 import { formatTopbarStamp } from "@/lib/datetime";
+import { HelpButton } from "@/features/help/HelpButton";
 import { initials } from "@/lib/initials";
 
 export function Topbar() {
@@ -53,6 +54,7 @@ export function Topbar() {
 
       <div className="ml-auto flex items-center gap-4">
         <span className="font-medium text-muted-foreground tabular-nums">{formatTopbarStamp(now)}</span>
+        <HelpButton />
         <div className="flex items-center gap-2.5">
           <Avatar className="size-8">
             <AvatarFallback className="bg-lagon-100 text-small font-semibold text-lagon-700">
