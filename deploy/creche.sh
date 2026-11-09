@@ -251,7 +251,9 @@ json_texte() { printf '"%s"' "$(printf %s "$1" | tr -d '\n\r' | sed 's/\\/\\\\/g
 cmd_etat_json() {
     libre=$(df -P -B1 "$TICAGOU_DONNEES" 2>/dev/null | awk 'NR == 2 { print $4 }')
     total=$(df -P -B1 "$TICAGOU_DONNEES" 2>/dev/null | awk 'NR == 2 { print $2 }')
-    printf '{"at":"%s","disk":{"freeBytes":%s,"totalBytes":%s},"creches":[' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${libre:-null}" "${total:-null}"
+    # Versions de l'image construites sur ce serveur : la console les propose pour « mettre à jour ».
+    images=$(docker images ticagou-web --format '{{.Tag}}' 2>/dev/null | grep -E '^[0-9A-Za-z][0-9A-Za-z._-]{0,29}$' | sed 's/.*/"&"/' | paste -sd, - || true)
+    printf '{"at":"%s","disk":{"freeBytes":%s,"totalBytes":%s},"images":[%s],"creches":[' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${libre:-null}" "${total:-null}" "$images"
     premier=1
     for slug in $(creches); do
         [ -f "$(dossier_de "$slug")/creche.env" ] || continue
@@ -369,6 +371,125 @@ cmd_supprimer() {
     echo "$slug supprimée. Pensez à la copie hors site."
 }
 
+# Modules de chaque formule de démonstration (comme scripts/tester-en-local.ps1).
+modules_demo() {
+    case $1 in
+        Essentiel) echo "" ;;
+        Gestion) echo "INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS" ;;
+        *) echo "INSCRIPTIONS,FACTURATION,COMPTABILITE,PERSONNEL,REPAS,PORTAIL_PARENTS" ;;
+    esac
+}
+
+# demo <identifiant> [--formule Essentiel|Gestion|Complet] [--domaine <nom>] : une instance de démonstration remplie par
+# scripts/demo/donnees-demo.mjs (crèche, enfants, équipe, présences, factures), lancé dans un conteneur Node.
+cmd_demo() {
+    slug=${1:?Usage : demo <identifiant> [--formule Complet] [--domaine <nom>]}; shift
+    formule=Complet domaine=""
+    while [ $# -gt 0 ]; do
+        case $1 in
+            --formule) formule=$2 ;;
+            --domaine) domaine=$2 ;;
+            *) echo "Option inconnue : $1" >&2; exit 1 ;;
+        esac
+        shift 2
+    done
+    case $formule in Essentiel|Gestion|Complet) ;; *) echo "--formule : Essentiel, Gestion ou Complet." >&2; exit 1 ;; esac
+    if [ -n "$domaine" ]; then cmd_creer "$slug" --domaine "$domaine"; else cmd_creer "$slug"; fi
+    echo "DEMO=1" >>"$(dossier_de "$slug")/creche.env"
+    jeton=$(valeur "$slug" TICAGOU_SETUP_TOKEN)
+    set -- --url "http://creche-$slug:8080" --jeton "$jeton"
+    if [ -n "${PORTAL_DOMAIN:-}" ] && socle ps --status running portail 2>/dev/null | grep -q portail; then
+        code=$(portail_admin activation-codes "{\"label\":\"$slug\"}" | sed -n 's/.*"activationCode":"\([^"]*\)".*/\1/p')
+        [ -n "$code" ] && set -- "$@" --portail "https://$PORTAL_DOMAIN" --code "$code"
+    fi
+    echo "Chargement des données de démonstration (1 à 3 minutes)…"
+    docker run --rm --network ticagou -v "$DEPLOY/../scripts/demo:/demo:ro" node:24-alpine node /demo/donnees-demo.mjs "$@"
+    sql_creche "$slug" "INSERT INTO subscription (id, number, holder, plan, places, desktops, tablets, valid_until, modules)
+        SELECT 1, 'DEMO', name, '$formule (démonstration)', 60, 5, 5, CURRENT_DATE + 365, '$(modules_demo "$formule")' FROM structure LIMIT 1
+        ON CONFLICT (id) DO UPDATE SET plan = excluded.plan, modules = excluded.modules, valid_until = excluded.valid_until, updated_at = now()"
+    echo "Démonstration prête : https://$(valeur "$slug" DOMAINE)"
+    echo "Direction : nathalie.kaloi / Niaouli-2026! (comptes : docs/commercial/demonstrations.md)"
+}
+
+# supprimer-demo <identifiant> : sans confirmation, mais seulement pour une instance créée par « demo ».
+cmd_supprimer_demo() {
+    slug=${1:?Usage : supprimer-demo <identifiant>}
+    existe "$slug"
+    grep -q '^DEMO=1$' "$(dossier_de "$slug")/creche.env" || { echo "$slug n'est pas une démonstration : refusé." >&2; exit 1; }
+    echo "$slug" | cmd_supprimer "$slug"
+}
+
+# appliquer : ordres confirmés dans la console (ADR 0017), exécutés ici sur une liste blanche ; cron chaque minute :
+#   * * * * * /opt/ticagou/ticagou-web/deploy/creche.sh appliquer >>/var/log/ticagou-console.log 2>&1
+CONSOLE_INTERNE=${CONSOLE_INTERNE:-http://127.0.0.1:8095/interne/v1}
+
+# Paramètre d'un ordre (« clé=valeur;clé=valeur »).
+param() { printf '%s' "$2" | tr ';' '\n' | sed -n "s/^$1=//p"; }
+
+# Contrôle d'un ordre : identifiants, type de la liste blanche, valeurs dans un alphabet sûr.
+ordre_valide() {
+    echo "$1" | grep -Eq '^[0-9a-f-]{36}$' || return 1
+    case $2 in CREER|DEMO|SUPPRIMER_DEMO|ABONNEMENT|SUSPENDRE|REPRENDRE|METTRE_A_JOUR) ;; *) return 1 ;; esac
+    echo "$3" | grep -Eq '^[a-z0-9][a-z0-9-]{1,40}$' || return 1
+    if [ -n "$4" ] && printf '%s\n' "$4" | tr ';' '\n' | grep -Evq '^[a-z_]+=[A-Za-z0-9.,_-]*$'; then
+        return 1
+    fi
+    return 0
+}
+
+executer_ordre() {
+    type=$1 slug=$2 params=$3
+    case $type in
+        CREER)
+            domaine=$(param domaine "$params")
+            if [ -n "$domaine" ]; then cmd_creer "$slug" --domaine "$domaine"; else cmd_creer "$slug"; fi ;;
+        DEMO)
+            domaine=$(param domaine "$params")
+            if [ -n "$domaine" ]; then cmd_demo "$slug" --formule "$(param formule "$params")" --domaine "$domaine"
+            else cmd_demo "$slug" --formule "$(param formule "$params")"; fi ;;
+        SUPPRIMER_DEMO) cmd_supprimer_demo "$slug" ;;
+        ABONNEMENT)
+            modules=$(param modules "$params")
+            set -- --numero "$(param numero "$params")" --offre "$(param offre "$params")" --places "$(param places "$params")" \
+                --pc "$(param pc "$params")" --tablettes "$(param tablettes "$params")" --jusqu-au "$(param jusqu_au "$params")"
+            [ -n "$modules" ] && set -- "$@" --modules "$modules"
+            cmd_abonnement "$slug" "$@" ;;
+        SUSPENDRE) cmd_suspendre "$slug" ;;
+        REPRENDRE) cmd_reprendre "$slug" ;;
+        METTRE_A_JOUR) cmd_mettre_a_jour "$(param version "$params")" "$slug" ;;
+        *) echo "Ordre hors liste blanche : $type" >&2; return 1 ;;
+    esac
+}
+
+cmd_appliquer() {
+    : "${CONSOLE_HOST_TOKEN:?Renseignez CONSOLE_HOST_TOKEN dans socle.env}"
+    mkdir -p "$TICAGOU_DONNEES"
+    # Un seul passage à la fois : un ordre long (démonstration, mise à jour) ne se relance pas à la minute suivante.
+    exec 9>"$TICAGOU_DONNEES/.appliquer.lock"
+    flock -n 9 || exit 0
+    entetes=$(mktemp) ordres=$(mktemp) sortie=$(mktemp)
+    trap 'rm -f "$entetes" "$ordres" "$sortie"' EXIT
+    printf 'Authorization: Bearer %s\n' "$CONSOLE_HOST_TOKEN" >"$entetes"
+    curl -fsS -m 30 -H @"$entetes" "$CONSOLE_INTERNE/ordres" >"$ordres"
+    tab=$(printf '\t')
+    while IFS="$tab" read -r id type slug params; do
+        [ -n "$id" ] || continue
+        # Pris une seule fois : si un autre passage l'a pris, la console répond 409 et on passe.
+        curl -fs -m 30 -o /dev/null -X POST -H @"$entetes" "$CONSOLE_INTERNE/ordres/$id/debut" || continue
+        echo "$(date '+%d/%m/%Y %H:%M') ordre $type $slug"
+        if ! ordre_valide "$id" "$type" "$slug" "$params"; then
+            echo "Ordre refusé par creche.sh : type ou paramètres hors liste blanche." >"$sortie"
+            ok=false
+        elif (executer_ordre "$type" "$slug" "$params") </dev/null >"$sortie" 2>&1; then
+            ok=true
+        else
+            ok=false
+        fi
+        curl -fsS -m 30 -o /dev/null -X POST -H @"$entetes" -H 'Content-Type: text/plain' --data-binary @"$sortie" \
+            "$CONSOLE_INTERNE/ordres/$id/fin?ok=$ok" || echo "Compte rendu de l'ordre $id impossible." >&2
+    done <"$ordres"
+}
+
 aide() {
     cat <<FIN
 socle [--portail] [--console]  démarre PostgreSQL, Caddy et, en option, le portail et la console
@@ -385,6 +506,9 @@ code-portail <libellé>         code d'activation du portail parents
 sauvegarder-console            sauvegarde chiffrée de la base de la console (cron, chaque nuit)
 rapport-console                envoie l'état des crèches à la console (cron, toutes les 5 min)
 console-telephone-perdu <identifiant>   double authentification de la console à refaire
+demo <identifiant> [--formule F] instance de démonstration remplie (Essentiel, Gestion ou Complet)
+supprimer-demo <identifiant>   efface une démonstration (refusé pour une vraie crèche)
+appliquer                      exécute les ordres confirmés dans la console (cron, chaque minute)
 supprimer <crèche>             efface tout, après restitution des données
 FIN
 }
@@ -406,6 +530,9 @@ case $commande in
     sauvegarder-console) cmd_sauvegarder_console ;;
     rapport-console) cmd_rapport_console ;;
     console-telephone-perdu) cmd_console_telephone_perdu "$@" ;;
+    demo) cmd_demo "$@" ;;
+    supprimer-demo) cmd_supprimer_demo "$@" ;;
+    appliquer) cmd_appliquer ;;
     supprimer) cmd_supprimer "$@" ;;
     *) aide ;;
 esac

@@ -77,6 +77,15 @@ public class HostReports {
         repository.hostAbsent(reported);
         var data = json.createObjectNode();
         data.put("creches", reported.size());
+        var images = report.path("images");
+        if (images.isArray()) {
+            var list = data.putArray("images");
+            images.forEach(i -> {
+                if (i.isTextual() && i.asText().matches("[0-9A-Za-z][0-9A-Za-z._-]{0,29}")) {
+                    list.add(i.asText());
+                }
+            });
+        }
         var disk = report.path("disk");
         if (disk.path("freeBytes").isNumber() && disk.path("totalBytes").isNumber()) {
             data.putObject("disk").put("freeBytes", disk.get("freeBytes").asLong()).put("totalBytes", disk.get("totalBytes").asLong());

@@ -10,6 +10,7 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { ConfirmProvider } from "@/features/auth/Confirm";
 import { InvoicesPage } from "@/features/billing/InvoicesPage";
 import { OutboxPage } from "@/features/billing/OutboxPage";
+import { OrdersPage } from "@/features/orders/OrdersPage";
 import { CrechePage } from "@/features/parc/CrechePage";
 import { ParcPage } from "@/features/parc/ParcPage";
 
@@ -35,9 +36,10 @@ function Gate({ state }: { state: AuthState }) {
         <Route path="parc/:slug" element={<CrechePage />} />
         <Route path="factures" element={<InvoicesPage />} />
         <Route path="envoi" element={<OutboxPage />} />
+        <Route path="ordres" element={<OrdersPage />} />
         <Route path="parametres" element={<SettingsPage />} />
         {navItems
-          .filter((item) => item.phase > 3 && item.path !== "/parametres")
+          .filter((item) => item.phase > 5 && item.path !== "/parametres")
           .map((item) => (
             <Route key={item.path} path={item.path.slice(1)} element={<PlannedPage item={item} />} />
           ))}

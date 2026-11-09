@@ -51,7 +51,7 @@ class ParcController {
     record FicheRequest(
             @NotBlank(message = "Le nom de la crèche est obligatoire.") @Size(max = 150) String name,
             @Size(max = 80) String city,
-            @NotNull @Pattern(regexp = "PROSPECT|CLIENT|RESILIE", message = "Statut inconnu.") String lifecycle,
+            @NotNull @Pattern(regexp = "PROSPECT|CLIENT|RESILIE|DEMO", message = "Statut inconnu.") String lifecycle,
             LocalDate clientSince,
             @NotNull @Valid ClientRequest client) {
     }

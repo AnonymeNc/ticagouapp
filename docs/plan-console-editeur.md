@@ -31,12 +31,15 @@ familles, qui existent déjà dans le module `FACTURATION`. Une relance par e-ma
 **Avancement** : phase 1 livrée le 08/11/2026 (`console/`, [ADR 0017](adr/0017-console-editeur.md)) ; phase 2 livrée le
 08/11/2026 (parc, fiche crèche, tableau de bord, recherche, heure des lectures en bas de la barre latérale) ; phase 3
 livrée le 09/11/2026 (barème, TGC et mentions, contrats, factures et avoirs, paiements, boîte d'envoi, indicateurs) ;
-phase 4 livrée le 09/11/2026 (relances préparées chaque jour ouvré, règles datées, règles par client, fériés, modèles).
+phase 4 livrée le 09/11/2026 (relances préparées chaque jour ouvré, règles datées, règles par client, fériés, modèles) ;
+phase 5 livrée le 09/11/2026 (ordres aux instances, avec en plus la création d'une crèche et les démonstrations depuis la
+console).
 
 Écarts encore assumés avec la maquette :
-- fiche crèche : « Suspendre… » présent mais désactivé jusqu'aux ordres (phase 5) ; la ligne « Contrat : aligné » de
-  la carte Santé est remplacée par l'état du portail parents ; l'alignement avec le contrat est dans l'onglet Abonnement ;
-- relance 3 : la suspension est proposée sur le tableau de bord (« Décider »), elle s'exécutera par ordre en phase 5 ;
+- fiche crèche : la ligne « Contrat : aligné » de la carte Santé est remplacée par l'état du portail parents ;
+  l'alignement avec le contrat est dans l'onglet Abonnement (« Reporter le contrat dans l'instance ») ;
+- relance 3 : « Décider » ouvre la fiche de la crèche, où « Suspendre… » donne l'ordre (motif et code) ;
+- ordres : la mise à jour de « toutes » les crèches se fait en un ordre par crèche (plus lisible que « Faite 7/9 ») ;
 - l'e-mail d'une facture validée suit un texte fixe (modifiable message par message dans la boîte d'envoi) ;
 - tableau de bord : pas encore de variation du revenu récurrent d'un mois sur l'autre (« + 13 500 F depuis
   octobre ») ; elle viendra avec le reporting (phase 6).
@@ -51,6 +54,15 @@ Choix de la phase 3 :
   facturée, le complément est préparé en brouillon et ce qui est à rendre est indiqué pour un avoir ;
 - le délai de préparation des renouvellements (45 jours, 10 pour le mensuel) est un réglage de l'application ;
 - les remises s'additionnent, calculées chacune sur le sous-total de l'abonnement.
+
+Choix de la phase 5 (et demande du 09/11/2026 : créer une crèche et lancer une démonstration depuis la console) :
+- « créer la crèche » et « démonstration » sont des ordres comme les autres ; la console ne touche toujours pas Docker ;
+- une démonstration est une instance à part (identifiant `demo-AAAAMMJJ-HHMM`, statut « Démonstration »), remplie par
+  `scripts/demo/donnees-demo.mjs` dans un conteneur Node ; elle ne compte ni comme cliente ni dans le revenu ;
+- supprimer une démonstration se fait depuis la console ; supprimer une crèche cliente reste en ligne de commande,
+  après restitution de ses données (irréversible) ;
+- l'abonnement attendu de l'instance suit les périodes **payées** (D6) : une facture seulement validée ne prolonge rien ;
+- les ordres que vous donnez demandent votre code ; ceux que la console propose (abonnement payé) attendent « Confirmer ».
 
 Choix de la phase 4 :
 - une relance groupée prend le ton du niveau le plus élevé de ses factures ; chaque facture garde son niveau ;

@@ -199,10 +199,18 @@ public class InvoiceRepository {
                 ORDER BY period_from DESC LIMIT 1""", this::invoice, crecheId, date(day), date(day)).stream().findFirst();
     }
 
-    /** Fin de la période d'abonnement validée la plus lointaine (abonnement attendu de l'instance). */
+    /**
+     * Fin de la période d'abonnement payée la plus lointaine (abonnement attendu de l'instance, D6) : facture validée,
+     * soldée par des paiements, et pas annulée par avoir.
+     */
     public Optional<LocalDate> paidThrough(UUID crecheId) {
         return jdbc.queryForList("""
-                SELECT max(period_to) FROM invoice WHERE creche_id = ? AND type = 'FACTURE' AND kind = 'ABONNEMENT' AND status = 'VALIDEE'""",
+                SELECT max(i.period_to) FROM invoice i
+                CROSS JOIN LATERAL (SELECT coalesce((SELECT sum(a.amount) FROM payment_allocation a WHERE a.invoice_id = i.id), 0) AS paid,
+                                           coalesce((SELECT sum(c.total_ttc) FROM invoice c WHERE c.corrects_id = i.id AND c.status = 'VALIDEE'), 0)
+                                               AS credited) s
+                WHERE i.creche_id = ? AND i.type = 'FACTURE' AND i.kind = 'ABONNEMENT' AND i.status = 'VALIDEE'
+                  AND s.credited < i.total_ttc AND i.total_ttc - s.paid - s.credited <= 0""",
                 Date.class, crecheId).stream().filter(java.util.Objects::nonNull).map(Date::toLocalDate).findFirst();
     }
 

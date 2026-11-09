@@ -10,7 +10,7 @@ export const levelLabels: Record<Level, string> = {
   OFF: "Arrêtée ou hors parc",
 };
 
-export const lifecycleLabels: Record<Lifecycle, string> = { PROSPECT: "Prospect", CLIENT: "Client", RESILIE: "Résilié" };
+export const lifecycleLabels: Record<Lifecycle, string> = { PROSPECT: "Prospect", CLIENT: "Client", RESILIE: "Résilié", DEMO: "Démonstration" };
 
 export const kindLabels: Record<ClientKind, string> = {
   PRIVE: "Privé",
@@ -93,6 +93,9 @@ export function subscriptionPill(row: Pick<Row, "lifecycle" | "licenseState" | "
   }
   if (row.lifecycle === "RESILIE") {
     return { tone: "neutral", label: "Résilié", sub: null };
+  }
+  if (row.lifecycle === "DEMO") {
+    return { tone: "lagon", label: "Démonstration", sub: null };
   }
   const until = row.validUntil ? formatDay(row.validUntil) : null;
   switch (row.licenseState) {
