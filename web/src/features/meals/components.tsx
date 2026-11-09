@@ -21,6 +21,7 @@ export function MealsHeader({ subtitle, actions }: { subtitle?: ReactNode; actio
         <NavLink to="/repas" end className={tab}>Aujourd’hui en cuisine</NavLink>
         <NavLink to="/repas/menus" className={tab}>Menus de la semaine</NavLink>
         <NavLink to="/repas/recapitulatif" className={tab}>Récapitulatif trimestriel</NavLink>
+        <NavLink to="/repas/temperatures" className={tab}>Températures</NavLink>
       </nav>
     </>
   );

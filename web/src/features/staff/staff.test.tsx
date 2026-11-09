@@ -147,3 +147,49 @@ describe("feuilles d’heures", () => {
     expect(screen.getByRole("button", { name: "Rouvrir le mois" })).toBeInTheDocument();
   });
 });
+
+describe("espace pro", () => {
+  const request = (over: Record<string, unknown>) => ({
+    id: "r-1", userId: "u-1", userName: "Céline Hnawia", kind: "CONGES", fromDay: "2026-12-21", toDay: "2026-12-23", minutes: null,
+    note: null, status: "DEMANDEE", answer: null, requestedAt: "2026-11-10T00:00:00Z", handledBy: null, ...over,
+  });
+  const common = {
+    "GET /staff-counters": { body: { year: 2026, leaveDaysTaken: 4.5, overtimeMinutes: 90, recoveredMinutes: 0, balanceMinutes: 90 } },
+    "GET /team-notes": { body: [{ id: "n-1", sectionId: null, body: "Le portail du jardin ferme mal.", authorName: "Céline Hnawia",
+      createdAt: "2026-11-10T00:00:00Z", read: false, readers: 1 }] },
+    "GET /staff-calendar": { body: { active: false } },
+  };
+
+  it("demande un congé à la direction et montre les compteurs", async () => {
+    const educ: Me = { ...director, id: "u-1", role: "EDUCATRICE" };
+    const { calls } = server(educ, {
+      ...common,
+      "GET /staff-requests/mine": { body: [request({ status: "REFUSEE", answer: "Trop d’absences cette semaine-là." })] },
+      "POST /staff-requests": { status: 201, body: request({}) },
+      "POST /team-notes/n-1/read": { status: 204 },
+    });
+    renderAt("/personnel/mon-espace");
+    expect(await screen.findByText("4,5 j")).toBeInTheDocument();
+    expect(screen.getByText(/Trop d’absences cette semaine-là/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/^Du/), "21/12/2026");
+    await userEvent.type(screen.getByLabelText(/^Au/), "23/12/2026");
+    await userEvent.click(screen.getByRole("button", { name: /Envoyer à la direction/ }));
+    expect(await screen.findByText("Demande envoyée à la direction.")).toBeInTheDocument();
+    expect(calls.find((c) => c.key === "POST /staff-requests")?.body).toEqual({ kind: "CONGES", fromDay: "2026-12-21", toDay: "2026-12-23", minutes: null, note: null });
+    await userEvent.click(screen.getByRole("button", { name: "J’ai lu" }));
+    await waitFor(() => expect(calls.some((c) => c.key === "POST /team-notes/n-1/read")).toBe(true));
+  });
+
+  it("la direction accepte un congé et voit les jours en sous-effectif", async () => {
+    server(director, {
+      ...common,
+      "GET /staff-requests/mine": { body: [] },
+      "GET /staff-requests": { body: [request({})] },
+      "POST /staff-requests/r-1/accept": { body: { request: request({ status: "ACCEPTEE" }), shortageDays: ["2026-12-22"] } },
+    });
+    renderAt("/personnel/mon-espace");
+    const pending = (await screen.findByRole("heading", { name: "Demandes du personnel à traiter" })).closest("section")!;
+    await userEvent.click(within(pending).getByRole("button", { name: "Accepter" }));
+    expect(await screen.findByText(/encadrement insuffisant prévu le 22\/12\/2026/)).toBeInTheDocument();
+  });
+});

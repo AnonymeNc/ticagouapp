@@ -31,6 +31,7 @@ export function StaffHeader({ subtitle, actions }: { subtitle?: ReactNode; actio
         {team && <NavLink to="/personnel" end className={tab}>Équipe</NavLink>}
         <NavLink to="/personnel/planning" className={tab}>{team ? "Planning de la semaine" : "Mon planning"}</NavLink>
         <NavLink to="/personnel/heures" className={tab}>{team ? "Feuilles d’heures" : "Mes heures"}</NavLink>
+        <NavLink to="/personnel/mon-espace" className={tab}>{team ? "Demandes et cahier" : "Mon espace"}</NavLink>
       </nav>
     </>
   );
