@@ -36,8 +36,9 @@ import { PortalTab } from "@/features/portal/PortalTab";
 import { AccountingSettingsTab } from "@/features/accounting/AccountingSettingsTab";
 import { DataImportTab } from "@/features/dataimport/DataImportTab";
 import { OnlineEnrollmentSettings } from "@/features/enrollment/OnlineEnrollmentSettings";
+import { DocumentTemplatesTab } from "./DocumentTemplatesTab";
 
-type Tab = "structure" | "sections" | "encadrement" | "criteres" | "preinscription" | "repas" | "bareme" | "financeurs" | "utilisateurs"
+type Tab = "structure" | "sections" | "encadrement" | "criteres" | "preinscription" | "modeles" | "repas" | "bareme" | "financeurs" | "utilisateurs"
   | "comptabilite" | "sauvegardes" | "reprise" | "appareils" | "portail";
 
 /**
@@ -52,6 +53,7 @@ const GROUPS: { label: string; items: { key: Tab; label: string; meta: string; a
     { key: "criteres", label: "Critères d’inscription", meta: "Priorité des demandes", module: "INSCRIPTIONS" },
     { key: "preinscription", label: "Pré-inscription en ligne", meta: "Formulaire public, questions", module: "INSCRIPTIONS" },
     { key: "repas", label: "Repas et régimes", meta: "Heures, régimes", module: "REPAS" },
+    { key: "modeles", label: "Modèles de documents", meta: "Attestations, certificats" },
   ] },
   { label: "Facturation", items: [
     { key: "bareme", label: "Barème et facturation", meta: "Tarifs, règles, TGC", accounting: true, module: "INSCRIPTIONS" },
@@ -118,6 +120,7 @@ export function SettingsPage() {
           {tab === "repas" && <MealsTab />}
           {tab === "criteres" && <Criteria />}
           {tab === "preinscription" && <OnlineEnrollmentSettings />}
+          {tab === "modeles" && <DocumentTemplatesTab />}
           {tab === "utilisateurs" && <><UsersTab /><RightsMatrix />{modules.has("PERSONNEL") && <StaffSettingsSection />}</>}
           {tab === "sauvegardes" && <BackupsTab />}
           {tab === "reprise" && <DataImportTab />}
