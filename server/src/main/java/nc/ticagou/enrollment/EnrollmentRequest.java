@@ -132,6 +132,13 @@ public class EnrollmentRequest {
     @Column(nullable = false)
     private Stage stage = Stage.NOUVELLE;
 
+    /** BUREAU ou EN_LIGNE (formulaire public, ADR 0020). */
+    @Column(nullable = false, updatable = false)
+    private String source = "BUREAU";
+
+    @Column(name = "consent_at", updatable = false)
+    private java.time.Instant consentAt;
+
     @Column(name = "stage_changed_on", nullable = false)
     private LocalDate stageChangedOn;
 
@@ -163,6 +170,20 @@ public class EnrollmentRequest {
     private long version;
 
     protected EnrollmentRequest() {
+    }
+
+    /** Demande déposée en ligne, avec l'heure du consentement de la famille. */
+    public void receivedOnline(java.time.Instant consentAt) {
+        this.source = "EN_LIGNE";
+        this.consentAt = consentAt;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public java.time.Instant getConsentAt() {
+        return consentAt;
     }
 
     public EnrollmentRequest(UUID structureId, LocalDate receivedOn) {

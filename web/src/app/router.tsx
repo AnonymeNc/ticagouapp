@@ -23,6 +23,7 @@ import { KioskHomePage } from "@/features/kiosk/KioskHomePage";
 import { KioskShell } from "@/features/kiosk/KioskShell";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { MessagesPage } from "@/features/portal/MessagesPage";
+import { PreinscriptionPage } from "@/features/enrollment/PreinscriptionPage";
 import { NewsPage } from "@/features/portal/NewsPage";
 import { PlanningPage } from "@/features/staff/PlanningPage";
 import { StaffRecordPage } from "@/features/staff/StaffRecordPage";
@@ -36,6 +37,8 @@ import { AccountingExportPage } from "@/features/accounting/AccountingExportPage
 import { ReportingPage } from "@/features/reporting/ReportingPage";
 
 export const routes: RouteObject[] = [
+  // Pré-inscription en ligne (ADR 0020) : page publique, sans session, intégrable au site de la crèche.
+  { path: "/preinscription", element: <PreinscriptionPage /> },
   {
     // Tablette appairée : session par PIN, jamais conservée ; file d'attente hors connexion (ADR 0005)
     path: "/kiosk",

@@ -6,11 +6,18 @@
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "no-referrer"
-		X-Frame-Options "DENY"
-		Permissions-Policy "geolocation=(), microphone=()"
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		# Micro et caméra pour le site lui-même : vidéos de la journée sur la tablette (ADR 0019).
+		Permissions-Policy "geolocation=(), microphone=(self), camera=(self)"
 		-Server
 	}
+	# Aucun cadre, sauf la pré-inscription en ligne, intégrable au site de la crèche (ADR 0020).
+	@cadre_interdit not path /preinscription /preinscription/*
+	header @cadre_interdit {
+		X-Frame-Options "DENY"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+	}
+	@preinscription path /preinscription /preinscription/*
+	header @preinscription Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors https:"
 	# Exploitation, documentation et rapport de l'hôte à la console : jamais sur internet.
 	@interne path /actuator/* /v3/api-docs* /swagger-ui* /admin/* /interne/*
 	respond @interne 404
