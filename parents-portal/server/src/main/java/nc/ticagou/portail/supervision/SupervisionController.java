@@ -41,6 +41,16 @@ public class SupervisionController {
         return Map.of("siteId", supervision.activate(request.get("activationCode"), request.get("publicKey"), request.get("name")));
     }
 
+    /** Vue groupe (lot 7) : crèches du même groupe que le site signataire. */
+    @org.springframework.web.bind.annotation.GetMapping("/group")
+    public java.util.List<com.fasterxml.jackson.databind.JsonNode> group(
+            @RequestHeader(value = SyncAuthenticator.HEADER_STRUCTURE, required = false) String site,
+            @RequestHeader(value = SyncAuthenticator.HEADER_DATE, required = false) String date,
+            @RequestHeader(value = SyncAuthenticator.HEADER_SIGNATURE, required = false) String signature) {
+        var siteId = authenticator.authenticateSite("GET", "/supervision/v1/group", site, date, signature, new byte[0]);
+        return supervision.group(siteId);
+    }
+
     @PostMapping("/status")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void status(@RequestHeader(value = SyncAuthenticator.HEADER_STRUCTURE, required = false) String site,

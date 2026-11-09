@@ -237,7 +237,8 @@ public class MonitoringService {
                 portal.isEmpty() ? new MonitoringStatus.Portal("DESACTIVE", 0, null, pending)
                         : new MonitoringStatus.Portal((String) portal.getFirst().get("state"), (Integer) portal.getFirst().get("failures"),
                                 (String) portal.getFirst().get("last_error"), pending),
-                toReview, usage(structureId, license.license() == null ? null : license.license().places()));
+                toReview, usage(structureId, license.license() == null ? null : license.license().places()),
+                group(structureId, license.license() == null ? null : license.license().places()));
     }
 
     /** Usage sans donnée personnelle : des comptes et une date (ADR 0012 amendée, console de l'éditeur). */
@@ -257,6 +258,42 @@ public class MonitoringService {
                 structureId, today.withDayOfMonth(1).minusMonths(1));
         return new MonitoringStatus.Usage(children, places, users,
                 direction == null ? null : LocalDate.ofInstant(direction.toInstant(), NOUMEA), attendances, invoices);
+    }
+
+    /**
+     * Bloc « groupe » (lot 7), seulement si la direction a rejoint un groupe : occupation moyenne des 30 derniers jours
+     * (présences par jour d'accueil rapportées aux places), facturé aux familles le mois dernier, reste dû des factures
+     * validées, dépassements d'encadrement des 7 derniers jours.
+     */
+    MonitoringStatus.Group group(UUID structureId, Integer places) {
+        var rows = jdbc.queryForList("SELECT group_code_hash, group_url FROM monitoring_settings WHERE structure_id = ? "
+                + "AND group_code_hash IS NOT NULL", structureId);
+        if (rows.isEmpty()) {
+            return null;
+        }
+        var now = clock.instant();
+        var today = LocalDate.ofInstant(now, NOUMEA);
+        var usage = usage(structureId, places);
+        var name = jdbc.queryForObject("SELECT name FROM structure WHERE id = ?", String.class, structureId);
+        var daily = jdbc.queryForList("SELECT count(DISTINCT child_id) FROM child_attendance WHERE structure_id = ? AND day > ? AND day <= ? "
+                + "GROUP BY day", Integer.class, structureId, today.minusDays(30), today);
+        Integer occupancy = null;
+        if (places != null && places > 0 && !daily.isEmpty()) {
+            occupancy = (int) Math.round(daily.stream().mapToInt(Integer::intValue).average().orElse(0) * 100.0 / places);
+        }
+        long invoiced = jdbc.queryForObject("SELECT COALESCE(sum(family_total), 0) FROM invoice WHERE structure_id = ? AND month = ?",
+                Long.class, structureId, today.withDayOfMonth(1).minusMonths(1));
+        long paid = jdbc.queryForObject("""
+                SELECT COALESCE(sum(a.amount), 0) FROM payment_allocation a JOIN invoice i ON i.id = a.invoice_id
+                 WHERE i.structure_id = ?""", Long.class, structureId);
+        long credited = jdbc.queryForObject("""
+                SELECT COALESCE(sum(n.family_total), 0) FROM credit_note n JOIN invoice i ON i.id = n.invoice_id
+                 WHERE i.structure_id = ?""", Long.class, structureId);
+        long billed = jdbc.queryForObject("SELECT COALESCE(sum(family_total), 0) FROM invoice WHERE structure_id = ?", Long.class, structureId);
+        int breaches = jdbc.queryForObject("SELECT count(*) FROM ratio_breach WHERE structure_id = ? AND started_at >= ?", Integer.class,
+                structureId, Timestamp.from(now.minus(Duration.ofDays(7))));
+        return new MonitoringStatus.Group((String) rows.getFirst().get("group_code_hash"), name, (String) rows.getFirst().get("group_url"),
+                usage.activeChildren(), places, occupancy, invoiced, Math.max(0, billed - credited - paid), breaches, today);
     }
 
     /** Octets libres et total du disque d'un dossier ; nul si le dossier est inaccessible. */

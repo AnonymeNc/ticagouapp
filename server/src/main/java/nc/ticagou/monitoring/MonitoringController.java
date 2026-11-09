@@ -24,10 +24,34 @@ public class MonitoringController {
     public record ActivateRequest(@NotBlank @Size(max = 255) String serviceUrl, @NotBlank @Size(max = 40) String activationCode) {
     }
 
-    private final MonitoringService monitoring;
+    /** {@code url} : adresse de cette crèche, pour le lien depuis la vue groupe des autres. */
+    public record JoinGroup(@NotBlank @Size(max = 64) String code, @Size(max = 255) String url) {
+    }
 
-    public MonitoringController(MonitoringService monitoring) {
+    private final MonitoringService monitoring;
+    private final GroupService groups;
+
+    public MonitoringController(MonitoringService monitoring, GroupService groups) {
         this.monitoring = monitoring;
+        this.groups = groups;
+    }
+
+    @GetMapping("/group")
+    @Operation(summary = "Vue groupe : crèches du groupe et leurs indicateurs agrégés")
+    public GroupService.GroupView group() {
+        return groups.view();
+    }
+
+    @PostMapping("/group")
+    @Operation(summary = "Rejoindre un groupe (code commun) : partage des indicateurs agrégés de la crèche")
+    public GroupService.GroupView join(@Valid @RequestBody JoinGroup request) {
+        return groups.join(request.code(), request.url());
+    }
+
+    @PostMapping("/group/leave")
+    @Operation(summary = "Quitter le groupe : plus rien n'est partagé")
+    public GroupService.GroupView leave() {
+        return groups.leave();
     }
 
     @GetMapping

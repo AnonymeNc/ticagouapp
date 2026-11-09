@@ -36,6 +36,12 @@ veut le savoir avant la directrice, sans accéder aux données de la crèche.
 
   Aucun nom, aucune donnée d'enfant, de famille ou du personnel : un test le vérifie, et un autre vérifie que l'usage
   ne contient que des nombres et une date.
+  - groupe (amendement du 10/11/2026, lot 7 du [plan](../plan-alignement-meeko.md)), **seulement si la direction a
+    rejoint un groupe** dans « Vue groupe », avec son consentement et un code commun dont seule l'empreinte sort : nom et
+    adresse de la crèche, enfants inscrits, places, occupation des 30 derniers jours, montant facturé aux familles le
+    mois dernier, reste dû, dépassements d'encadrement des 7 derniers jours. Le service ne garde que ces champs et ne les
+    montre qu'aux crèches du même groupe (`GET /supervision/v1/group`, signé) ; quitter le groupe les efface au prochain
+    état. Toujours rien sur les personnes.
 - **Rythme** : toutes les 15 minutes, puis attente doublée après chaque échec, jusqu'à 1 h.
 - **Alertes** (`supervision/AlertRules`, évaluées à la réception et toutes les 15 minutes) :
   - serveur muet depuis 2 h entre 6 h et 19 h (heure de Nouméa), 12 h la nuit ;

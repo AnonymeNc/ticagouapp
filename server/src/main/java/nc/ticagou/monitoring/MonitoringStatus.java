@@ -5,10 +5,18 @@ import java.time.LocalDate;
 
 /**
  * État technique envoyé au service de supervision (ADR 0012). Liste blanche : seuls ces champs sortent, et aucun ne
- * contient de donnée personnelle (ni enfant, ni famille, ni personnel) — un test le vérifie.
+ * contient de donnée personnelle (ni enfant, ni famille, ni personnel) — un test le vérifie. {@code group} n'apparaît que
+ * si la direction a rejoint un groupe (lot 7) : le nom de la crèche, son adresse et des indicateurs agrégés.
  */
 public record MonitoringStatus(String version, String database, Backup backup, Disk disk, License license,
-                               Tablets tablets, Portal portal, int attendanceToReview, Usage usage) {
+                               Tablets tablets, Portal portal, int attendanceToReview, Usage usage,
+                               @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+                               Group group) {
+
+    /** Indicateurs partagés avec les autres crèches du groupe : des nombres, rien sur les personnes. */
+    public record Group(String codeHash, String name, String url, int activeChildren, Integer places, Integer occupancyPercent,
+                        long invoicedLastMonth, long outstanding, int ratioBreaches7d, LocalDate asOf) {
+    }
 
     /** Sauvegardes : réussite la plus récente, retard de plus de 48 h, dernier test de restauration. */
     public record Backup(boolean enabled, boolean toolsAvailable, boolean stale, Instant lastSuccessAt,

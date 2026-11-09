@@ -92,6 +92,29 @@ public class SupervisionService {
         return id;
     }
 
+    static final java.util.List<String> GROUP_FIELDS = java.util.List.of("name", "url", "activeChildren", "places", "occupancyPercent",
+            "invoicedLastMonth", "outstanding", "ratioBreaches7d", "asOf");
+
+    /** Crèches du même groupe que ce site (lui compris), avec la date du dernier état ; vide sans groupe. */
+    @Transactional(readOnly = true)
+    public java.util.List<JsonNode> group(UUID siteId) {
+        var hash = jdbc.queryForList("SELECT group_hash FROM supervision_site WHERE id = ? AND group_hash IS NOT NULL", String.class, siteId);
+        if (hash.isEmpty()) {
+            return java.util.List.of();
+        }
+        return jdbc.query("SELECT id, group_snapshot::text AS snapshot, last_seen_at FROM supervision_site WHERE group_hash = ? "
+                + "AND suspended_at IS NULL ORDER BY group_snapshot->>'name'", (rs, i) -> {
+                    try {
+                        var node = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(rs.getString("snapshot"));
+                        node.put("self", rs.getObject("id", UUID.class).equals(siteId));
+                        node.put("lastSeenAt", rs.getTimestamp("last_seen_at") == null ? null : rs.getTimestamp("last_seen_at").toInstant().toString());
+                        return (JsonNode) node;
+                    } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }, hash.getFirst());
+    }
+
     /** État reçu : seuls les champs connus sont gardés, puis les alertes du site sont réévaluées. */
     @Transactional
     public void record(UUID siteId, JsonNode status) {
@@ -104,6 +127,20 @@ public class SupervisionService {
         var now = clock.instant();
         jdbc.update("UPDATE supervision_site SET last_seen_at = ?, last_status = ?::jsonb WHERE id = ?",
                 Timestamp.from(now), kept.toString(), siteId);
+        // Vue groupe (lot 7) : le bloc n'est gardé qu'avec ses champs connus ; absent, la crèche ne partage plus rien.
+        var group = status.get("group");
+        var hash = group == null ? null : group.path("codeHash").asText(null);
+        if (hash == null || !hash.matches("[0-9a-f]{64}")) {
+            jdbc.update("UPDATE supervision_site SET group_hash = NULL, group_snapshot = NULL WHERE id = ?", siteId);
+        } else {
+            var snapshot = json.createObjectNode();
+            GROUP_FIELDS.forEach(f -> {
+                if (group.has(f)) {
+                    snapshot.set(f, group.get(f));
+                }
+            });
+            jdbc.update("UPDATE supervision_site SET group_hash = ?, group_snapshot = ?::jsonb WHERE id = ?", hash, snapshot.toString(), siteId);
+        }
         evaluate(siteId, now);
     }
 
