@@ -32,7 +32,13 @@ une facture soldée entre-temps retire la relance (`OutboxService`).
 **Livré (phase 5)** : ordres aux instances (`orders/`) — liste blanche (`OrderRules`, testée seule), proposés ou donnés avec
 le code, pris une seule fois par `creche.sh appliquer` sur `/interne/v1/ordres` (`OrderController`) ; créer une crèche,
 démonstrations (`creche.sh demo`), abonnement aligné sur le contrat (proposé après paiement), suspendre, reprendre,
-mettre à jour. Le reporting annonce sa phase.
+mettre à jour. Supprimer une crèche : ordre EXPORTER (archive chiffrée lue sur `CONSOLE_EXPORTS_DIR`, téléchargée par
+le navigateur), puis SUPPRIMER, créé seulement après ce téléchargement.
+
+**Livré (phase 6)** : reporting (`reporting/`) — calculs purs dans `Reporting` (balance âgée, mois, coût du support,
+départs ; testés seuls), `ReportingService` (chiffre d'affaires, TGC par taux, encaissé, revenu mensuel par formule,
+vente additionnelle, risque de départ, rentabilité), `ReportingExports` (journal des ventes et des encaissements en CSV,
+classeur Excel avec fastexcel comme l'application, ADR 0006). Temps de support saisi sur les notes et appels de la fiche.
 
 ## Lancer en développement
 

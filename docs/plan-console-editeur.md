@@ -33,7 +33,8 @@ familles, qui existent déjà dans le module `FACTURATION`. Une relance par e-ma
 livrée le 09/11/2026 (barème, TGC et mentions, contrats, factures et avoirs, paiements, boîte d'envoi, indicateurs) ;
 phase 4 livrée le 09/11/2026 (relances préparées chaque jour ouvré, règles datées, règles par client, fériés, modèles) ;
 phase 5 livrée le 09/11/2026 (ordres aux instances, avec en plus la création d'une crèche et les démonstrations depuis la
-console).
+console) ; suppression d'une crèche depuis la console, après export téléchargé, le 09/11/2026 ; phase 6 livrée le
+09/11/2026 (reporting, exports pour le comptable, temps de support saisi sur les appels).
 
 Écarts encore assumés avec la maquette :
 - fiche crèche : la ligne « Contrat : aligné » de la carte Santé est remplacée par l'état du portail parents ;
@@ -41,8 +42,27 @@ console).
 - relance 3 : « Décider » ouvre la fiche de la crèche, où « Suspendre… » donne l'ordre (motif et code) ;
 - ordres : la mise à jour de « toutes » les crèches se fait en un ordre par crèche (plus lisible que « Faite 7/9 ») ;
 - l'e-mail d'une facture validée suit un texte fixe (modifiable message par message dans la boîte d'envoi) ;
-- tableau de bord : pas encore de variation du revenu récurrent d'un mois sur l'autre (« + 13 500 F depuis
-  octobre ») ; elle viendra avec le reporting (phase 6).
+- reporting : en plus de la maquette, un tableau par mois et la TGC par taux (pour la déclaration), un export des
+  encaissements ; le sélecteur de période offre aussi « Autre période » (du… au…), et les filtres client et formule.
+
+Choix de la phase 6 :
+- chiffre d'affaires et TGC : pièces validées émises dans la période, avoirs en négatif ; « abonnements » regroupe
+  abonnements et compléments, « prestations » le reste ; la formule d'une pièce est celle de son contrat (une prestation
+  sans contrat n'apparaît pas quand on filtre par formule) ;
+- encaissé : paiements reçus dans la période (filtré par formule : la seule part affectée aux pièces de cette formule) ;
+- balance âgée **à ce jour**, en TTC restant dû : échue le jour même = non échu ; 0–30 j veut dire 1 à 30 jours de retard ;
+- revenu mensuel par formule : contrats qui couvrent aujourd'hui, au prix de leur barème (formule de base, modules à la
+  carte, PC/tablettes/support, remises) ;
+- taux de départ sur 12 mois glissants : crèches résiliées dont le dernier contrat a fini dans l'année, rapportées aux
+  crèches sous contrat il y a un an (« — » s'il n'y en avait aucune) ;
+- risque de départ : direction sans connexion depuis 14 jours, présences en baisse d'au moins 30 % sur 4 semaines, au
+  moins 2 factures payées en retard (ou encore dues après échéance) sur 12 mois ;
+- rentabilité : revenu mensuel du contrat − (minutes saisies sur les notes et appels de la période, ramenées au mois ×
+  taux horaire) − hébergement réparti ; taux horaire (9 000 F) et hébergement (1 200 F) réglables depuis l'écran ;
+- journal des ventes et des encaissements en CSV (point-virgule, UTF-8, dates JJ/MM/AAAA, montants entiers, une colonne
+  base et TGC par taux) et classeur Excel (fastexcel, ADR 0006) ; **le format exact attendu par le comptable reste à lui
+  demander** (FEC éventuel non fait) ;
+- tableau de bord : variation du revenu récurrent depuis la fin du mois précédent.
 
 Choix de la phase 3 :
 - factures et avoirs dans une même table (`type` FACTURE ou AVOIR), numérotés en deux séries (`F2026-0001`,

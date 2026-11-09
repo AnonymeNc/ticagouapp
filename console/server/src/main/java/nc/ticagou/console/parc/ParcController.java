@@ -58,7 +58,9 @@ class ParcController {
 
     record NoteRequest(
             @NotNull @Pattern(regexp = "NOTE|APPEL") String kind,
-            @NotBlank(message = "La note est vide.") @Size(max = 2000, message = "2 000 caractères au plus.") String text) {
+            @NotBlank(message = "La note est vide.") @Size(max = 2000, message = "2 000 caractères au plus.") String text,
+            @jakarta.validation.constraints.Min(value = 1, message = "Durée : 1 minute au moins.")
+            @jakarta.validation.constraints.Max(value = 1440, message = "Durée : 24 heures au plus.") Integer minutes) {
     }
 
     record ProspectRequest(
@@ -100,7 +102,7 @@ class ParcController {
     @PostMapping("/parc/{slug}/notes")
     @ResponseStatus(HttpStatus.CREATED)
     Detail note(@PathVariable String slug, @Valid @RequestBody NoteRequest request) {
-        return service.note(slug, request.kind(), request.text());
+        return service.note(slug, request.kind(), request.text(), request.minutes());
     }
 
     @GetMapping("/recherche")

@@ -144,7 +144,7 @@ describe("parc des crèches", () => {
       },
       "POST /parc/lagon-bleu/notes": (call) => {
         const note = call.body as { kind: "APPEL"; text: string };
-        current = { ...current, notes: [{ id: 1, at: new Date().toISOString(), operatorLogin: "jordan", ...note }] };
+        current = { ...current, notes: [{ id: 1, at: new Date().toISOString(), operatorLogin: "jordan", minutes: null, ...note }] };
         return { status: 201, body: current };
       },
     });

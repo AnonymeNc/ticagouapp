@@ -238,7 +238,7 @@ describe("facturation de l'éditeur", () => {
 
   it("tableau de bord : indicateurs de facturation et envois en tête de la liste", async () => {
     const board: Board = {
-      mrr: 171_000, arr: 2_052_000, outstanding: 412_650, overdue: 186_480, overdueCount: 3, dso: 27, drafts: 2, renewalDrafts: 2, pendingMessages: 4,
+      mrr: 171_000, mrrPrevious: 171_000, arr: 2_052_000, outstanding: 412_650, overdue: 186_480, overdueCount: 3, dso: 27, drafts: 2, renewalDrafts: 2, pendingMessages: 4,
       months: ["2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11"].map((month) => ({ month, invoiced: 100_000, collected: 80_000 })),
       late: [summary({ status: "VALIDEE", state: "RETARD", daysLate: 16, number: "F2026-0047", remaining: 174_960, dueOn: "2026-10-24" })],
       draftList: [summary({}), summary({ id: "f2", crecheName: "Crèche Tiare" })],

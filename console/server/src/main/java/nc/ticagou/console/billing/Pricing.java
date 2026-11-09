@@ -46,7 +46,7 @@ public final class Pricing {
 
     public record Catalogue(PriceList list, List<PriceItem> items) {
 
-        Optional<PriceItem> find(String kind, String code, String tier) {
+        public Optional<PriceItem> find(String kind, String code, String tier) {
             return items.stream().filter(i -> i.kind().equals(kind) && i.code().equals(code) && java.util.Objects.equals(i.tier(), tier))
                     .findFirst();
         }

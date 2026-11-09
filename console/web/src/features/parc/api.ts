@@ -78,7 +78,7 @@ export type Client = {
   paymentDays: number;
 };
 
-export type Note = { id: number; at: string; operatorLogin: string | null; kind: "NOTE" | "APPEL"; text: string };
+export type Note = { id: number; at: string; operatorLogin: string | null; kind: "NOTE" | "APPEL"; text: string; minutes: number | null };
 export type JournalEvent = { id: number; at: string; operatorLogin: string | null; action: string; target: string | null; detail: string | null; ip: string | null };
 export type Point = { day: string; diskUsedPercent: number | null; dataFree: number | null; activeChildren: number | null; attendances7d: number | null; activeUsers30d: number | null };
 
@@ -167,7 +167,7 @@ export function useUpdateFiche(slug: string) {
 }
 
 export function useAddNote(slug: string) {
-  return useCrecheWrite((note: { kind: "NOTE" | "APPEL"; text: string }) =>
+  return useCrecheWrite((note: { kind: "NOTE" | "APPEL"; text: string; minutes?: number }) =>
     api<Detail>(`/parc/${encodeURIComponent(slug)}/notes`, { method: "POST", body: note }),
   );
 }

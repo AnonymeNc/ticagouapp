@@ -536,6 +536,7 @@ function FicheEditor({ detail }: { detail: Detail }) {
 function Notes({ detail, kind, onKind }: { detail: Detail; kind: "NOTE" | "APPEL"; onKind: (k: "NOTE" | "APPEL") => void }) {
   const add = useAddNote(detail.row.slug);
   const [text, setText] = useState("");
+  const [minutes, setMinutes] = useState("");
   const area = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (kind === "APPEL") {
@@ -545,7 +546,12 @@ function Notes({ detail, kind, onKind }: { detail: Detail; kind: "NOTE" | "APPEL
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    add.mutate({ kind, text }, { onSuccess: () => setText("") });
+    add.mutate({ kind, text, ...(minutes ? { minutes: Number(minutes) } : {}) }, {
+      onSuccess: () => {
+        setText("");
+        setMinutes("");
+      },
+    });
   };
 
   return (
@@ -584,9 +590,23 @@ function Notes({ detail, kind, onKind }: { detail: Detail; kind: "NOTE" | "APPEL
             {errorMessage(add.error)}
           </p>
         )}
-        <Button type="submit" disabled={add.isPending || text.trim() === ""} className="self-start">
-          {kind === "APPEL" ? "Noter l’appel" : "Ajouter la note"}
-        </Button>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="note-minutes">Temps passé (min)</Label>
+            <Input
+              id="note-minutes"
+              inputMode="numeric"
+              className="w-28"
+              placeholder="facultatif"
+              value={minutes}
+              onChange={(e) => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            />
+          </div>
+          <Button type="submit" disabled={add.isPending || text.trim() === ""}>
+            {kind === "APPEL" ? "Noter l’appel" : "Ajouter la note"}
+          </Button>
+        </div>
+        <p className="m-0 text-small text-muted-foreground">Le temps saisi alimente la rentabilité par crèche (Reporting).</p>
       </form>
       <ul className="m-0 mt-4 flex list-none flex-col p-0">
         {detail.notes.length === 0 && <li className="text-muted-foreground">Aucune note.</li>}
@@ -596,6 +616,7 @@ function Notes({ detail, kind, onKind }: { detail: Detail; kind: "NOTE" | "APPEL
               <Pill tone={note.kind === "APPEL" ? "lagon" : "neutral"}>{note.kind === "APPEL" ? "Appel" : "Note"}</Pill>
               {formatDateTime(new Date(note.at))}
               {note.operatorLogin && ` · ${note.operatorLogin}`}
+              {note.minutes != null && ` · ${note.minutes} min`}
             </div>
             <p className="m-0 mt-1 whitespace-pre-line">{note.text}</p>
           </li>

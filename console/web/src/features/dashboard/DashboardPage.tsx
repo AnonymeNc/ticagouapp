@@ -74,7 +74,7 @@ function Overview({ parc, board, orders }: { parc: Parc; board?: Board; orders?:
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Revenu mensuel récurrent" value={xpf(board?.mrr)} hint={board ? `ARR ${xpf(board.arr)} · contrats en cours, HT` : "…"} />
+        <Kpi label="Revenu mensuel récurrent" value={xpf(board?.mrr)} hint={board ? mrrHint(board, new Date()) : "…"} />
         <Kpi
           label="Encours clients"
           value={xpf(board?.outstanding)}
@@ -190,6 +190,14 @@ function Chart({ months }: { months: Board["months"] }) {
       </div>
     </section>
   );
+}
+
+/** « + 13 500 F depuis octobre · ARR 162 000 F » ; sans variation, l'ARR seul. */
+export function mrrHint(board: Pick<Board, "mrr" | "mrrPrevious" | "arr">, now: Date): string {
+  const delta = board.mrr - (board.mrrPrevious ?? board.mrr);
+  const previous = new Date(now.getFullYear(), now.getMonth() - 1, 15).toLocaleString("fr-FR", { month: "long", timeZone: "Pacific/Noumea" });
+  const change = delta === 0 ? null : `${delta > 0 ? "+" : "−"} ${xpf(Math.abs(delta))} depuis ${previous}`;
+  return [change, `ARR ${xpf(board.arr)}`, change ? null : "contrats en cours, HT"].filter(Boolean).join(" · ");
 }
 
 function Kpi({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: "bad" }) {
