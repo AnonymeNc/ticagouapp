@@ -89,6 +89,10 @@ services:
       CONSOLE_SMTP_AUTH: "true"
       CONSOLE_SMTP_STARTTLS: "true"
       CONSOLE_FORWARD_HEADERS: native
+      # Exports des crèches (creche.sh exporter), téléchargés depuis la console avant une suppression.
+      CONSOLE_EXPORTS_DIR: /exports
+    volumes:
+      - ${TICAGOU_DONNEES}/console-exports:/exports:ro
     networks: [ticagou]
 
 volumes:

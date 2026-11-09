@@ -1,6 +1,9 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConfirmProvider } from "@/features/auth/Confirm";
 import { connected, mockServer, renderApp } from "@/test/mockServer";
+import { DeleteCreche } from "./DeleteCreche";
 import type { Row } from "@/features/parc/api";
 import type { Order, OrdersBoard } from "./api";
 
@@ -102,5 +105,67 @@ describe("ordres aux instances", () => {
     const list = await screen.findByRole("heading", { name: "À faire aujourd’hui" });
     await waitFor(() => expect(within(list.closest("section")!).getByText(/1 ordre à confirmer/)).toBeInTheDocument());
     expect(within(list.closest("section")!).getByText(/non aligné sur le contrat/)).toBeInTheDocument();
+  });
+});
+
+describe("supprimer une crèche depuis la console", () => {
+  beforeEach(() => {
+    document.cookie = "XSRF-TOKEN=jeton-csrf";
+    URL.createObjectURL = vi.fn(() => "blob:export");
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  });
+
+  it("deux mises en garde, export téléchargé tout seul, puis suppression transmise", async () => {
+    let exported = false;
+    const done = order({ id: "e1", type: "EXPORTER", params: { suite: "supprimer" }, status: "FAIT", reason: "Suppression de la crèche",
+      result: { exportFile: "niaoulis-20261109-1030.tar.gz.enc", size: 6 } });
+    const calls = mockServer({
+      "GET /parc/niaoulis/ordres": () => ({ body: exported ? [done] : [] }),
+      "POST /ordres": () => {
+        exported = true;
+        return { status: 201, body: { ...done, status: "EN_ATTENTE", result: null } };
+      },
+      "GET /ordres/e1/export": () => ({ body: "abcd" }),
+      "POST /ordres/e1/export/recu": () => ({ body: { ...done, result: { ...done.result, receivedAt: "2026-11-09T00:00:00Z", deletionOrder: "s1" } } }),
+    });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <ConfirmProvider>
+          <DeleteCreche row={row({ balanceDue: 45_000, activeChildren: 20 })} />
+        </ConfirmProvider>
+      </QueryClientProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "Supprimer la crèche…" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Supprimer Les Niaoulis ?");
+    expect(dialog).toHaveTextContent(/Solde dû : 45\s000/);
+    expect(dialog).toHaveTextContent("20 enfants encore inscrits");
+    await user.click(within(dialog).getByRole("button", { name: "Continuer" }));
+
+    const submit = screen.getByRole("button", { name: "Exporter puis supprimer" });
+    await user.type(screen.getByLabelText("Identifiant de la crèche"), "niaouli");
+    expect(submit).toBeDisabled();
+    await user.type(screen.getByLabelText("Identifiant de la crèche"), "s");
+    await user.click(submit);
+    expect(calls.find((c) => c.method === "POST" && c.path === "/ordres")?.body).toEqual({
+      type: "EXPORTER", slug: "niaoulis", params: { suite: "supprimer", confirmation: "niaoulis" }, reason: "Suppression de la crèche",
+    });
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Export enregistré sur cet ordinateur : niaoulis-20261109-1030.tar.gz.enc");
+    const paths = calls.map((c) => `${c.method} ${c.path}`);
+    expect(paths.indexOf("GET /ordres/e1/export")).toBeLessThan(paths.indexOf("POST /ordres/e1/export/recu"));
+    expect(paths.filter((p) => p === "POST /ordres/e1/export/recu")).toHaveLength(1);
+  });
+
+  it("export incomplet : rien n'est signalé reçu, donc rien n'est supprimé", async () => {
+    const done = order({ id: "e1", type: "EXPORTER", params: { suite: "supprimer" }, status: "FAIT", result: { exportFile: "niaoulis-20261109-1030.tar.gz.enc", size: 999 } });
+    const calls = mockServer({ ...base, "GET /ordres/e1/export": () => ({ body: "abcd" }), "GET /ordres": () => ({ body: { ...board, orders: [done] } }) });
+    const user = userEvent.setup();
+    renderApp("/ordres");
+    await user.click(await screen.findByRole("button", { name: "Télécharger puis supprimer" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Export incomplet");
+    expect(calls.some((c) => c.path === "/ordres/e1/export/recu")).toBe(false);
   });
 });

@@ -2,6 +2,8 @@
 # Exploitation des crèches hébergées (ADR 0013) : une instance, une base et un dossier par crèche.
 # Voir docs/EXPLOITATION.md. Commandes : ./creche.sh aide
 set -eu
+# Dossier d'appel : un chemin relatif donné en argument (export, archive) part de là.
+APPEL=$(pwd)
 cd "$(dirname "$0")"
 DEPLOY=$(pwd)
 
@@ -14,6 +16,8 @@ set +a
 : "${TICAGOU_DONNEES:?Renseignez TICAGOU_DONNEES dans socle.env}"
 CRECHES="$TICAGOU_DONNEES/creches"
 SITES="$TICAGOU_DONNEES/caddy-sites"
+# Exports des crèches, lus par la console (montés en lecture seule) ; gardés 7 jours.
+EXPORTS="$TICAGOU_DONNEES/console-exports"
 
 socle() { docker compose -f socle.yml --env-file socle.env "$@"; }
 sql_admin() { socle exec -T db psql -v ON_ERROR_STOP=1 -qAt -U ticagou_admin "$@"; }
@@ -101,6 +105,7 @@ cmd_socle() {
                 printf '%s {\n\timport securite\n\treverse_proxy portail:8090\n}\n' "$PORTAL_DOMAIN" >"$SITES/portail.caddy"
                 ;;
             --console)
+                mkdir -p "$EXPORTS" && chmod 711 "$EXPORTS"
                 : "${CONSOLE_DB_PASSWORD:?Renseignez CONSOLE_DB_PASSWORD dans socle.env}"
                 : "${CONSOLE_SECRET_KEY:?Renseignez CONSOLE_SECRET_KEY dans socle.env (openssl rand -base64 32)}"
                 profil="$profil --profile console"
@@ -298,6 +303,7 @@ cmd_reprendre() { existe "$1"; instance "$1" up -d; attendre "$1"; echo "$1 rela
 cmd_restaurer() {
     slug=${1:?Usage : restaurer <crèche> <archive.tcb>}
     archive=${2:?Usage : restaurer <crèche> <archive.tcb>}
+    case $archive in /*) ;; *) archive="$APPEL/$archive" ;; esac
     existe "$slug"
     nom=$(basename "$archive")
     [ -f "$(dossier_de "$slug")/data/backups/$nom" ] || cp "$archive" "$(dossier_de "$slug")/data/backups/$nom"
@@ -368,7 +374,90 @@ cmd_supprimer() {
     rm -f "$SITES/$slug.caddy"
     socle exec -T caddy caddy reload --config /etc/caddy/Caddyfile
     rm -rf "$(dossier_de "$slug")"
-    echo "$slug supprimée. Pensez à la copie hors site."
+    echo "$slug supprimée : base, documents, sauvegardes et site effacés."
+}
+
+# exporter <crèche> : toute la crèche (base, documents, clés) dans une archive chiffrée avec CONSOLE_SECRET_KEY, écrite
+# dans console-exports et gardée 7 jours ; la console la fait télécharger avant une suppression (restitution aussi).
+#   relire : openssl enc -d -aes-256-cbc -pbkdf2 -pass env:CONSOLE_SECRET_KEY -in <fichier> | tar xz
+#   recréer la crèche : ./creche.sh reimporter <fichier>
+cmd_exporter() {
+    slug=${1:?Usage : exporter <crèche>}
+    existe "$slug"
+    : "${CONSOLE_SECRET_KEY:?Renseignez CONSOLE_SECRET_KEY dans socle.env}"
+    mkdir -p "$EXPORTS"
+    chmod 711 "$EXPORTS"
+    dossier=$(dossier_de "$slug")
+    travail=$(mktemp -d)
+    mkdir "$travail/$slug"
+    if ! socle exec -T db pg_dump -U ticagou_admin -Fc "$(base_de "$slug")" >"$travail/$slug/base.dump" || [ ! -s "$travail/$slug/base.dump" ]; then
+        rm -rf "$travail"
+        echo "Export de la base de $slug impossible." >&2
+        exit 1
+    fi
+    cp "$dossier/creche.env" "$travail/$slug/creche.env"
+    # Documents et pièces de l'instance ; ses sauvegardes, plus anciennes que cet export, n'y sont pas.
+    tar -C "$dossier" --exclude=data/backups -cf "$travail/$slug/donnees.tar" data
+    cat >"$travail/$slug/LISEZMOI.txt" <<FIN
+Export complet de la crèche $slug ($(valeur "$slug" DOMAINE)), fait le $(date '+%d/%m/%Y à %H:%M').
+
+base.dump    base PostgreSQL (pg_dump, format personnalisé) : enfants, familles, contrats, présences, factures, journal
+donnees.tar  documents de la crèche, chiffrés avec TICAGOU_STORAGE_KEY
+creche.env   clés de la crèche (base, documents, clé de secours des sauvegardes) : à garder au coffre
+
+Recréer la crèche à l'identique sur le serveur : ./creche.sh reimporter <ce fichier .tar.gz.enc>
+Lire seulement la base : pg_restore -l base.dump, ou pg_restore -d <base vide> base.dump
+FIN
+    fichier="$EXPORTS/$slug-$(date +%Y%m%d-%H%M).tar.gz.enc"
+    tar -C "$travail" -czf "$travail/export.tar.gz" "$slug"
+    openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:CONSOLE_SECRET_KEY -in "$travail/export.tar.gz" -out "$fichier"
+    rm -rf "$travail"
+    [ -s "$fichier" ] || { echo "Export vide : $fichier" >&2; exit 1; }
+    chmod 600 "$fichier"
+    # Lu par la console, qui tourne avec l'utilisateur 1001.
+    chown 1001:1001 "$fichier" 2>/dev/null || true
+    echo "Export prêt : $(basename "$fichier") ($(wc -c <"$fichier" | tr -d ' ') octets)"
+}
+
+# Suppression ordonnée par la console : seulement si l'export qu'elle a fait télécharger est là, complet et récent.
+supprimer_apres_export() {
+    slug=$1 export=$2
+    existe "$slug"
+    echo "$export" | grep -Eq "^$slug-[0-9]{8}-[0-9]{4}\\.tar\\.gz\\.enc\$" || { echo "Export d'une autre crèche ou absent : refusé." >&2; exit 1; }
+    fichier="$EXPORTS/$export"
+    [ -s "$fichier" ] || { echo "Export $export introuvable : suppression refusée." >&2; exit 1; }
+    [ -n "$(find "$fichier" -mmin -1440)" ] || { echo "Export de plus de 24 h : refaites l'export avant de supprimer." >&2; exit 1; }
+    echo "$slug" | cmd_supprimer "$slug"
+}
+
+# reimporter <export.tar.gz.enc> : recrée une crèche supprimée depuis son export (mêmes clés, même domaine).
+cmd_reimporter() {
+    archive=${1:?Usage : reimporter <export.tar.gz.enc>}
+    case $archive in /*) ;; *) archive="$APPEL/$archive" ;; esac
+    : "${CONSOLE_SECRET_KEY:?Renseignez CONSOLE_SECRET_KEY dans socle.env}"
+    travail=$(mktemp -d)
+    openssl enc -d -aes-256-cbc -pbkdf2 -pass env:CONSOLE_SECRET_KEY -in "$archive" -out "$travail/export.tar.gz"
+    tar -C "$travail" -xzf "$travail/export.tar.gz"
+    rm -f "$travail/export.tar.gz"
+    slug=$(ls "$travail")
+    echo "$slug" | grep -Eq '^[a-z0-9][a-z0-9-]{1,40}$' || { rm -rf "$travail"; echo "Export illisible." >&2; exit 1; }
+    dossier=$(dossier_de "$slug")
+    [ -e "$dossier" ] && { rm -rf "$travail"; echo "Cette crèche existe déjà : $dossier" >&2; exit 1; }
+    base=$(base_de "$slug")
+    mkdir -p "$dossier"
+    chmod 700 "$dossier"
+    (umask 077; cp "$travail/$slug/creche.env" "$dossier/creche.env")
+    tar -C "$dossier" -xf "$travail/$slug/donnees.tar"
+    chown -R 1000:1000 "$dossier/data" 2>/dev/null || true
+    sql_admin -d postgres -c "CREATE ROLE $base LOGIN CREATEDB PASSWORD '$(echappe "$(valeur "$slug" TICAGOU_DB_PASSWORD)")'"
+    sql_admin -d postgres -c "CREATE DATABASE $base OWNER $base"
+    fermer_base "$base"
+    socle exec -T db pg_restore -U ticagou_admin -d "$base" --no-owner --role="$base" <"$travail/$slug/base.dump"
+    rm -rf "$travail"
+    instance "$slug" up -d
+    attendre "$slug"
+    ecrire_site "$slug" "$(valeur "$slug" DOMAINE)"
+    echo "$slug recréée depuis $(basename "$archive") : https://$(valeur "$slug" DOMAINE)"
 }
 
 # Modules de chaque formule de démonstration (comme scripts/tester-en-local.ps1).
@@ -429,7 +518,7 @@ param() { printf '%s' "$2" | tr ';' '\n' | sed -n "s/^$1=//p"; }
 # Contrôle d'un ordre : identifiants, type de la liste blanche, valeurs dans un alphabet sûr.
 ordre_valide() {
     echo "$1" | grep -Eq '^[0-9a-f-]{36}$' || return 1
-    case $2 in CREER|DEMO|SUPPRIMER_DEMO|ABONNEMENT|SUSPENDRE|REPRENDRE|METTRE_A_JOUR) ;; *) return 1 ;; esac
+    case $2 in CREER|DEMO|SUPPRIMER_DEMO|ABONNEMENT|SUSPENDRE|REPRENDRE|METTRE_A_JOUR|EXPORTER|SUPPRIMER) ;; *) return 1 ;; esac
     echo "$3" | grep -Eq '^[a-z0-9][a-z0-9-]{1,40}$' || return 1
     if [ -n "$4" ] && printf '%s\n' "$4" | tr ';' '\n' | grep -Evq '^[a-z_]+=[A-Za-z0-9.,_-]*$'; then
         return 1
@@ -457,6 +546,8 @@ executer_ordre() {
         SUSPENDRE) cmd_suspendre "$slug" ;;
         REPRENDRE) cmd_reprendre "$slug" ;;
         METTRE_A_JOUR) cmd_mettre_a_jour "$(param version "$params")" "$slug" ;;
+        EXPORTER) cmd_exporter "$slug" ;;
+        SUPPRIMER) supprimer_apres_export "$slug" "$(param export "$params")" ;;
         *) echo "Ordre hors liste blanche : $type" >&2; return 1 ;;
     esac
 }
@@ -467,6 +558,8 @@ cmd_appliquer() {
     # Un seul passage à la fois : un ordre long (démonstration, mise à jour) ne se relance pas à la minute suivante.
     exec 9>"$TICAGOU_DONNEES/.appliquer.lock"
     flock -n 9 || exit 0
+    # Exports déjà téléchargés : sur l'ordinateur de l'éditeur, plus besoin de les garder ici au-delà de 7 jours.
+    [ -d "$EXPORTS" ] && find "$EXPORTS" -name '*.tar.gz.enc' -mtime +7 -delete
     entetes=$(mktemp) ordres=$(mktemp) sortie=$(mktemp)
     trap 'rm -f "$entetes" "$ordres" "$sortie"' EXIT
     printf 'Authorization: Bearer %s\n' "$CONSOLE_HOST_TOKEN" >"$entetes"
@@ -509,7 +602,9 @@ console-telephone-perdu <identifiant>   double authentification de la console à
 demo <identifiant> [--formule F] instance de démonstration remplie (Essentiel, Gestion ou Complet)
 supprimer-demo <identifiant>   efface une démonstration (refusé pour une vraie crèche)
 appliquer                      exécute les ordres confirmés dans la console (cron, chaque minute)
-supprimer <crèche>             efface tout, après restitution des données
+exporter <crèche>              base, documents et clés dans une archive chiffrée (console-exports, 7 jours)
+reimporter <export>            recrée une crèche supprimée depuis son export
+supprimer <crèche>             efface tout (depuis la console : après export téléchargé)
 FIN
 }
 
@@ -533,6 +628,8 @@ case $commande in
     demo) cmd_demo "$@" ;;
     supprimer-demo) cmd_supprimer_demo "$@" ;;
     appliquer) cmd_appliquer ;;
+    exporter) cmd_exporter "$@" ;;
+    reimporter) cmd_reimporter "$@" ;;
     supprimer) cmd_supprimer "$@" ;;
     *) aide ;;
 esac

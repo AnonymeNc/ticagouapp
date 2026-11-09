@@ -86,6 +86,11 @@ public class OrderRepository {
                 ok ? "FAIT" : "ECHEC", Timestamp.from(now), output, result == null ? null : result.toString(), id);
     }
 
+    /** Résultat complété après coup (export lu en entier, téléchargé, ordre de suppression créé). */
+    public void result(UUID id, JsonNode result) {
+        jdbc.update("UPDATE instance_order SET result = ?::jsonb WHERE id = ?", result.toString(), id);
+    }
+
     private Order order(ResultSet rs, int i) throws SQLException {
         Map<String, String> params;
         JsonNode result;

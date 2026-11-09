@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { Link, useParams } from "react-router";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ContractCard, CrecheInvoices } from "@/features/billing/ContractCard";
-import { CrecheOrders, InstanceActions } from "@/features/orders/InstanceActions";
+import { CrecheData, CrecheOrders, InstanceActions } from "@/features/orders/InstanceActions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthDot, Pill } from "@/components/ui/pill";
@@ -143,6 +143,7 @@ function Fiche({ slug }: { slug: string }) {
             <ContractCard slug={row.slug} places={row.places} />
             <CrecheOrders slug={row.slug} />
             <SubscriptionTab detail={detail} />
+            <CrecheData row={row} />
           </div>
         )}
         {tab === "usage" && <UsageTab detail={detail} />}
@@ -379,8 +380,8 @@ function SubscriptionTab({ detail }: { detail: Detail }) {
           ]}
         />
         <p className="m-0 mt-4 text-small text-muted-foreground">
-          Pour renouveler ou changer la formule : <span className="font-mono">./creche.sh abonnement {row.slug} …</span>. La console
-          l’enverra elle-même avec les ordres (phase 5).
+          Pour renouveler ou changer la formule : « Reporter le contrat dans l’instance » ci-dessus ; un abonnement payé le
+          propose de lui-même, à confirmer dans les ordres.
         </p>
       </Card>
     </div>

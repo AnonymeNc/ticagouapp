@@ -38,6 +38,10 @@ public class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.NOT_FOUND, code, detail);
     }
 
+    public static ApiException gone(String code, String detail) {
+        return new ApiException(HttpStatus.GONE, code, detail);
+    }
+
     public static ApiException conflict(String code, String detail) {
         return new ApiException(HttpStatus.CONFLICT, code, detail);
     }

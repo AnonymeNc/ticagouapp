@@ -11,7 +11,7 @@ import { ago } from "@/features/parc/labels";
 import { errorMessage } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { describe, ordersApi, statusPill, typeLabels, useOrderAction, useOrders, type Order } from "./api";
+import { describe, formatSize, ordersApi, statusPill, typeLabels, useDownloadExport, useOrderAction, useOrders, type Order } from "./api";
 
 type Panel = "creer" | "demo" | "maj" | null;
 
@@ -75,8 +75,8 @@ export function OrdersPage() {
         )}
       </section>
       <p className="m-0 text-small text-muted-foreground">
-        Les ordres que vous donnez demandent votre code. Ceux que la console propose (abonnement payé) attendent « Confirmer ». Supprimer une
-        crèche cliente reste en ligne de commande, après restitution de ses données.
+        Les ordres que vous donnez demandent votre code. Ceux que la console propose (abonnement payé) attendent « Confirmer ». Une crèche se
+        supprime depuis sa fiche (onglet Abonnement) : son export complet se télécharge d’abord sur cet ordinateur.
       </p>
     </>
   );
@@ -86,7 +86,8 @@ export function OrdersTable({ orders, compact = false }: { orders: Order[]; comp
   const [open, setOpen] = useState<string | null>(null);
   const confirm = useOrderAction((id: string) => ordersApi.confirm(id));
   const cancel = useOrderAction((id: string) => ordersApi.cancel(id));
-  const error = confirm.error ?? cancel.error;
+  const download = useDownloadExport();
+  const error = confirm.error ?? cancel.error ?? download.error;
   return (
     <div className="overflow-x-auto">
       {error && <p role="alert" className="m-0 p-2 text-danger-700">{errorMessage(error)}</p>}
@@ -118,6 +119,13 @@ export function OrdersTable({ orders, compact = false }: { orders: Order[]; comp
                     {describe(o)}
                     {o.reason && <div>{o.reason}</div>}
                     {o.result?.setupLink && <SetupLink link={o.result.setupLink} />}
+                    {o.result?.exportFile && (
+                      <div>
+                        Export : <span className="font-mono">{o.result.exportFile}</span>
+                        {o.result.size != null && ` (${formatSize(o.result.size)})`}
+                        {o.result.receivedAt && ", téléchargé"}
+                      </div>
+                    )}
                     {o.result?.url && (
                       <div>
                         <a href={o.result.url} target="_blank" rel="noreferrer" className="text-lagon-600 underline">{o.result.url}</a>
@@ -128,6 +136,16 @@ export function OrdersTable({ orders, compact = false }: { orders: Order[]; comp
                   <td className="px-3 py-2.5 text-right whitespace-nowrap">
                     {o.status === "A_CONFIRMER" && (
                       <Button size="sm" disabled={confirm.isPending} onClick={() => confirm.mutate(o.id)}>Confirmer (code)</Button>
+                    )}
+                    {o.status === "FAIT" && o.result?.exportFile && (
+                      <Button
+                        size="sm"
+                        variant={o.params.suite === "supprimer" && !o.result.deletionOrder ? "destructive" : "outline"}
+                        disabled={download.isPending}
+                        onClick={() => download.mutate(o)}
+                      >
+                        {o.params.suite === "supprimer" && !o.result.deletionOrder ? "Télécharger puis supprimer" : "Télécharger l’export"}
+                      </Button>
                     )}
                     {(o.status === "A_CONFIRMER" || o.status === "EN_ATTENTE" || o.stale) && (
                       <Button size="sm" variant="ghost" disabled={cancel.isPending} onClick={() => cancel.mutate(o.id)}>Annuler</Button>

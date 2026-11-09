@@ -59,8 +59,10 @@ Choix de la phase 5 (et demande du 09/11/2026 : créer une crèche et lancer une
 - « créer la crèche » et « démonstration » sont des ordres comme les autres ; la console ne touche toujours pas Docker ;
 - une démonstration est une instance à part (identifiant `demo-AAAAMMJJ-HHMM`, statut « Démonstration »), remplie par
   `scripts/demo/donnees-demo.mjs` dans un conteneur Node ; elle ne compte ni comme cliente ni dans le revenu ;
-- supprimer une démonstration se fait depuis la console ; supprimer une crèche cliente reste en ligne de commande,
-  après restitution de ses données (irréversible) ;
+- supprimer une démonstration se fait depuis la console, sans export ;
+- supprimer une crèche cliente se fait aussi depuis la console (demande du 09/11/2026) : deux mises en garde, export
+  complet et chiffré téléchargé tout seul sur l'ordinateur de l'éditeur, puis seulement la suppression, qui nomme cet
+  export ; l'export seul sert à restituer les données ; `creche.sh reimporter` revient en arrière ;
 - l'abonnement attendu de l'instance suit les périodes **payées** (D6) : une facture seulement validée ne prolonge rien ;
 - les ordres que vous donnez demandent votre code ; ceux que la console propose (abonnement payé) attendent « Confirmer ».
 

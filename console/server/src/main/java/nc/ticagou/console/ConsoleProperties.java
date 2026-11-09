@@ -16,9 +16,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param mailFrom         expéditeur des factures et relances ({@code CONSOLE_MAIL_FROM}, facturation@…)
  * @param renewalLeadDays  brouillon de renouvellement d'un abonnement annuel, en jours avant la période (45)
  * @param monthlyLeadDays  brouillon de la mensualité suivante, en jours avant le mois (10)
+ * @param exportsDir       exports des crèches écrits par {@code creche.sh exporter}, lus pour le téléchargement (/exports)
  */
 @ConfigurationProperties(prefix = "console")
 public record ConsoleProperties(String secretKey, String setupToken, boolean secureCookie, int sessionMaxHours,
                                 String portalUrl, String portalAdminToken, String hostToken, boolean scheduling,
-                                String mailFrom, int renewalLeadDays, int monthlyLeadDays) {
+                                String mailFrom, int renewalLeadDays, int monthlyLeadDays, String exportsDir) {
 }

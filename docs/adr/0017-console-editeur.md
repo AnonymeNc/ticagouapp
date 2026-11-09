@@ -42,8 +42,14 @@ avoir redemandent le code.
 **La console ne touche jamais Docker** : elle dépose des ordres que `creche.sh appliquer` (cron de l'hôte, chaque minute)
 exécute, sur une liste blanche revérifiée par le script : créer une crèche, lancer ou supprimer une démonstration,
 abonnement, suspendre, reprendre, mettre à jour. Chaque ordre est pris une seule fois et rend compte (sortie, lien de
-démarrage). Les ordres donnés demandent le code ; ceux que la console propose attendent une confirmation. Supprimer une
-crèche cliente n'en fait pas partie : c'est irréversible, cela reste en ligne de commande.
+démarrage). Les ordres donnés demandent le code ; ceux que la console propose attendent une confirmation.
+
+**Supprimer une crèche cliente** (amendement du 09/11/2026) passe aussi par la console, en deux ordres : EXPORTER (base,
+documents et clés dans une archive chiffrée avec `CONSOLE_SECRET_KEY`, que la console lit sur un dossier monté en
+lecture seule) puis SUPPRIMER. La console ne crée le second qu'après avoir servi l'export en entier et que le navigateur
+de l'éditeur l'a reçu ; il nomme l'export, que `creche.sh` revérifie (présent, de cette crèche, de moins de 24 h) avant
+d'effacer. Deux mises en garde précèdent : ce qui est effacé, puis l'identifiant retapé et le code. Ainsi rien n'est
+effacé sans une copie complète sur l'ordinateur de l'éditeur, et `creche.sh reimporter` la remet en service.
 
 **Supervision** : reste dans le portail ; la console la lit par l'API d'administration, sur le réseau Docker interne,
 toutes les 5 minutes (`PORTAL_ADMIN_TOKEN`). L'hôte, lui, envoie son rapport (`creche.sh rapport-console`, cron toutes les

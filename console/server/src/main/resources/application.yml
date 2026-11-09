@@ -77,3 +77,5 @@ console:
   mail-from: ${CONSOLE_MAIL_FROM:}
   renewal-lead-days: 45
   monthly-lead-days: 10
+  # Exports des crèches (creche.sh exporter), montés en lecture seule depuis l'hôte ; téléchargés avant une suppression.
+  exports-dir: ${CONSOLE_EXPORTS_DIR:exports}
