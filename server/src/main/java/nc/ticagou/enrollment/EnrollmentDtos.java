@@ -108,7 +108,12 @@ public final class EnrollmentDtos {
                                 LocalDateTime visitAt, boolean visitDone, LocalDate offerExpiresOn,
                                 String refusalReason, UUID childId, List<ContractLink> contracts,
                                 Set<UUID> criteria, List<CriterionDto> availableCriteria, int score, Ranking ranking,
-                                TestResult capacity, List<NoteDto> notes, List<EventDto> history, long version) {
+                                TestResult capacity, List<NoteDto> notes, List<EventDto> history, long version,
+                                String source, Instant consentAt, List<AnswerDto> answers) {
+    }
+
+    /** Réponse à une question personnalisée, avec le libellé de la question au moment de la demande. */
+    public record AnswerDto(String label, String value) {
     }
 
     // --- Saisie -------------------------------------------------------------------------------------

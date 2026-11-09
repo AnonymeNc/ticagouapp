@@ -65,11 +65,14 @@ public class EnrollmentService {
     private final CapacityService capacity;
     private final AuditService audit;
     private final Clock clock;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     public EnrollmentService(EnrollmentRequestRepository requests, EnrollmentCriterionRepository criteria,
                              EnrollmentNoteRepository notes, EnrollmentEventRepository events,
                              SectionRepository sections, ChildRepository children, ContractRepository contracts,
-                             FamilyService families, CapacityService capacity, AuditService audit, Clock clock) {
+                             FamilyService families, CapacityService capacity, AuditService audit, Clock clock,
+                             org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
         this.requests = requests;
         this.criteria = criteria;
         this.notes = notes;
@@ -110,7 +113,7 @@ public class EnrollmentService {
                             r.getExpectedBirthDate(), r.getSectionId(), r.getDesiredStart(), r.getDays(), r.getStage(),
                             r.getReceivedOn(), r.getStageChangedOn(), r.getFollowUpOn(), r.getVisitAt(),
                             r.isVisitDone(), r.getOfferExpiresOn(), r.getRefusalReason(),
-                            score(r, criteriaById, today), tags(r, criteriaById, today), hint);
+                            score(r, criteriaById, today), withSource(r, tags(r, criteriaById, today)), hint);
                 })
                 .toList();
         return new BoardDto(stats(all, today), cards);
@@ -166,7 +169,24 @@ public class EnrollmentService {
                 score(r, criteriaById, today), ranking(r, criteriaById, today), hint,
                 notes.findByRequestIdOrderByCreatedAtDesc(id).stream().map(NoteDto::from).toList(),
                 events.findByRequestIdOrderByCreatedAtDesc(id).stream().map(EventDto::from).toList(),
-                r.getVersion());
+                r.getVersion(), r.getSource(), r.getConsentAt(), answers(id));
+    }
+
+    /** « En ligne » en tête des étiquettes d'une demande déposée par le formulaire public. */
+    private static List<String> withSource(EnrollmentRequest r, List<String> tags) {
+        if (!"EN_LIGNE".equals(r.getSource())) {
+            return tags;
+        }
+        var out = new java.util.ArrayList<String>(tags.size() + 1);
+        out.add("En ligne");
+        out.addAll(tags);
+        return out;
+    }
+
+    private List<EnrollmentDtos.AnswerDto> answers(UUID requestId) {
+        return jdbc.query("SELECT a.label, a.value FROM enrollment_answer a JOIN enrollment_question q ON q.id = a.question_id "
+                + "WHERE a.request_id = ? ORDER BY q.display_order, a.label", (rs, i) -> new EnrollmentDtos.AnswerDto(rs.getString(1),
+                rs.getString(2)), requestId);
     }
 
     private Ranking ranking(EnrollmentRequest request, Map<UUID, EnrollmentCriterion> criteriaById, LocalDate today) {
@@ -219,6 +239,20 @@ public class EnrollmentService {
         requests.saveAndFlush(request);
         event(request, "Demande reçue au bureau");
         audit.record(AuditAction.ENROLLMENT_REQUEST_CREATED, "enrollment_request", request.getId(), Map.of());
+        return request.getId();
+    }
+
+    /** Demande reçue par le formulaire public (ADR 0020) : sans utilisateur, marquée « En ligne ». */
+    @Transactional
+    public UUID createOnline(UUID structureId, RequestForm form, java.time.Instant consentAt) {
+        var request = new EnrollmentRequest(structureId, LocalDate.now(clock));
+        apply(request, form);
+        request.receivedOnline(consentAt);
+        requests.saveAndFlush(request);
+        events.saveAndFlush(new EnrollmentEvent(structureId, request.getId(), "Demande reçue en ligne", "Formulaire en ligne",
+                clock.instant()));
+        audit.record(new nc.ticagou.audit.AuditService.Actor(structureId, null, "Formulaire en ligne"),
+                AuditAction.ENROLLMENT_REQUEST_CREATED, "enrollment_request", request.getId(), Map.of("source", "EN_LIGNE"));
         return request.getId();
     }
 

@@ -159,6 +159,19 @@ function RequestView({ record }: { record: RequestRecord }) {
               )}
             </section>
           )}
+          {record.source === "EN_LIGNE" && (
+            <section className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
+              <h2 className="m-0 text-title-3">Demande en ligne</h2>
+              {record.consentAt && <p className="m-0 text-small text-muted-foreground">Consentement donné le {formatDate(new Date(record.consentAt))}</p>}
+              {record.answers.length === 0 ? <p className="m-0 text-muted-foreground">Pas de question en plus.</p> : (
+                <dl className="m-0 flex flex-col gap-2">
+                  {record.answers.map((a) => (
+                    <div key={a.label}><dt className="text-small text-muted-foreground">{a.label}</dt><dd className="m-0">{a.value}</dd></div>
+                  ))}
+                </dl>
+              )}
+            </section>
+          )}
           <section className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
             <h2 className="m-0 text-title-3">Historique</h2>
             <ol className="m-0 flex list-none flex-col gap-2 p-0">

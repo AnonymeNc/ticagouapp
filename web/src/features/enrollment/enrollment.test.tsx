@@ -34,6 +34,9 @@ const board: Board = {
 
 const record: RequestRecord = {
   ...card({}),
+  source: "BUREAU",
+  consentAt: null,
+  answers: [],
   careType: "REGULIER", arrivesAt: "07:30:00", leavesAt: "16:30:00", guardianFirstName: "Vaïana", guardianLastName: "Tein",
   relationship: "Mère", phone: "77.12.34", email: "vaiana.tein@exemple.nc", familyId: null, familyLabel: null, siblings: [],
   childId: null, contracts: [], criteria: ["k-1"], availableCriteria: [
@@ -192,5 +195,52 @@ describe("transformer en contrat", () => {
     expect(body.contract.planning.billingMode).toBe("REEL");
     expect(body.contract.adaptation.length).toBeGreaterThan(0);
     expect(body.contract.adaptation.every((s: { date: string }) => s.date < "2099-01-05")).toBe(true);
+  });
+});
+
+describe("pré-inscription en ligne", () => {
+  const publicForm = {
+    enabled: true, structureName: "Les P’tits Niaoulis", intro: "Bienvenue.", criteria: [{ id: "c-1", label: "Fratrie déjà accueillie" }],
+    questions: [{ id: "q-1", label: "Comment nous avez-vous connus ?", kind: "CHOIX", options: ["Internet", "Bouche-à-oreille"], required: true,
+      displayOrder: 1, validFrom: "2026-11-01", validTo: null }],
+  };
+
+  it("dépose une demande sans compte, avec ses réponses et le consentement", async () => {
+    const { calls } = mockApi({
+      "GET /public/preinscription": { body: publicForm },
+      "POST /public/preinscription": { status: 202, body: { message: "Votre demande est bien envoyée : la crèche vous recontactera." } },
+    });
+    renderAt("/preinscription");
+    expect(await screen.findByRole("heading", { name: /Pré-inscription — Les P’tits Niaoulis/ })).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("Prénom"), "Lou");
+    await userEvent.type(screen.getByLabelText("Nom"), "Tein");
+    await userEvent.type(screen.getByLabelText(/Date de naissance/), "12/03/2025");
+    await userEvent.type(screen.getByLabelText(/Entrée souhaitée/), "05/01/2027");
+    await userEvent.click(screen.getByRole("button", { name: "Lundi" }));
+    await userEvent.click(screen.getByRole("button", { name: "Jeudi" }));
+    await userEvent.type(screen.getByLabelText("Votre prénom"), "Vaïana");
+    await userEvent.type(screen.getByLabelText("Votre nom"), "Tein");
+    await userEvent.type(screen.getByLabelText("Téléphone"), "77.12.34");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Fratrie déjà accueillie" }));
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer ma demande" }));
+    expect(await screen.findByText(/Répondez à la question : Comment nous avez-vous connus/)).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Comment nous avez-vous connus ?"), "Internet");
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer ma demande" }));
+    expect(await screen.findByText(/Cochez la case de consentement/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("checkbox", { name: /J’accepte que la crèche enregistre/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer ma demande" }));
+    expect(await screen.findByText(/Votre demande est bien envoyée/)).toBeInTheDocument();
+    const sent = calls.find((c) => c.key === "POST /public/preinscription")?.body as Record<string, unknown>;
+    expect(sent).toMatchObject({
+      consent: true, website: "", answers: { "q-1": "Internet" },
+      request: { childFirstName: "Lou", birthDate: "2025-03-12", desiredStart: "2027-01-05", days: [1, 4], criteria: ["c-1"], phone: "77.12.34" },
+    });
+    expect(typeof sent.startedAt).toBe("number");
+  });
+
+  it("indique que la crèche ne reçoit pas de demande en ligne quand le formulaire est fermé", async () => {
+    mockApi({ "GET /public/preinscription": { body: { ...publicForm, enabled: false, criteria: [], questions: [] } } });
+    renderAt("/preinscription");
+    expect(await screen.findByText(/ne reçoit pas de pré-inscription en ligne/)).toBeInTheDocument();
   });
 });

@@ -105,6 +105,10 @@ export type RequestRecord = {
   notes: Note[];
   history: HistoryEvent[];
   version: number;
+  /** BUREAU ou EN_LIGNE (formulaire public, ADR 0020). */
+  source: "BUREAU" | "EN_LIGNE";
+  consentAt: string | null;
+  answers: { label: string; value: string }[];
 };
 
 export type RequestFormBody = {
