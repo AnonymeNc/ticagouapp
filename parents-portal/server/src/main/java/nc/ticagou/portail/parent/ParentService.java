@@ -146,7 +146,22 @@ public class ParentService {
         return Map.of("day", date, "items", items, "days", days);
     }
 
-    // --- Factures, documents ------------------------------------------------------------------
+    /** Album : les photos et vidéos partagées où figure l'enfant, des plus récentes aux plus anciennes (60 jours au plus). */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> photos(String email, UUID structureId, UUID childId) {
+        childAccess(email, structureId, childId);
+        return jdbc.query("SELECT i.id, i.type, i.at, i.payload, i.file_type FROM item i "
+                + "JOIN item_child c ON c.structure_id = i.structure_id AND c.item_id = i.id "
+                + "WHERE i.structure_id = ? AND c.child_id = ? AND i.type = 'ENTRY' AND i.file IS NOT NULL "
+                + "ORDER BY i.at DESC", (rs, i) -> {
+                    var row = row(rs.getObject("id", UUID.class), rs.getString("type"), rs.getTimestamp("at"),
+                            rs.getString("payload"), true);
+                    row.put("fileType", rs.getString("file_type"));
+                    return row;
+                }, structureId, childId);
+    }
+
+    // --- Factures, documents, actualités ------------------------------------------------------
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> items(String email, String type) {
@@ -162,6 +177,27 @@ public class ParentService {
                         row.put("familyId", a.familyId());
                         return row;
                     }, a.structureId(), a.familyId(), type));
+        }
+        return result;
+    }
+
+    /** Actualités de la crèche encore affichées (date de fin non dépassée), de la plus récente à la plus ancienne. */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> news(String email) {
+        var today = Date.valueOf(LocalDate.now(clock.withZone(TimeConfig.NOUMEA)));
+        var result = new ArrayList<Map<String, Object>>();
+        for (var a : accesses(email)) {
+            result.addAll(jdbc.query("SELECT i.id, i.type, i.at, i.payload, i.file IS NOT NULL AS has_file, i.file_type FROM item i "
+                    + "JOIN item_family f ON f.structure_id = i.structure_id AND f.item_id = i.id "
+                    + "WHERE i.structure_id = ? AND f.family_id = ? AND i.type = 'NEWS' AND i.expires_on >= ? ORDER BY i.at DESC",
+                    (rs, i) -> {
+                        var row = row(rs.getObject("id", UUID.class), rs.getString("type"), rs.getTimestamp("at"),
+                                rs.getString("payload"), rs.getBoolean("has_file"));
+                        row.put("fileType", rs.getString("file_type"));
+                        row.put("structureId", a.structureId());
+                        row.put("familyId", a.familyId());
+                        return row;
+                    }, a.structureId(), a.familyId(), today));
         }
         return result;
     }

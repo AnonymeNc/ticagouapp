@@ -12,6 +12,9 @@ public final class Uploads {
 
     public static final long MAX_PHOTO_BYTES = 2L * 1024 * 1024;
     public static final long MAX_DOCUMENT_BYTES = 10L * 1024 * 1024;
+    /** Vidéo de 30 s compressée sur la tablette ; en Base64, elle tient dans un lot de synchronisation (ADR 0019). */
+    public static final long MAX_VIDEO_BYTES = 5L * 1024 * 1024;
+    private static final Set<String> VIDEO_TYPES = Set.of("video/mp4", "video/webm");
     private static final Set<String> PHOTO_TYPES = Set.of("image/png", "image/jpeg");
     private static final Set<String> DOCUMENT_TYPES = Set.of("application/pdf", "image/png", "image/jpeg");
 
@@ -26,6 +29,18 @@ public final class Uploads {
         var type = detect(content);
         if (type == null || !PHOTO_TYPES.contains(type)) {
             throw ApiException.rule("photo_type", "La photo doit être une image JPEG ou PNG.");
+        }
+        return type;
+    }
+
+    /** Vérifie une vidéo (MP4 ou WebM, 5 Mo au plus) et renvoie son type réel. */
+    public static String checkVideo(byte[] content) {
+        if (content.length == 0 || content.length > MAX_VIDEO_BYTES) {
+            throw ApiException.rule("video_size", "La vidéo doit peser au plus 5 Mo (30 secondes).");
+        }
+        var type = detect(content);
+        if (type == null || !VIDEO_TYPES.contains(type)) {
+            throw ApiException.rule("video_type", "La vidéo doit être au format MP4 ou WebM.");
         }
         return type;
     }
@@ -56,6 +71,13 @@ public final class Uploads {
         }
         if (startsWith(c, 0xFF, 0xD8, 0xFF)) {
             return "image/jpeg";
+        }
+        if (startsWith(c, 0x1A, 0x45, 0xDF, 0xA3)) {
+            return "video/webm";
+        }
+        // MP4 : boîte « ftyp » après la taille sur 4 octets.
+        if (c.length >= 12 && c[4] == 'f' && c[5] == 't' && c[6] == 'y' && c[7] == 'p') {
+            return "video/mp4";
         }
         return null;
     }

@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.context.event.EventListener;
@@ -32,16 +33,18 @@ public class PortalPublisher {
     private final LicenseService licenses;
     private final DailyEntryRepository entries;
     private final ChildAttendanceRepository attendances;
+    private final StructureNewsRepository news;
     private final Clock clock;
 
     public PortalPublisher(PortalSettingsRepository settings, PortalOutboxRepository outbox, LicenseService licenses,
                            DailyEntryRepository entries, ChildAttendanceRepository attendances,
-                           Clock clock) {
+                           StructureNewsRepository news, Clock clock) {
         this.settings = settings;
         this.outbox = outbox;
         this.licenses = licenses;
         this.entries = entries;
         this.attendances = attendances;
+        this.news = news;
         this.clock = clock;
     }
 
@@ -55,8 +58,10 @@ public class PortalPublisher {
         if (change.type() == PortalItemType.CHILD) {
             // L'autorisation photo a pu changer : les photos encore visibles sur le portail sont réexaminées.
             var since = LocalDate.now(clock.withZone(NOUMEA)).minus(PHOTO_RETENTION);
-            for (var entryId : entries.idsForChildSince(change.entityId(), DailyEntry.Kind.PHOTO, since)) {
-                enqueue(new PortalChange(change.structureId(), PortalItemType.ENTRY, entryId));
+            for (var kind : List.of(DailyEntry.Kind.PHOTO, DailyEntry.Kind.VIDEO)) {
+                for (var entryId : entries.idsForChildSince(change.entityId(), kind, since)) {
+                    enqueue(new PortalChange(change.structureId(), PortalItemType.ENTRY, entryId));
+                }
             }
         }
     }
@@ -70,6 +75,13 @@ public class PortalPublisher {
         for (var attendance : attendances.findByChildIdAndDayGreaterThanEqual(childId, since)) {
             enqueue(new PortalChange(structureId, PortalItemType.ATTENDANCE, attendance.getId()));
         }
+    }
+
+    /** Famille invitée ou portail réactivé : les actualités encore visibles repartent (la liste des familles change). */
+    void enqueueVisibleNews(UUID structureId) {
+        var today = LocalDate.now(clock.withZone(NOUMEA));
+        news.findByStructureIdOrderByPublishedAtDesc(structureId).stream().filter(n -> n.isVisibleOn(today))
+                .forEach(n -> enqueue(new PortalChange(structureId, PortalItemType.NEWS, n.getId())));
     }
 
     /** Ajout sans contrôle de l'état (activation, ordre d'effacement). */

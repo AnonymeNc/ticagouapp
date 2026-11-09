@@ -68,3 +68,45 @@ describe("Paramètres › Portail parents", () => {
     await waitFor(() => expect(calls.find((c) => c.key === "POST /portal/deactivate")?.body).toEqual({ confirmation: "désactiver" }));
   });
 });
+
+describe("Messages › actualités et messages à plusieurs familles", () => {
+  const moyens = { id: "sec-m", name: "Moyens", minAgeMonths: 18, maxAgeMonths: 30, capacity: 12, color: "#2a7", displayOrder: 2 };
+  const published = {
+    id: "n-1", sectionId: null, sectionName: null, title: "Menu de la semaine", body: "En pièce jointe.", fileName: "menu.pdf",
+    publishedBy: "Nathalie Kowalski", publishedAt: "2026-11-02T04:00:00Z", expiresOn: null, withdrawnAt: null, status: "PUBLIEE", families: 12,
+  };
+
+  it("écrit à toutes les familles d’une section", async () => {
+    const { calls } = server(on, {
+      "GET /sections": { body: [moyens] },
+      "GET /messages": { body: [] },
+      "POST /messages/broadcast": { body: { families: 9 } },
+    });
+    renderAt("/messages");
+    await userEvent.click(await screen.findByRole("button", { name: /Écrire à plusieurs familles/ }));
+    await userEvent.selectOptions(screen.getByLabelText("Destinataires"), "sec-m");
+    await userEvent.type(screen.getByLabelText("Message"), "Pensez aux chapeaux demain.");
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer" }));
+    expect(await screen.findByText(/Message envoyé à 9 familles/)).toBeInTheDocument();
+    expect(calls.find((c) => c.key === "POST /messages/broadcast")?.body).toEqual({ sectionId: "sec-m", body: "Pensez aux chapeaux demain." });
+  });
+
+  it("publie une actualité avec sa date de fin et la liste", async () => {
+    const { calls } = server(on, {
+      "GET /portal/news": { body: [published] },
+      "POST /portal/news": { status: 201, body: { ...published, id: "n-2", title: "Fête du lagon", families: 3 } },
+    });
+    renderAt("/messages/actualites");
+    expect(await screen.findByRole("heading", { name: "Menu de la semaine" })).toBeInTheDocument();
+    expect(screen.getByText(/Toute la crèche · Nathalie Kowalski · 02\/11\/2026 · 12 familles/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("Titre"), "Fête du lagon");
+    await userEvent.type(screen.getByLabelText("Texte"), "Samedi 10 h.");
+    await userEvent.type(screen.getByLabelText(/Affichée jusqu’au/), "19/12/2026");
+    await userEvent.click(screen.getByRole("button", { name: /Publier pour les parents/ }));
+    expect(await screen.findByText(/Publiée : 3 familles la verront/)).toBeInTheDocument();
+    const form = calls.find((c) => c.key === "POST /portal/news")?.body as FormData;
+    expect(form.get("title")).toBe("Fête du lagon");
+    expect(form.get("expiresOn")).toBe("2026-12-19");
+    expect(form.get("sectionId")).toBeNull();
+  });
+});

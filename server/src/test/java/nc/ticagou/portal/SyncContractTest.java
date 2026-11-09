@@ -41,7 +41,8 @@ class SyncContractTest {
             PortalItemType.ENTRY, SyncDtos.EntryPayload.class,
             PortalItemType.INVOICE, SyncDtos.InvoicePayload.class,
             PortalItemType.DOCUMENT, SyncDtos.DocumentPayload.class,
-            PortalItemType.MESSAGE, SyncDtos.MessagePayload.class);
+            PortalItemType.MESSAGE, SyncDtos.MessagePayload.class,
+            PortalItemType.NEWS, SyncDtos.NewsPayload.class);
 
     private static JsonNode read(String name) throws IOException {
         return JSON.readTree(Files.readAllBytes(CONTRACT.resolve(name)));
@@ -63,7 +64,7 @@ class SyncContractTest {
             assertThat(JSON.valueToTree(payload).toString()).as(item.type().name()).isEqualTo(node.get("payload").toString());
         }
         assertThat(types).containsAll(PAYLOADS.keySet()).contains(PortalItemType.PURGE_FAMILY);
-        assertThat(read("batch-response.json").get("acceptedUpTo").asLong()).isEqualTo(10);
+        assertThat(read("batch-response.json").get("acceptedUpTo").asLong()).isEqualTo(11);
     }
 
     @Test

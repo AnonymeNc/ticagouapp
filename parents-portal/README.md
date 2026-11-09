@@ -42,6 +42,7 @@ Pour relier un serveur de crèche de développement :
 | `PORTAL_ADMIN_TOKEN` | Jeton de l'hébergeur pour `/admin/v1` (codes d'activation, suspension) |
 | `PORTAL_SUPERVISION_EMAIL` | Adresse qui reçoit les alertes de supervision des serveurs de crèche (ADR 0012) ; vide : journal seulement |
 | `PORTAL_SMTP_HOST`, `PORTAL_SMTP_PORT`, `PORTAL_SMTP_USER`, `PORTAL_SMTP_PASSWORD`, `PORTAL_SMTP_AUTH`, `PORTAL_SMTP_STARTTLS`, `PORTAL_MAIL_FROM` | Envoi des e-mails de connexion |
+| `PORTAL_VAPID_KEY` | Clés des notifications Web Push (ADR 0018), « PKCS#8 Base64 » + « . » + « X.509 Base64 » ; vide : générées au premier démarrage et gardées dans la base. Changer la clé oblige les parents à réactiver les notifications |
 | `PORTAL_FORWARD_HEADERS` | `native` derrière le proxy TLS (adresse IP du client pour la signature et les limites) |
 
 Le portail doit être servi en HTTPS (proxy ou répartiteur de l'hébergeur) ; le cookie de session est `Secure`,

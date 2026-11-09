@@ -24,6 +24,7 @@ import nc.ticagou.portail.TimeConfig;
 import nc.ticagou.portail.common.ApiException;
 import nc.ticagou.portail.common.FileCrypto;
 import nc.ticagou.portail.common.Hashes;
+import nc.ticagou.portail.push.PushService;
 
 /**
  * Applique les lots envoyés par le serveur d'une crèche (ADR 0010). Le portail ne calcule rien : il garde ce qu'il
@@ -42,12 +43,14 @@ public class SyncService {
     private final FileCrypto crypto;
     private final ObjectMapper json;
     private final Clock clock;
+    private final PushService push;
 
-    public SyncService(JdbcTemplate jdbc, FileCrypto crypto, ObjectMapper json, Clock clock) {
+    public SyncService(JdbcTemplate jdbc, FileCrypto crypto, ObjectMapper json, Clock clock, PushService push) {
         this.jdbc = jdbc;
         this.crypto = crypto;
         this.json = json;
         this.clock = clock;
+        this.push = push;
     }
 
     // --- Activation ---------------------------------------------------------------------------
@@ -111,7 +114,7 @@ public class SyncService {
                 case "STRUCTURE" -> structure(structureId, payload);
                 case "GUARDIAN" -> guardian(structureId, id, deleted, payload);
                 case "CHILD" -> child(structureId, id, deleted, payload);
-                case "ATTENDANCE", "ENTRY", "INVOICE", "DOCUMENT", "MESSAGE" -> item(structureId, type, id, deleted, payload);
+                case "ATTENDANCE", "ENTRY", "INVOICE", "DOCUMENT", "MESSAGE", "NEWS" -> item(structureId, type, id, deleted, payload);
                 case "PURGE_FAMILY" -> purgeFamily(structureId, id);
                 default -> throw ApiException.rule("unknown_type", "Type inconnu : " + type);
             }
@@ -152,6 +155,7 @@ public class SyncService {
         jdbc.update("UPDATE parent_session SET revoked_at = ? WHERE lower(email) = lower(?) AND revoked_at IS NULL "
                         + "AND NOT EXISTS (SELECT 1 FROM guardian g WHERE lower(g.email) = lower(?))",
                 Timestamp.from(clock.instant()), email, email);
+        push.forgetOrphan(email);
     }
 
     private void child(UUID structureId, UUID id, boolean deleted, JsonNode p) {
@@ -168,6 +172,9 @@ public class SyncService {
     }
 
     private void item(UUID structureId, String type, UUID id, boolean deleted, JsonNode p) {
+        // Un élément déjà reçu (renvoi, mise à jour) ne notifie pas les parents une seconde fois (ADR 0018).
+        boolean existed = jdbc.queryForObject("SELECT count(*) FROM item WHERE structure_id = ? AND id = ?", Long.class,
+                structureId, id) > 0;
         jdbc.update("DELETE FROM item WHERE structure_id = ? AND id = ?", structureId, id);
         if (deleted) {
             return;
@@ -214,6 +221,17 @@ public class SyncService {
                 fileType = "application/pdf";
                 expires = today.plus(BILLING_RETENTION);
             }
+            case "NEWS" -> {
+                // Actualité : affichée jusqu'à sa date de fin, sinon au plus 12 mois.
+                at = instant(p, "publishedAt");
+                day = at == null ? today : LocalDate.ofInstant(at, TimeConfig.NOUMEA);
+                p.path("familyIds").forEach(f -> families.add(UUID.fromString(f.asText())));
+                file = bytes(p, "file");
+                fileType = file == null ? null : text(p, "fileType");
+                var end = text(p, "expiresOn");
+                var max = today.plus(MESSAGE_RETENTION);
+                expires = end == null || LocalDate.parse(end).isAfter(max) ? max : LocalDate.parse(end);
+            }
             default -> {
                 at = instant(p, "sentAt");
                 families.add(uuid(p, "familyId"));
@@ -221,13 +239,16 @@ public class SyncService {
                 expires = today.plus(MESSAGE_RETENTION);
             }
         }
-        stored.remove(List.of("photo", "photoType", "pdf", "familyIds", "childIds", "familyId"));
+        stored.remove(List.of("photo", "photoType", "pdf", "file", "fileType", "familyIds", "childIds", "familyId"));
         jdbc.update("INSERT INTO item (structure_id, id, type, day, at, payload, file, file_type, expires_on, updated_at) "
                         + "VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?)", structureId, id, type,
                 day == null ? null : Date.valueOf(day), at == null ? null : Timestamp.from(at), stored.toString(),
                 file == null ? null : crypto.encrypt(structureId, id, file), fileType, Date.valueOf(expires),
                 Timestamp.from(clock.instant()));
         link(structureId, id, families, children);
+        if (!existed) {
+            push.onNewItem(structureId, type, p, families, children, file != null);
+        }
     }
 
     void link(UUID structureId, UUID id, List<UUID> families, List<UUID> children) {

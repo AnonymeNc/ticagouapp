@@ -108,8 +108,8 @@ public class KioskService {
      */
     public OperationResult processPhoto(Operation op, byte[] photo) {
         if (op.type() != OperationType.TRANSMISSION || op.entry() == null
-                || op.entry().kind() != nc.ticagou.journal.DailyEntry.Kind.PHOTO) {
-            throw ApiException.rule("invalid_operation", "Une photo s’envoie avec une transmission « Photo ».");
+                || !op.entry().kind().isMedia()) {
+            throw ApiException.rule("invalid_operation", "Une photo ou une vidéo s’envoie avec une transmission « Photo » ou « Vidéo ».");
         }
         return processOne(devices.requireCurrent(), op, photo);
     }

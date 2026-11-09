@@ -46,10 +46,11 @@ au moment de l'envoi à partir de l'état courant :
 | `GUARDIAN` | prénom, nom, e-mail, famille : seulement les responsables invités par la direction |
 | `CHILD` | prénom, initiale du nom, section ; photo de profil si l'autorisation PHOTOS est accordée ; informations de santé **partagées explicitement** |
 | `ATTENDANCE` | heures d'arrivée et de départ du jour |
-| `ENTRY` | transmission : heure, type (repas, sieste, change, activité, photo, mot), texte court, détails (quantité, durée) |
+| `ENTRY` | transmission : heure, type (repas, sieste, change, activité, photo, vidéo, mot), texte court, détails (quantité, durée) ; une vidéo de 30 s au plus part dans le champ `photo` ([ADR 0019](0019-videos-transmissions.md)) |
 | `INVOICE` | facture ou avoir validé : numéro, mois, lignes (libellé et montant, comme sur le PDF), montants XPF, reste dû, PDF |
 | `DOCUMENT` | document proposé à la signature (contrat, avenant, autorisation) : titre, PDF, empreinte, état |
-| `MESSAGE` | message de l'équipe : prénom de l'auteur, texte |
+| `MESSAGE` | message de l'équipe : prénom de l'auteur, texte ; un message « à plusieurs familles » part comme un message dans le fil de chacune |
+| `NEWS` | actualité de la crèche : titre, texte, prénom de l'auteur, date de publication et de fin, pièce jointe facultative (PDF ou image, 5 Mo au plus), familles visées (toutes les familles invitées, ou celles qui ont un enfant inscrit dans la section) |
 | `STRUCTURE` | nom, téléphone, coordonnées de virement, heure limite pour signaler une absence sans repas facturé (vide si la crèche ne le pratique pas : les parents n’en sont pas informés) |
 | `PURGE_FAMILY`, `PURGE_STRUCTURE` | ordre d'effacement |
 
@@ -57,12 +58,12 @@ au moment de l'envoi à partir de l'état courant :
   - jamais d'allergie, de PAI, de régime, de vaccin, de médecin ni de consigne médicamenteuse par défaut ;
   - la DIRECTION peut partager une information précise (table `health_share`, tracée dans l'audit). Le texte est
     figé au moment du partage, et une modification ultérieure de la fiche ne sort pas toute seule.
-- **Photos** :
-  - une photo n'est envoyée que si l'éducatrice l'a marquée « à partager » ;
+- **Photos et vidéos** (ADR 0019) :
+  - une photo ou une vidéo n'est envoyée que si l'éducatrice l'a marquée « à partager » ;
   - chaque enfant identifié sur la photo doit avoir l'autorisation PHOTOS accordée. Sinon, la photo ne sort pas.
 - **Familles sans accès** : rien de ce qui la concerne ne sort tant qu'aucun responsable de la famille n'est invité.
-- **Catégories** : la direction choisit ce qu'elle partage (transmissions, photos, factures, documents, messages,
-  absences). Une catégorie décochée n'est plus envoyée.
+- **Catégories** : la direction choisit ce qu'elle partage (transmissions, photos, factures, documents, messages et
+  actualités, absences). Une catégorie décochée n'est plus envoyée.
 
 **Ce qui remonte**
 | Élément | Effet sur le serveur local |
@@ -79,7 +80,7 @@ derniers jours, dans la limite de la conservation ci-dessous.
 
 **Conservation et effacement**
 - Sur le portail, les transmissions, présences et photos sont effacées après 60 jours, les factures et les documents
-  après 24 mois.
+  après 24 mois, les actualités à leur date de fin ou après 12 mois. Une actualité retirée par la direction est effacée.
 - Les fichiers y sont chiffrés au repos (AES-256-GCM).
 - `PURGE_FAMILY` part à la suppression d'une famille. Le retrait de l'accès des responsables efface leur compte.
 - **Désactivation** (Paramètres › Portail parents, ou licence sans le module `PORTAIL_PARENTS`) :
@@ -117,7 +118,10 @@ derniers jours, dans la limite de la conservation ci-dessous.
   partage apparaissent dans un encadré.
 - **Factures** : pas de paiement en ligne ; les coordonnées de virement remplacent le choix du moyen de paiement.
   L'attestation annuelle n'est pas encore envoyée.
-- **Documents** : la rubrique « De la crèche » (menus, projet pédagogique) n'est pas alimentée ; le détail d'une
-  sortie est dans le PDF de l'autorisation.
+- **Documents** : la rubrique « De la crèche » (menus, projet pédagogique) reprend les pièces jointes des actualités ;
+  le détail d'une sortie est dans le PDF de l'autorisation.
+- **Actualités et album** (lot 1, sans maquette dédiée) : la dernière actualité des 14 derniers jours s'affiche en tête
+  de la journée, avec un lien vers toutes les actualités ; un lien « Les photos de … » ouvre l'album de l'enfant (photos
+  partagées des 60 derniers jours, téléchargeables). La barre du bas garde ses cinq rubriques.
 - **Absence** : le bandeau « Prévenez avant 09:00 : le repas du jour ne vous sera pas facturé » ne s'affiche que si la
   direction a réglé cette heure dans Paramètres › Portail parents.

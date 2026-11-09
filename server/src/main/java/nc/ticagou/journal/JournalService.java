@@ -102,13 +102,14 @@ public class JournalService {
         var text = JournalRules.text(input.kind(), input.text());
         var details = JournalRules.details(input.kind(), input.details());
         UUID photoId = null;
-        if (input.kind() == Kind.PHOTO) {
+        if (input.kind().isMedia()) {
             if (photo == null || photo.length == 0) {
-                throw ApiException.rule("photo_required", "La photo manque.");
+                throw ApiException.rule("photo_required", input.kind() == Kind.VIDEO ? "La vidéo manque." : "La photo manque.");
             }
-            photoId = fileStore.store(structureId, photo, Uploads.checkPhoto(photo)).getId();
+            var type = input.kind() == Kind.VIDEO ? Uploads.checkVideo(photo) : Uploads.checkPhoto(photo);
+            photoId = fileStore.store(structureId, photo, type).getId();
         } else if (photo != null) {
-            throw ApiException.rule("invalid_entry", "Seule une transmission « Photo » porte une photo.");
+            throw ApiException.rule("invalid_entry", "Seule une transmission « Photo » ou « Vidéo » porte un fichier.");
         }
         var now = clock.instant();
         var entry = new DailyEntry(id, structureId, day, occurred, input.kind(), input.childIds(), photoId, author.userId(),

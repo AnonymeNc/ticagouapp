@@ -1,5 +1,5 @@
 /** Portail parents côté crèche (ADR 0010) : types et appels, miroir des DTO serveur. */
-import { api } from "@/lib/api";
+import { api, apiBlob, apiUpload } from "@/lib/api";
 import type { EntryKind } from "@/features/kiosk/api";
 
 export type PortalState = "DESACTIVE" | "ACTIF" | "PURGE_EN_COURS";
@@ -104,7 +104,26 @@ export type JournalEntryDto = {
   updatedAt: string;
 };
 
+export type News = {
+  id: string;
+  sectionId: string | null;
+  sectionName: string | null;
+  title: string;
+  body: string;
+  fileName: string | null;
+  publishedBy: string;
+  publishedAt: string;
+  expiresOn: string | null;
+  withdrawnAt: string | null;
+  status: "PUBLIEE" | "EXPIREE" | "RETIREE";
+  /** Familles qui la voient sur le portail (publiée seulement). */
+  families: number;
+};
+
+export type NewsInput = { title: string; body: string; sectionId: string | null; expiresOn: string | null; file: File | null };
+
 export const portalKeys = {
+  news: ["portal", "news"] as const,
   status: ["portal"] as const,
   family: (familyId: string) => ["portal", "family", familyId] as const,
   healthShares: (childId: string) => ["portal", "health", childId] as const,
@@ -146,6 +165,22 @@ export const portalApi = {
   unread: (signal?: AbortSignal) => api<number>("/messages/unread", { signal }),
   thread: (familyId: string, signal?: AbortSignal) => api<Thread>(`/families/${familyId}/messages`, { signal }),
   send: (familyId: string, body: string) => api<Thread>(`/families/${familyId}/messages`, { method: "POST", body: { body } }),
+
+  broadcast: (sectionId: string | null, body: string) =>
+    api<{ families: number }>("/messages/broadcast", { method: "POST", body: { sectionId, body } }),
+
+  news: (signal?: AbortSignal) => api<News[]>("/portal/news", { signal }),
+  publishNews: (input: NewsInput) => {
+    const form = new FormData();
+    form.append("title", input.title);
+    form.append("body", input.body);
+    if (input.sectionId) form.append("sectionId", input.sectionId);
+    if (input.expiresOn) form.append("expiresOn", input.expiresOn);
+    if (input.file) form.append("file", input.file);
+    return apiUpload<News>("/portal/news", form);
+  },
+  withdrawNews: (id: string) => api<News>(`/portal/news/${id}/withdraw`, { method: "POST" }),
+  newsFile: (id: string) => apiBlob(`/portal/news/${id}/file`),
 
   reportedAbsences: (signal?: AbortSignal) => api<ReportedAbsence[]>("/portal/reported-absences", { signal }),
   confirmAbsence: (id: string, reasonId: string) =>

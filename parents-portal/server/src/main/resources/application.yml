@@ -65,3 +65,5 @@ portal:
   # Cookie de session marqué Secure (désactivé seulement en développement HTTP).
   secure-cookie: ${PORTAL_SECURE_COOKIE:true}
   scheduling: ${PORTAL_SCHEDULING:true}
+  # Clés VAPID des notifications (« PKCS#8 Base64 » + « . » + « X.509 Base64 ») ; vide : générées et gardées en base.
+  vapid-key: ${PORTAL_VAPID_KEY:}

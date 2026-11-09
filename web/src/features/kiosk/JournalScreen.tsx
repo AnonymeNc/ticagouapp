@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, CloudOff, Moon, Palette, Baby, MessageSquareText, Pill, UtensilsCrossed, CalendarX2 } from "lucide-react";
+import { Camera, Video, CloudOff, Moon, Palette, Baby, MessageSquareText, Pill, UtensilsCrossed, CalendarX2 } from "lucide-react";
 import { errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { kioskApi, newId, type EntryKind, type JournalEntry, type KioskChild } from "./api";
 import { BackButton, Chip, HealthBadges, Initials, TouchButton, hm } from "./components";
 import { useKiosk } from "./KioskContext";
 import { shrinkPhoto } from "./photo";
+import { VideoRecorder, videoSupported } from "./VideoRecorder";
 import { openAttendance } from "./view";
 
 /**
  * Onglet « Journée » de la tablette : transmissions de la journée (repas et biberon, sieste, change, médicament,
- * activité, photo, mot) pour un ou plusieurs enfants présents ; un médicament, pour un seul (ADR 0014). Écart à la maquette : pas d'écran dédié dans « Pointage tablette accueil » ; le
- * style reprend la grille de pointage. Hors connexion, tout sauf les photos part par la file d'attente.
+ * activité, photo, vidéo de 30 s, mot) pour un ou plusieurs enfants présents ; un médicament, pour un seul (ADR 0014). Écart à la maquette : pas d'écran dédié dans « Pointage tablette accueil » ; le
+ * style reprend la grille de pointage. Hors connexion, tout sauf les photos et les vidéos part par la file d'attente.
  */
 export const JOURNAL_KEY = ["kiosk-journal"] as const;
 
@@ -23,6 +24,7 @@ export const kindLabels: Record<EntryKind, string> = {
   MEDICAMENT: "Médicament",
   ACTIVITE: "Activité",
   PHOTO: "Photo",
+  VIDEO: "Vidéo",
   MOT: "Mot pour les parents",
 };
 
@@ -33,6 +35,7 @@ const kindIcons: Record<EntryKind, typeof Moon> = {
   MEDICAMENT: Pill,
   ACTIVITE: Palette,
   PHOTO: Camera,
+  VIDEO: Video,
   MOT: MessageSquareText,
 };
 
@@ -99,6 +102,7 @@ export function JournalScreen({ onDone }: { onDone: () => void }) {
   const present = (today?.children ?? []).filter((c) => openAttendance(c));
   const consents = new Set(journal.data?.photoConsents ?? []);
   const photoAllowed = selected.length > 0 && selected.every((id) => consents.has(id));
+  const media = kind === "PHOTO" || kind === "VIDEO";
 
   const reset = () => {
     setKind(null);
@@ -115,7 +119,7 @@ export function JournalScreen({ onDone }: { onDone: () => void }) {
     setStatus(null);
     if (next === "SIESTE") setDetails({ from: nowTime(now()) });
     // Une photo ne se partage que sur décision de l'éducatrice.
-    if (next === "PHOTO") setShared(false);
+    if (next === "PHOTO" || next === "VIDEO") setShared(false);
   };
 
   const toggle = (child: KioskChild) =>
@@ -129,7 +133,7 @@ export function JournalScreen({ onDone }: { onDone: () => void }) {
     (kind !== "CHANGE" || details.change) &&
     (kind !== "MEDICAMENT" || (details.medicine?.trim() && selected.length === 1)) &&
     ((kind !== "ACTIVITE" && kind !== "MOT") || text.trim().length > 0) &&
-    (kind !== "PHOTO" || photo !== null);
+    ((kind !== "PHOTO" && kind !== "VIDEO") || photo !== null);
 
   const save = async () => {
     if (!kind || !session) return;
@@ -138,13 +142,14 @@ export function JournalScreen({ onDone }: { onDone: () => void }) {
       childIds: selected,
       details,
       text: text.trim() || null,
-      shared: kind === "PHOTO" ? shared && photoAllowed : shared,
+      shared: media ? shared && photoAllowed : shared,
       ...(time ? { time } : {}),
     };
     setSending(true);
     try {
-      if (kind === "PHOTO") {
-        const result = await kioskApi.photo(
+      if (media) {
+        const send = kind === "VIDEO" ? kioskApi.video : kioskApi.photo;
+        const result = await send(
           {
             clientId: newId(),
             type: "TRANSMISSION",
@@ -156,12 +161,12 @@ export function JournalScreen({ onDone }: { onDone: () => void }) {
           },
           photo!,
         );
-        if (result.outcome === "REFUSEE") throw new Error(result.message ?? "Photo refusée.");
+        if (result.outcome === "REFUSEE") throw new Error(result.message ?? (kind === "VIDEO" ? "Vidéo refusée." : "Photo refusée."));
       } else {
         await act({ type: "TRANSMISSION", entry });
       }
       const names = present.filter((c) => selected.includes(c.id)).map((c) => c.firstName).join(", ");
-      setStatus({ tone: "ok", text: `${kindLabels[kind]} enregistré${kind === "PHOTO" ? "e" : ""} pour ${names}.` });
+      setStatus({ tone: "ok", text: `${kindLabels[kind]} enregistré${media ? "e" : ""} pour ${names}.` });
       reset();
       setSelected([]);
       void queryClient.invalidateQueries({ queryKey: JOURNAL_KEY });
@@ -229,7 +234,7 @@ export function JournalScreen({ onDone }: { onDone: () => void }) {
         <div className="flex flex-wrap gap-3">
           {(Object.keys(kindLabels) as EntryKind[]).map((k) => {
             const Icon = kindIcons[k];
-            const disabled = k === "PHOTO" && !online;
+            const disabled = (k === "PHOTO" && !online) || (k === "VIDEO" && (!online || !videoSupported()));
             return (
               <button
                 key={k}
@@ -338,6 +343,7 @@ export function JournalScreen({ onDone }: { onDone: () => void }) {
               />
             </label>
           )}
+          {kind === "VIDEO" && <VideoRecorder video={photo} onChange={setPhoto} />}
           <label className="flex flex-col gap-1 text-touch-label">
             {kind === "ACTIVITE" ? "Activité" : kind === "MOT" ? "Mot pour les parents" : "Précision"}
             {kind !== "ACTIVITE" && kind !== "MOT" && <span className="font-normal text-muted-foreground"> (facultatif)</span>}
@@ -348,17 +354,16 @@ export function JournalScreen({ onDone }: { onDone: () => void }) {
             <input
               type="checkbox"
               className="size-7"
-              checked={kind === "PHOTO" ? shared && photoAllowed : shared}
-              disabled={kind === "PHOTO" && !photoAllowed}
+              checked={media ? shared && photoAllowed : shared}
+              disabled={media && !photoAllowed}
               onChange={(e) => setShared(e.target.checked)}
             />
             Partager avec les familles sur le portail
           </label>
-          {kind === "PHOTO" && selected.length > 0 && !photoAllowed && (
+          {media && selected.length > 0 && !photoAllowed && (
             <p className="m-0 text-base text-warning-700">
               Partage impossible : l’autorisation de photographier manque pour{" "}
-              {present.filter((c) => selected.includes(c.id) && !consents.has(c.id)).map((c) => c.firstName).join(", ")}. La
-              photo reste dans le journal de la crèche.
+              {present.filter((c) => selected.includes(c.id) && !consents.has(c.id)).map((c) => c.firstName).join(", ")}. {kind === "VIDEO" ? "La vidéo" : "La photo"} reste dans le journal de la crèche.
             </p>
           )}
           <TouchButton disabled={!ready || sending} onClick={() => void save()} className="self-start">

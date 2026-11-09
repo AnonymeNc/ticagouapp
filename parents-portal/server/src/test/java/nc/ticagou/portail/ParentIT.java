@@ -39,12 +39,12 @@ class ParentIT extends PortalTest {
         batch(creche, fixture("batch.json"));
         var pdf = "%PDF-1.4 autorisation".getBytes(StandardCharsets.US_ASCII);
         batch(creche, Map.of("items", List.of(
-                Map.of("seq", 11, "type", "GUARDIAN", "id", UUID.randomUUID(), "deleted", false, "payload",
+                Map.of("seq", 12, "type", "GUARDIAN", "id", UUID.randomUUID(), "deleted", false, "payload",
                         Map.of("familyId", OTHER_FAMILY, "firstName", "Paul", "lastName", "Naisseline", "email", "paul@example.nc")),
-                Map.of("seq", 12, "type", "CHILD", "id", OTHER_CHILD, "deleted", false, "payload",
+                Map.of("seq", 13, "type", "CHILD", "id", OTHER_CHILD, "deleted", false, "payload",
                         Map.of("familyId", OTHER_FAMILY, "firstName", "Tom", "lastInitial", "N", "section", "Grands",
                                 "sharedHealth", List.of())),
-                Map.of("seq", 13, "type", "DOCUMENT", "id", UUID.fromString("0b9a3c1e-0000-4000-8000-000000005001"),
+                Map.of("seq", 14, "type", "DOCUMENT", "id", UUID.fromString("0b9a3c1e-0000-4000-8000-000000005001"),
                         "deleted", false, "payload", Map.of("familyId", FAMILY, "childId", CHILD, "kind", "AUTORISATION",
                                 "title", "Autorisation de sorties — Léa", "pdf", Base64.getEncoder().encodeToString(pdf),
                                 "sha256", Hashes.sha256(pdf), "status", "A_SIGNER")))));
@@ -239,6 +239,77 @@ class ParentIT extends PortalTest {
         var fresh = login(MARIE);
         assertThat(maxAge(call(get("/api/v1/me"), fresh, null))).isBetween(java.time.Duration.ofDays(29).toSeconds(),
                 java.time.Duration.ofDays(30).toSeconds());
+    }
+
+    @Test
+    void actualitesDeLaFamilleEtAlbumDeLEnfant() throws Exception {
+        var today = LocalDate.now(ZoneId.of("Pacific/Noumea"));
+        var mine = UUID.randomUUID();
+        var photo = UUID.randomUUID();
+        var jpeg = Base64.getDecoder().decode("/9j/4AAQSkZJRgABAQ==");
+        var expired = new java.util.HashMap<String, Object>(Map.of("familyIds", List.of(FAMILY), "title", "Ancienne",
+                "body", "Fête passée", "author", "Sandrine", "publishedAt", "2026-10-01T04:00:00Z"));
+        expired.put("expiresOn", today.minusDays(1).toString());
+        batch(creche, Map.of("items", List.of(
+                Map.of("seq", 20, "type", "NEWS", "id", mine, "deleted", false, "payload", Map.of(
+                        "familyIds", List.of(FAMILY, OTHER_FAMILY), "title", "Fête du lagon", "body", "Samedi 10 h, venez nombreux !",
+                        "author", "Sandrine", "publishedAt", java.time.Instant.now().toString(),
+                        "file", Base64.getEncoder().encodeToString("%PDF-1.4 affiche".getBytes(StandardCharsets.US_ASCII)),
+                        "fileType", "application/pdf", "fileName", "affiche.pdf")),
+                Map.of("seq", 21, "type", "NEWS", "id", UUID.randomUUID(), "deleted", false, "payload", Map.of(
+                        "familyIds", List.of(OTHER_FAMILY), "title", "Section des Grands", "body", "Sortie à la plage",
+                        "author", "Sandrine", "publishedAt", java.time.Instant.now().toString())),
+                Map.of("seq", 22, "type", "NEWS", "id", UUID.randomUUID(), "deleted", false, "payload", expired),
+                Map.of("seq", 23, "type", "ENTRY", "id", photo, "deleted", false, "payload", Map.of(
+                        "familyIds", List.of(FAMILY), "childIds", List.of(CHILD), "day", today.toString(),
+                        "at", java.time.Instant.now().toString(), "kind", "PHOTO", "text", "Atelier peinture",
+                        "details", Map.of(), "photo", Base64.getEncoder().encodeToString(jpeg), "photoType", "image/jpeg")))));
+        var cookie = login(MARIE);
+
+        // Seules les actualités de sa famille, encore affichées ; la pièce jointe se télécharge.
+        var news = body(call(get("/api/v1/me/news"), cookie, null));
+        assertThat(news).extracting(n -> n.at("/data/title").asText()).containsExactly("Fête du lagon");
+        assertThat(news.at("/0/fileType").asText()).isEqualTo("application/pdf");
+        assertThat(news.at("/0/data/fileName").asText()).isEqualTo("affiche.pdf");
+        var file = call(get("/api/v1/me/files/" + creche.id() + "/" + mine), cookie, null);
+        assertThat(new String(file.getResponse().getContentAsByteArray(), StandardCharsets.US_ASCII)).startsWith("%PDF");
+
+        // Album : les photos de l'enfant ; celles d'un autre enfant n'existent pas pour Marie.
+        var album = body(call(get("/api/v1/me/children/" + creche.id() + "/" + CHILD + "/photos"), cookie, null));
+        assertThat(album).extracting(p -> p.get("id").asText()).containsExactly(photo.toString());
+        assertThat(status(call(get("/api/v1/me/children/" + creche.id() + "/" + OTHER_CHILD + "/photos"), cookie, null)))
+                .isEqualTo(404);
+
+        // Retirée par la crèche : effacée.
+        batch(creche, Map.of("items", List.of(Map.of("seq", 24, "type", "NEWS", "id", mine, "deleted", true))));
+        assertThat(body(call(get("/api/v1/me/news"), cookie, null))).isEmpty();
+    }
+
+    @Test
+    void videoDansLAlbumServieParPlages() throws Exception {
+        var video = UUID.randomUUID();
+        var mp4 = new byte[2000];
+        new java.util.Random(1).nextBytes(mp4);
+        batch(creche, Map.of("items", List.of(Map.of("seq", 20, "type", "ENTRY", "id", video, "deleted", false, "payload", Map.of(
+                "familyIds", List.of(FAMILY), "childIds", List.of(CHILD), "day", LocalDate.now(ZoneId.of("Pacific/Noumea")).toString(),
+                "at", java.time.Instant.now().toString(), "kind", "VIDEO", "text", "Premiers pas", "details", Map.of(),
+                "photo", Base64.getEncoder().encodeToString(mp4), "photoType", "video/mp4")))));
+        var cookie = login(MARIE);
+
+        var album = body(call(get("/api/v1/me/children/" + creche.id() + "/" + CHILD + "/photos"), cookie, null));
+        assertThat(album.at("/0/data/kind").asText()).isEqualTo("VIDEO");
+        assertThat(album.at("/0/fileType").asText()).isEqualTo("video/mp4");
+
+        // Safari sur iPhone demande les vidéos par plages (ADR 0019).
+        var part = mvc.perform(get("/api/v1/me/files/" + creche.id() + "/" + video).cookie(cookie).header("Range", "bytes=0-99"))
+                .andReturn().getResponse();
+        assertThat(part.getStatus()).isEqualTo(206);
+        assertThat(part.getHeader("Content-Range")).isEqualTo("bytes 0-99/2000");
+        assertThat(part.getContentAsByteArray()).isEqualTo(java.util.Arrays.copyOf(mp4, 100));
+        assertThat(part.getContentType()).isEqualTo("video/mp4");
+        var whole = mvc.perform(get("/api/v1/me/files/" + creche.id() + "/" + video).cookie(cookie)).andReturn().getResponse();
+        assertThat(whole.getStatus()).isEqualTo(200);
+        assertThat(whole.getContentAsByteArray()).isEqualTo(mp4);
     }
 
     @Test

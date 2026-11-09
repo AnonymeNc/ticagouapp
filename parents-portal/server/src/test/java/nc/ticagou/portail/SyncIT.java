@@ -49,7 +49,13 @@ class SyncIT extends PortalTest {
         assertThat(jdbc.queryForObject("SELECT email FROM guardian", String.class)).isEqualTo("marie.wamytan@example.nc");
         assertThat(jdbc.queryForObject("SELECT shared_health->0->>'text' FROM child", String.class)).contains("PAI");
         assertThat(jdbc.queryForList("SELECT type FROM item ORDER BY type", String.class))
-                .containsExactly("ATTENDANCE", "DOCUMENT", "ENTRY", "INVOICE", "MESSAGE");
+                .containsExactly("ATTENDANCE", "DOCUMENT", "ENTRY", "INVOICE", "MESSAGE", "NEWS");
+        // Actualité : affichée jusqu'à sa date de fin, pièce jointe chiffrée, nom du fichier gardé.
+        assertThat(jdbc.queryForObject("SELECT expires_on FROM item WHERE type = 'NEWS'", java.sql.Date.class).toLocalDate())
+                .isEqualTo(java.time.LocalDate.parse("2026-11-08"));
+        assertThat(jdbc.queryForObject("SELECT payload::text FROM item WHERE type = 'NEWS'", String.class))
+                .contains("menu-semaine-45.pdf").doesNotContain("JVBER", "familyIds");
+        assertThat(jdbc.queryForObject("SELECT file_type FROM item WHERE type = 'NEWS'", String.class)).isEqualTo("application/pdf");
         // Fichiers chiffrés au repos : le PDF n'apparaît pas en clair.
         var stored = jdbc.queryForObject("SELECT file FROM item WHERE type = 'INVOICE'", byte[].class);
         assertThat(new String(stored, java.nio.charset.StandardCharsets.ISO_8859_1)).doesNotContain("%PDF");
@@ -59,8 +65,8 @@ class SyncIT extends PortalTest {
         // Même lot renvoyé (coupure) : rien de plus.
         var signedAgain = batch(creche, batch);
         assertThat(status(signedAgain)).isEqualTo(200);
-        assertThat(count("item")).isEqualTo(5);
-        assertThat(count("item_family")).isEqualTo(5);
+        assertThat(count("item")).isEqualTo(6);
+        assertThat(count("item_family")).isEqualTo(6);
     }
 
     @Test
@@ -101,10 +107,10 @@ class SyncIT extends PortalTest {
         assertThat(status(signed(a, "POST", "/sync/v1/inbox/ack", ack, Instant.now()))).isEqualTo(204);
         assertThat(count("inbox")).isZero();
 
-        batch(a, Map.of("items", List.of(Map.of("seq", 11, "type", "PURGE_FAMILY", "id", FAMILY, "deleted", true))));
+        batch(a, Map.of("items", List.of(Map.of("seq", 12, "type", "PURGE_FAMILY", "id", FAMILY, "deleted", true))));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM guardian WHERE structure_id = ?", Long.class, a.id())).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM item WHERE structure_id = ?", Long.class, a.id())).isZero();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM item WHERE structure_id = ?", Long.class, b.id())).isEqualTo(5);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM item WHERE structure_id = ?", Long.class, b.id())).isEqualTo(6);
 
         batch(b, Map.of("items", List.of(Map.of("seq", Long.MAX_VALUE, "type", "PURGE_STRUCTURE", "id", b.id(), "deleted", true))));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM portal_structure WHERE id = ?", Long.class, b.id())).isZero();
@@ -121,6 +127,8 @@ class SyncIT extends PortalTest {
         batch(creche, Map.of("items", List.of(Map.of("seq", 20, "type", "ENTRY", "id", entry, "deleted", true))));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM item WHERE id = ?", Long.class, entry)).isZero();
 
+        // L'actualité de l'exemple a une date de fin déjà passée : seule la présence doit expirer ici.
+        jdbc.update("UPDATE item SET expires_on = current_date + 1 WHERE type = 'NEWS'");
         jdbc.update("UPDATE item SET expires_on = current_date - 1 WHERE type = 'ATTENDANCE'");
         jdbc.update("INSERT INTO login_request (id, email, token_hash, code_hash, created_at, expires_at) "
                 + "VALUES (gen_random_uuid(), 'x@y.nc', 'a', 'b', now() - interval '2 days', now() - interval '2 days')");

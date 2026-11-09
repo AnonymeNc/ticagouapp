@@ -18,7 +18,7 @@ const shareLabels: { key: keyof Omit<Shares, "paymentInfo" | "mealAbsenceCutoff"
   { key: "photos", label: "Photos", hint: "Seulement celles marquées « à partager », et si chaque enfant photographié est autorisé." },
   { key: "invoices", label: "Factures et avoirs", hint: "Montants, reste dû et PDF des factures validées." },
   { key: "documents", label: "Documents à signer", hint: "Contrats, avenants et autorisations que vous proposez." },
-  { key: "messages", label: "Messages", hint: "Échanges avec les familles." },
+  { key: "messages", label: "Messages et actualités", hint: "Échanges avec les familles, actualités de la crèche." },
   { key: "absences", label: "Absences signalées par les parents", hint: "À confirmer ici avant qu’elles comptent en facturation." },
 ];
 

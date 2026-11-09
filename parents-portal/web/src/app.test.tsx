@@ -118,6 +118,93 @@ describe("journée", () => {
   });
 });
 
+describe("actualités et album", () => {
+  const news = (id: string, structureId: string, title: string, file: boolean) => ({
+    id, type: "NEWS", at: new Date().toISOString(), hasFile: file, fileType: file ? "application/pdf" : null, structureId, familyId: "f-1",
+    data: { title, body: "Samedi 10 h, venez nombreux !", author: "Sandrine", publishedAt: new Date().toISOString(), expiresOn: null,
+      fileName: file ? "menu-semaine.pdf" : null },
+  });
+
+  it("annonce la dernière actualité de la crèche sur la journée et mène à l’album", async () => {
+    mockApi({
+      "GET /me": { body: me(family()) }, ...empty,
+      "GET /me/news": { body: [news("n-1", "s-1", "Fête du lagon", false), news("n-2", "autre", "Autre crèche", false)] },
+      "GET /me/children/s-1/c-1/photos": { body: [{ id: "p-1", type: "ENTRY", at: "2026-11-02T01:00:00Z", hasFile: true,
+        data: { day: "2026-11-02", at: "2026-11-02T01:00:00Z", kind: "PHOTO", text: "Atelier peinture", details: {} }, fileType: "image/jpeg" },
+        { id: "v-1", type: "ENTRY", at: "2026-11-02T00:30:00Z", hasFile: true, fileType: "video/mp4",
+        data: { day: "2026-11-02", at: "2026-11-02T00:30:00Z", kind: "VIDEO", text: "Premiers pas", details: {} } }] },
+    });
+    const router = renderAt("/");
+    expect(await screen.findByRole("heading", { name: "Fête du lagon" })).toBeInTheDocument();
+    expect(screen.queryByText("Autre crèche")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("link", { name: /Les photos de Maëlys/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/album"));
+    expect(await screen.findByRole("img", { name: "Atelier peinture" })).toHaveAttribute("src", "/api/v1/me/files/s-1/p-1");
+    expect(screen.getByRole("link", { name: "Télécharger : Atelier peinture" })).toHaveAttribute("download");
+    // Vidéo lue sur place, téléchargeable aussi.
+    expect(screen.getByLabelText(/^Premiers pas/)).toHaveAttribute("src", "/api/v1/me/files/s-1/v-1");
+    expect(screen.getByRole("link", { name: "Télécharger : Premiers pas" })).toHaveAttribute("download");
+  });
+
+  it("range les pièces jointes des actualités dans « De la crèche »", async () => {
+    mockApi({
+      "GET /me": { body: me(family()) },
+      "GET /me/documents": { body: [] },
+      "GET /me/news": { body: [news("n-1", "s-1", "Menu de la semaine", true), news("n-3", "s-1", "Sans pièce jointe", false)] },
+    });
+    renderAt("/documents");
+    expect(await screen.findByRole("heading", { name: "De la crèche" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Menu de la semaine/ })).toHaveAttribute("href", "/api/v1/me/files/s-1/n-1");
+    expect(screen.queryByText("Sans pièce jointe")).not.toBeInTheDocument();
+  });
+});
+
+describe("notifications", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete (navigator as any).serviceWorker;
+  });
+
+  it("explique quand le navigateur ne permet pas les notifications", async () => {
+    mockApi({ "GET /me": { body: me(family()) } });
+    renderAt("/notifications");
+    expect(await screen.findByText(/Ce navigateur ne permet pas les notifications/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Activer les notifications/ })).not.toBeInTheDocument();
+  });
+
+  it("abonne ce téléphone avec les catégories choisies, factures décochées par défaut", async () => {
+    const subscription = {
+      endpoint: "https://fcm.googleapis.com/fcm/send/abc",
+      toJSON: () => ({ keys: { p256dh: "BPub", auth: "secret" } }),
+      unsubscribe: vi.fn(async () => true),
+    };
+    let subscribed: typeof subscription | null = null;
+    const pushManager = {
+      getSubscription: vi.fn(async () => subscribed),
+      subscribe: vi.fn(async () => (subscribed = subscription)),
+    };
+    vi.stubGlobal("PushManager", function PushManager() {});
+    vi.stubGlobal("Notification", Object.assign(function Notification() {}, { permission: "default", requestPermission: vi.fn(async () => "granted") }));
+    Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: { getRegistration: async () => ({ pushManager }) } });
+    const calls = mockApi({
+      "GET /me": { body: me(family()) },
+      "GET /me/push": { body: { publicKey: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U", categories: null } },
+      "POST /me/push": { status: 204 },
+    });
+    renderAt("/notifications");
+    const factures = await screen.findByRole("checkbox", { name: /Factures/ });
+    expect(factures).not.toBeChecked();
+    await userEvent.click(screen.getByRole("checkbox", { name: /Actualités/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Activer les notifications/ }));
+    expect(await screen.findByText("Notifications activées sur ce téléphone.")).toBeInTheDocument();
+    expect(pushManager.subscribe).toHaveBeenCalledWith(expect.objectContaining({ userVisibleOnly: true }));
+    expect(calls.find((c) => c.key === "POST /me/push")?.body).toEqual({
+      endpoint: "https://fcm.googleapis.com/fcm/send/abc", p256dh: "BPub", auth: "secret", categories: ["PHOTOS", "MESSAGES", "DOCUMENTS"],
+    });
+    expect(screen.getByRole("button", { name: /Désactiver sur ce téléphone/ })).toBeInTheDocument();
+  });
+});
+
 describe("signature", () => {
   it("exige le tracé et la certification, puis envoie la réponse", async () => {
     mockApi({
