@@ -1,6 +1,7 @@
 import { useModules } from "@/features/license/useModules";
 import { ReportedAbsencesCard } from "@/features/portal/ReportedAbsencesCard";
 import { BookingRequestsCard } from "@/features/portal/BookingRequestsCard";
+import { GettingStartedCard } from "@/features/help/GettingStartedCard";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
@@ -148,6 +149,7 @@ export function DashboardPage() {
         </section>
       )}
 
+      {isDirection && <GettingStartedCard />}
       {modules.has("PORTAIL_PARENTS") && (isDirection || user.role === "EDUCATRICE") && <ReportedAbsencesCard canConfirm={isDirection} />}
       {modules.has("PORTAIL_PARENTS") && (isDirection || user.role === "EDUCATRICE") && <BookingRequestsCard canAnswer={isDirection} />}
       {user.role !== "COMPTABILITE" && <Staffing snapshot={snapshot} journal={journal.data} expected={data?.notArrived ?? []} />}

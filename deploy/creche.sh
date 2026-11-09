@@ -133,12 +133,21 @@ cmd_construire() {
     echo "Image : ticagou-web:$version"
 }
 
-# creer <crèche> [--domaine <nom>] : crèche = identifiant court, minuscules, chiffres et tirets
+# creer <crèche> [--domaine <nom>] [--essai] : crèche = identifiant court, minuscules, chiffres et tirets.
+#   --essai : essai gratuit de 15 jours (évaluation) ; « abonnement » en fait ensuite une vraie crèche, sans perte.
 cmd_creer() {
-    slug=${1:?Usage : creer <crèche> [--domaine <nom>]}; shift
+    slug=${1:?Usage : creer <crèche> [--domaine <nom>] [--essai]}; shift
     echo "$slug" | grep -Eq '^[a-z0-9][a-z0-9-]{1,40}$' || { echo "Identifiant invalide : minuscules, chiffres, tirets." >&2; exit 1; }
     domaine="$slug.$DOMAINE_BASE"
-    [ "${1:-}" = --domaine ] && domaine=$2
+    essai=""
+    while [ $# -gt 0 ]; do
+        case $1 in
+            --domaine) domaine=$2; shift ;;
+            --essai) essai=1 ;;
+            *) echo "Option inconnue : $1" >&2; exit 1 ;;
+        esac
+        shift
+    done
     dossier=$(dossier_de "$slug")
     [ -e "$dossier" ] && { echo "Cette crèche existe déjà : $dossier" >&2; exit 1; }
     base=$(base_de "$slug")
@@ -165,6 +174,12 @@ TICAGOU_BACKUP_RECOVERYKEY=$(cle_de_secours)
 TICAGOU_BACKUP_DAILYTIME=$heure
 TICAGOU_SETUP_TOKEN=$jeton
 FIN
+        if [ -n "$essai" ]; then echo "TICAGOU_EVALUATION_DAYS=15" >>"$dossier/creche.env"; fi
+        # Coordonnées du support, affichées dans l'aide de l'application (socle.env).
+        for variable in TICAGOU_SUPPORT_PHONE TICAGOU_SUPPORT_WHATSAPP TICAGOU_SUPPORT_EMAIL TICAGOU_SUPPORT_HOURS TICAGOU_SUPPORT_DELAY; do
+            valeur=$(printenv "$variable" || true)
+            if [ -n "$valeur" ]; then printf '%s=%s\n' "$variable" "$valeur" >>"$dossier/creche.env"; fi
+        done
     )
     if [ -n "${PORTAL_DOMAIN:-}" ] && socle ps --status running portail 2>/dev/null | grep -q portail; then
         code=$(cmd_code_supervision "$slug")
@@ -180,6 +195,7 @@ FIN
     attendre "$slug"
     ecrire_site "$slug" "$domaine"
     echo
+    if [ -n "$essai" ]; then echo "Essai gratuit de 15 jours : « abonnement $slug … » le transforme en abonnement, sans perte de données."; fi
     echo "Crèche créée. Lien de démarrage à remettre à la directrice (une seule utilisation) :"
     echo "  https://$domaine/setup?jeton=$jeton"
     echo
@@ -587,7 +603,7 @@ aide() {
     cat <<FIN
 socle [--portail] [--console]  démarre PostgreSQL, Caddy et, en option, le portail et la console
 construire [version]           construit l'image de l'application
-creer <crèche> [--domaine n]   crée une instance et donne le lien de démarrage
+creer <crèche> [--domaine n] [--essai]  crée une instance (--essai : 15 jours) et donne le lien de démarrage
 abonnement <crèche> ...        --numero --offre --places --jusqu-au [--pc --tablettes --modules A,B]
 etat [--json]                  liste les crèches, leur version, leur abonnement (--json : pour la console)
 mettre-a-jour <version> <crèche>|--toutes

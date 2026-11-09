@@ -227,3 +227,23 @@ describe("demandes des parents sur le tableau de bord", () => {
     await waitFor(() => expect(calls.find((c) => c.key === "POST /bookings/b-2/accept")?.body).toEqual({ overrideReason: "Renfort ce matin-là" }));
   });
 });
+
+describe("prise en main", () => {
+  it("montre les premiers pas restants et l’aide avec le support", async () => {
+    server(director, {
+      "GET /getting-started": { body: [
+        { key: "enfants", label: "Ajouter les enfants (ou reprendre un fichier Excel)", done: false, path: "/enfants" },
+        { key: "tablette", label: "Appairer la tablette de l’accueil", done: true, path: "/parametres" },
+      ] },
+      "GET /support": { body: { phone: "27 12 34", whatsapp: "+687 77 12 34", email: null, hours: "Du lundi au vendredi, 7 h 30 – 17 h", delay: "Réponse sous 4 h ouvrées" } },
+    });
+    renderAt("/");
+    const card = (await screen.findByRole("heading", { name: "Premiers pas" })).closest("section")!;
+    expect(within(card).getByText("1 sur 2")).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: /Ajouter les enfants/ })).toHaveAttribute("href", "/enfants");
+    await userEvent.click(screen.getByRole("button", { name: "Aide" }));
+    expect(await screen.findByRole("heading", { name: "Aide · Tableau de bord" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /WhatsApp/ })).toHaveAttribute("href", "https://wa.me/68777 1234".replace(" ", ""));
+    expect(screen.getByText("Réponse sous 4 h ouvrées")).toBeInTheDocument();
+  });
+});
