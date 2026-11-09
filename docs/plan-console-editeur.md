@@ -29,15 +29,27 @@ familles, qui existent déjà dans le module `FACTURATION`. Une relance par e-ma
 - **Maquette** : `docs/design/Ti'Cagou — Console éditeur.html`, à suivre pour toutes les phases.
 
 **Avancement** : phase 1 livrée le 08/11/2026 (`console/`, [ADR 0017](adr/0017-console-editeur.md)) ; phase 2 livrée le
-08/11/2026 (parc, fiche crèche, tableau de bord, recherche, heure des lectures en bas de la barre latérale).
+08/11/2026 (parc, fiche crèche, tableau de bord, recherche, heure des lectures en bas de la barre latérale) ; phase 3
+livrée le 09/11/2026 (barème, TGC et mentions, contrats, factures et avoirs, paiements, boîte d'envoi, indicateurs).
 
-Écarts assumés avec la maquette jusqu'à la phase 3 (rien à compter avant les factures) :
-- pas de compteur sur la boîte d'envoi, pas de colonne « Solde dû » ni de filtre « Impayés » dans le parc ;
-- tableau de bord : indicateurs du parc (crèches suivies, en alerte, évaluations sous 7 jours, renouvellements sous
-  30 jours) à la place du revenu récurrent, de l'encours et du délai de paiement ; pas de graphique « Facturé et
-  encaissé » ;
-- fiche crèche : boutons « Facture » (phase 3) et « Suspendre… » (phase 5) présents mais désactivés ; la ligne
-  « Contrat : aligné » est remplacée par l'état du portail parents, le contrat complet est dans l'onglet Abonnement.
+Écarts encore assumés avec la maquette :
+- fiche crèche : « Suspendre… » présent mais désactivé jusqu'aux ordres (phase 5) ; la ligne « Contrat : aligné » de
+  la carte Santé est remplacée par l'état du portail parents ; l'alignement avec le contrat est dans l'onglet Abonnement ;
+- boîte d'envoi : factures et avoirs seulement ; les relances et leurs règles (Paramètres › Relances, Modèles
+  d'e-mails) arrivent avec la phase 4 ;
+- tableau de bord : pas encore de variation du revenu récurrent d'un mois sur l'autre (« + 13 500 F depuis
+  octobre ») ; elle viendra avec le reporting (phase 6).
+
+Choix de la phase 3 :
+- factures et avoirs dans une même table (`type` FACTURE ou AVOIR), numérotés en deux séries (`F2026-0001`,
+  `AV2026-0001`) par exercice civil ; l'avoir est validé dès son émission (code redemandé) ;
+- la TGC est arrondie au franc par taux, sur le total hors taxe ; le taux appliqué est celui du jour d'émission ;
+- l'immutabilité est garantie aussi en base (trigger) : seuls la date d'envoi et la suspension des relances changent
+  encore sur une facture validée ;
+- un avenant ferme la version du contrat en cours et en ouvre une autre au même barème ; si la période est déjà
+  facturée, le complément est préparé en brouillon et ce qui est à rendre est indiqué pour un avoir ;
+- le délai de préparation des renouvellements (45 jours, 10 pour le mensuel) est un réglage de l'application ;
+- les remises s'additionnent, calculées chacune sur le sous-total de l'abonnement.
 
 Choix de la phase 2 :
 - le statut commercial n'a que trois valeurs saisies (prospect, client, résilié) ; évaluation, grâce, lecture seule et

@@ -27,7 +27,7 @@ class HealthTest {
     }
 
     static Health health(String lifecycle, JsonNode status, JsonNode host, List<String> alerts, boolean hostReporting) {
-        return Health.evaluate(new Health.Input(lifecycle, status == null ? null : NOW, false, status, host, alerts, "1.5.0", hostReporting));
+        return Health.evaluate(new Health.Input(lifecycle, status == null ? null : NOW, false, status, host, alerts, "1.5.0", hostReporting, 0));
     }
 
     @Test

@@ -20,6 +20,8 @@
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <console.jvm.args></console.jvm.args>
+        <!-- Même version que server/ (ADR 0004) : PDF des factures de l'éditeur. -->
+        <openhtmltopdf.version>1.1.110</openhtmltopdf.version>
     </properties>
 
     <dependencies>
@@ -38,6 +40,19 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>${openhtmltopdf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

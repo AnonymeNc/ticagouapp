@@ -1,71 +1,91 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { AlertTriangle, Clock, Info, PhoneCall, RefreshCw, Server } from "lucide-react";
+import { AlertTriangle, Clock, Info, Mail, PhoneCall, Plus, Receipt, RefreshCw, Send, Server } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { HealthDot } from "@/components/ui/pill";
-import { navItems } from "@/app/navigation";
 import { useOperator } from "@/features/auth/AuthProvider";
+import { useBoard, type Board } from "@/features/billing/api";
+import { monthShort, xpf } from "@/features/billing/labels";
 import { useParc, type Parc, type Row } from "@/features/parc/api";
 import { ago, formatDay, levelLabels } from "@/features/parc/labels";
 import { errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-type Todo = { key: string; tone: "bad" | "warn" | "info"; icon: ReactNode; title: ReactNode; hint: string; slug: string; action: string };
+type Todo = { key: string; tone: "bad" | "warn" | "info"; icon: ReactNode; title: ReactNode; hint: string; to: string; action: string };
 
 /**
- * Tableau de bord (maquette « Console ») : ce qui demande votre attention, tiré du parc. Les indicateurs financiers
- * (revenu récurrent, encours, délai de paiement) et le graphique « Facturé et encaissé » arrivent avec les factures.
+ * Tableau de bord (maquette « Console ») : revenu récurrent, encours, alertes, délai de paiement ; ce qui demande votre
+ * attention aujourd'hui (envois, brouillons, retards, alertes, évaluations, renouvellements) ; santé du parc et six mois
+ * de facturé et d'encaissé.
  */
 export function DashboardPage() {
   const operator = useOperator();
   const firstName = operator.displayName.split(/\s+/)[0];
   const parc = useParc();
+  const board = useBoard();
 
   return (
     <>
-      <div>
-        <h1 className="m-0 font-display text-display">Bonjour {firstName}</h1>
-        <p className="mt-1 text-muted-foreground">{parc.data ? subtitle(parc.data) : "Lecture du parc…"}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="m-0 font-display text-display">Bonjour {firstName}</h1>
+          <p className="mt-1 text-muted-foreground">{parc.data ? subtitle(parc.data, board.data) : "Lecture du parc…"}</p>
+        </div>
+        <div className="flex gap-2">
+          <Link to="/factures?nouvelle=" className={buttonVariants({ variant: "outline" })}>
+            <Plus aria-hidden />
+            Facture
+          </Link>
+          <Link to="/envoi" className={buttonVariants({ variant: "default" })}>
+            <Send aria-hidden />
+            Boîte d’envoi ({board.data?.pendingMessages ?? 0})
+          </Link>
+        </div>
       </div>
-      {parc.isError && (
+      {(parc.isError || board.isError) && (
         <p role="alert" className="text-danger-700">
-          {errorMessage(parc.error)}
+          {errorMessage(parc.error ?? board.error)}
         </p>
       )}
-      {parc.data && <Overview parc={parc.data} />}
+      {parc.data && <Overview parc={parc.data} board={board.data} />}
     </>
   );
 }
 
-function subtitle(parc: Parc): string {
+function subtitle(parc: Parc, board?: Board): string {
   const clients = parc.creches.filter((c) => c.lifecycle === "CLIENT");
   const evaluations = clients.filter((c) => c.licenseState === "EVALUATION").length;
   if (parc.creches.length === 0) {
     return "Aucune crèche dans le parc pour l’instant.";
   }
-  const base = `${clients.length} crèche${clients.length > 1 ? "s" : ""}`;
-  return evaluations ? `${base}, dont ${evaluations} en évaluation.` : `${base}.`;
+  const base = `${clients.length} crèche${clients.length > 1 ? "s" : ""}${evaluations ? `, dont ${evaluations} en évaluation` : ""}.`;
+  const waiting = board?.pendingMessages ?? 0;
+  return waiting ? `${base} ${waiting} message${waiting > 1 ? "s attendent" : " attend"} votre clic.` : base;
 }
 
-function Overview({ parc }: { parc: Parc }) {
+function Overview({ parc, board }: { parc: Parc; board?: Board }) {
   const { summary } = parc;
   const clients = parc.creches.filter((c) => c.lifecycle === "CLIENT").length;
-  const prospects = parc.creches.filter((c) => c.lifecycle === "PROSPECT").length;
   const alertKinds = count(parc.creches.flatMap((c) => c.alerts.map((a) => a.label)));
-  const todos = buildTodos(parc);
+  const todos = buildTodos(parc, new Date(), board);
 
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Crèches suivies" value={String(clients)} hint={prospects ? `${prospects} prospect${prospects > 1 ? "s" : ""} en plus` : "aucun prospect noté"} />
+        <Kpi label="Revenu mensuel récurrent" value={xpf(board?.mrr)} hint={board ? `ARR ${xpf(board.arr)} · contrats en cours, HT` : "…"} />
+        <Kpi
+          label="Encours clients"
+          value={xpf(board?.outstanding)}
+          hint={board?.overdueCount ? `${xpf(board.overdue)} en retard sur ${board.overdueCount} facture${board.overdueCount > 1 ? "s" : ""}` : "aucune facture en retard"}
+          tone={board?.overdueCount ? "bad" : undefined}
+        />
         <Kpi
           label="Crèches en alerte"
           value={`${summary.bad} / ${clients}`}
           hint={alertKinds.length ? alertKinds.map(([label, n]) => `${n} ${label.toLowerCase()}`).join(", ") : "aucune alerte ouverte"}
           tone={summary.bad ? "bad" : undefined}
         />
-        <Kpi label="Évaluations sous 7 jours" value={String(summary.evaluationsEnding)} hint="à appeler avant la fin" />
-        <Kpi label="À renouveler sous 30 jours" value={String(summary.renewals)} hint="dont les abonnements en grâce" />
+        <Kpi label="Délai moyen de paiement" value={board?.dso != null ? `${board.dso} j` : "—"} hint="factures soldées sur 90 jours · objectif 30 j" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
@@ -94,7 +114,7 @@ function Overview({ parc }: { parc: Parc }) {
                     <div>{todo.title}</div>
                     <div className="text-small text-muted-foreground">{todo.hint}</div>
                   </div>
-                  <Link to={`/parc/${todo.slug}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                  <Link to={todo.to} className={buttonVariants({ variant: todo.tone === "bad" && todo.key.startsWith("envoi") ? "default" : "outline", size: "sm" })}>
                     {todo.action}
                   </Link>
                 </li>
@@ -135,23 +155,38 @@ function Overview({ parc }: { parc: Parc }) {
               </p>
             )}
           </section>
-          <section className="rounded-lg border border-border-subtle bg-card p-5 shadow-1">
-            <h2 className="m-0 mb-2 font-display text-title-2">À venir</h2>
-            <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-muted-foreground">
-              {navItems
-                .filter((item) => item.phase > 2)
-                .map((item) => (
-                  <li key={item.path} className="flex items-center gap-2">
-                    <item.icon aria-hidden className="size-4" strokeWidth={1.75} />
-                    <span className="flex-1">{item.label}</span>
-                    <span className="text-small">phase {item.phase}</span>
-                  </li>
-                ))}
-            </ul>
-          </section>
+          {board && <Chart months={board.months} />}
         </div>
       </div>
     </>
+  );
+}
+
+/** Facturé TTC (factures moins avoirs) et encaissé, par mois (maquette : barres appariées). */
+function Chart({ months }: { months: Board["months"] }) {
+  const top = Math.max(1, ...months.flatMap((m) => [m.invoiced, m.collected]));
+  return (
+    <section className="rounded-lg border border-border-subtle bg-card p-5 shadow-1">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h2 className="m-0 font-display text-title-2">Facturé et encaissé</h2>
+        <span className="text-small text-muted-foreground">6 mois</span>
+      </div>
+      <div role="img" aria-label={`Facturé et encaissé par mois : ${months.map((m) => `${monthShort(m.month)} ${xpf(m.invoiced)} facturés, ${xpf(m.collected)} encaissés`).join(" ; ")}`} className="flex h-40 items-end gap-3.5 pt-2">
+        {months.map((m) => (
+          <div key={m.month} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+            <div className="flex h-full w-full items-end justify-center gap-[3px]">
+              <span title={`Facturé : ${xpf(m.invoiced)}`} className="w-2/5 max-w-[22px] rounded-t border border-lagon-600 bg-lagon-100" style={{ height: `${Math.max(1, (m.invoiced / top) * 100)}%` }} />
+              <span title={`Encaissé : ${xpf(m.collected)}`} className="w-2/5 max-w-[22px] rounded-t bg-lagon-600" style={{ height: `${Math.max(1, (m.collected / top) * 100)}%` }} />
+            </div>
+            <span className="text-small font-semibold text-muted-foreground">{monthShort(m.month)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex gap-4 text-small text-muted-foreground">
+        <span className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-sm border border-lagon-600 bg-lagon-100" />Facturé TTC</span>
+        <span className="flex items-center gap-1.5"><i className="inline-block size-2.5 rounded-sm bg-lagon-600" />Encaissé</span>
+      </div>
+    </section>
   );
 }
 
@@ -174,7 +209,7 @@ function count(labels: string[]): [string, number][] {
 const icon = (Icon: typeof Server) => <Icon aria-hidden className="size-[18px]" strokeWidth={1.75} />;
 
 /** Alertes d'abord, puis fins d'évaluation, renouvellements et points à surveiller. */
-export function buildTodos(parc: Parc, now: Date = new Date()): Todo[] {
+export function buildTodos(parc: Parc, now: Date = new Date(), board?: Board): Todo[] {
   const todos: Todo[] = [];
   const clients = parc.creches.filter((c) => c.lifecycle === "CLIENT");
   for (const row of clients.filter((c) => c.health.level === "BAD")) {
@@ -189,7 +224,7 @@ export function buildTodos(parc: Parc, now: Date = new Date()): Todo[] {
         </>
       ),
       hint: first ? `${first.detail} · ouverte ${ago(first.openedAt, now)}` : `Dernier contact ${ago(row.lastContactAt, now)}`,
-      slug: row.slug,
+      to: `/parc/${row.slug}`,
       action: "Voir",
     });
   }
@@ -204,7 +239,7 @@ export function buildTodos(parc: Parc, now: Date = new Date()): Todo[] {
         </>
       ),
       hint: `${usage(row)}${row.lastCallAt ? ` · dernier appel ${ago(row.lastCallAt, now)}` : " · à appeler"}`,
-      slug: row.slug,
+      to: `/parc/${row.slug}`,
       action: "Noter un appel",
     });
   }
@@ -219,12 +254,12 @@ export function buildTodos(parc: Parc, now: Date = new Date()): Todo[] {
           {row.licenseState === "EXPIREE_GRACE" ? `abonnement échu le ${formatDay(row.validUntil)}, lecture seule le ${formatDay(row.deadline)}` : `abonnement à renouveler avant le ${formatDay(row.validUntil)}`}
         </>
       ),
-      hint: `${row.plan ?? "Formule ?"} · la facture de renouvellement viendra avec la phase 3`,
-      slug: row.slug,
+      hint: `${row.plan ?? "Formule ?"} · avec un contrat saisi, le brouillon de renouvellement se prépare 45 jours avant`,
+      to: `/parc/${row.slug}`,
       action: "Voir",
     });
   }
-  for (const row of clients.filter((c) => c.health.level === "WARN")) {
+  for (const row of clients.filter((c) => c.health.level === "WARN" && !(board && c.health.reasons.every((r) => r.startsWith("Impayé"))))) {
     todos.push({
       key: `surveiller-${row.slug}`,
       tone: "info",
@@ -235,7 +270,50 @@ export function buildTodos(parc: Parc, now: Date = new Date()): Todo[] {
         </>
       ),
       hint: `Dernier contact ${ago(row.lastContactAt, now)}`,
-      slug: row.slug,
+      to: `/parc/${row.slug}`,
+      action: "Voir",
+    });
+  }
+  if (!board) {
+    return todos;
+  }
+  const alerts = todos.filter((t) => t.key.startsWith("alerte"));
+  return [...alerts, ...billingTodos(board), ...todos.filter((t) => !t.key.startsWith("alerte"))];
+}
+
+/** Facturation : messages à envoyer, brouillons à valider, factures en retard (les trois plus anciennes). */
+function billingTodos(board: Board): Todo[] {
+  const todos: Todo[] = [];
+  if (board.pendingMessages > 0) {
+    todos.push({
+      key: "envoi",
+      tone: "bad",
+      icon: icon(Mail),
+      title: <><b>{board.pendingMessages} message{board.pendingMessages > 1 ? "s préparés" : " préparé"}</b> dans la boîte d’envoi</>,
+      hint: "Rien n’est parti : relisez puis envoyez d’un clic",
+      to: "/envoi",
+      action: "Relire et envoyer",
+    });
+  }
+  if (board.drafts > 0) {
+    todos.push({
+      key: "brouillons",
+      tone: "warn",
+      icon: icon(Receipt),
+      title: <><b>{board.drafts} brouillon{board.drafts > 1 ? "s" : ""}</b> à valider : {board.draftList.slice(0, 3).map((d) => d.crecheName ?? d.clientName).join(", ")}</>,
+      hint: board.renewalDrafts ? `dont  renouvellement préparé 45 jours avant l’échéance` : "Factures saisies, pas encore validées",
+      to: "/factures",
+      action: "Valider",
+    });
+  }
+  for (const s of board.late.slice(0, 3)) {
+    todos.push({
+      key: `retard-${s.id}`,
+      tone: s.daysLate > 15 ? "bad" : "warn",
+      icon: icon(Clock),
+      title: <><b>{s.crecheName ?? s.clientName}</b> : facture {s.number} en retard de {s.daysLate} jour{s.daysLate > 1 ? "s" : ""}</>,
+      hint: `${xpf(s.remaining)} restent dus · échue le ${formatDay(s.dueOn)}${s.remindersPaused ? " · relances suspendues" : ""}`,
+      to: `/factures?id=${s.id}`,
       action: "Voir",
     });
   }

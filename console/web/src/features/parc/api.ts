@@ -33,6 +33,8 @@ export type Row = {
   container: string | null;
   alerts: AlertView[];
   lastCallAt: string | null;
+  balanceDue: number;
+  daysLate: number;
 };
 
 export type Summary = {
@@ -45,6 +47,7 @@ export type Summary = {
   renewals: number;
   versionsBehind: number;
   latestVersion: string | null;
+  unpaid: number;
 };
 
 export type Sources = {

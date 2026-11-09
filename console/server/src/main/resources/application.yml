@@ -16,6 +16,21 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  # Serveur de messagerie des factures et relances (envoi au clic seulement).
+  mail:
+    host: ${CONSOLE_SMTP_HOST:localhost}
+    port: ${CONSOLE_SMTP_PORT:1025}
+    username: ${CONSOLE_SMTP_USER:}
+    password: ${CONSOLE_SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${CONSOLE_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${CONSOLE_SMTP_STARTTLS:false}
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+  thymeleaf:
+    # Seulement pour les PDF : l'interface est l'application React.
+    check-template-location: false
   web:
     locale: fr_FR
     locale-resolver: fixed
@@ -58,3 +73,7 @@ console:
   # Rapport de l'hôte (creche.sh rapport-console, cron toutes les 5 min) : POST /interne/v1/hote.
   host-token: ${CONSOLE_HOST_TOKEN:}
   scheduling: ${CONSOLE_SCHEDULING:true}
+  # Factures et relances : préparées dans la boîte d'envoi, envoyées au clic (plan console § 0 bis).
+  mail-from: ${CONSOLE_MAIL_FROM:}
+  renewal-lead-days: 45
+  monthly-lead-days: 10

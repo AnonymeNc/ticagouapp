@@ -7,6 +7,9 @@ import { AuthProvider, type AuthState } from "@/features/auth/AuthProvider";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { SetupPage } from "@/features/auth/SetupPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { ConfirmProvider } from "@/features/auth/Confirm";
+import { InvoicesPage } from "@/features/billing/InvoicesPage";
+import { OutboxPage } from "@/features/billing/OutboxPage";
 import { CrechePage } from "@/features/parc/CrechePage";
 import { ParcPage } from "@/features/parc/ParcPage";
 
@@ -26,13 +29,15 @@ function Gate({ state }: { state: AuthState }) {
   }
   return (
     <Routes>
-      <Route element={<AppShell />}>
+      <Route element={<ConfirmProvider><AppShell /></ConfirmProvider>}>
         <Route index element={<DashboardPage />} />
         <Route path="parc" element={<ParcPage />} />
         <Route path="parc/:slug" element={<CrechePage />} />
+        <Route path="factures" element={<InvoicesPage />} />
+        <Route path="envoi" element={<OutboxPage />} />
         <Route path="parametres" element={<SettingsPage />} />
         {navItems
-          .filter((item) => item.phase > 2 && item.path !== "/parametres")
+          .filter((item) => item.phase > 3 && item.path !== "/parametres")
           .map((item) => (
             <Route key={item.path} path={item.path.slice(1)} element={<PlannedPage item={item} />} />
           ))}

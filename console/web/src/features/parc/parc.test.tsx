@@ -6,7 +6,8 @@ import type { Detail, Parc, Row } from "./api";
 import { ago, backupPill, subscriptionPill } from "./labels";
 import { slugify } from "./ParcPage";
 
-const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+// Jour à Nouméa (comme la console), décalé de {@code offset} jours.
+const day = (offset: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "Pacific/Noumea" }).format(new Date(Date.now() + offset * 86_400_000));
 
 function row(overrides: Partial<Row>): Row {
   return {
@@ -35,6 +36,8 @@ function row(overrides: Partial<Row>): Row {
     container: "healthy",
     alerts: [],
     lastCallAt: null,
+    balanceDue: 0,
+    daysLate: 0,
     ...overrides,
   };
 }
@@ -59,7 +62,7 @@ const tiare = row({ slug: "tiare", name: "Crèche Tiare" });
 
 const parc: Parc = {
   creches: [lagon, paita, kids, tiare],
-  summary: { total: 4, ok: 2, warn: 1, bad: 1, off: 0, evaluationsEnding: 1, renewals: 1, versionsBehind: 0, latestVersion: "1.5.0" },
+  summary: { total: 4, ok: 2, warn: 1, bad: 1, off: 0, evaluationsEnding: 1, renewals: 1, versionsBehind: 0, latestVersion: "1.5.0", unpaid: 0 },
   sources: { supervisionAt: new Date().toISOString(), supervisionAttemptAt: new Date().toISOString(), supervisionError: null, hostAt: new Date().toISOString(), hostError: null, unlinkedSites: ["Ancienne crèche"], rejectedSites: [], hostDiskFree: null, hostDiskTotal: null },
 };
 

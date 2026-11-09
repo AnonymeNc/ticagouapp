@@ -69,6 +69,17 @@ public class ParcRepository {
         return jdbc.query(CRECHE + " WHERE slug = ?", this::creche, slug).stream().findFirst();
     }
 
+    public Optional<Creche> findById(UUID id) {
+        return jdbc.query(CRECHE + " WHERE id = ?", this::creche, id).stream().findFirst();
+    }
+
+    /** Contrat signé : un prospect devient client, à la date de début du contrat si rien n'était noté. */
+    public void becomesClient(UUID id, LocalDate since, Instant now) {
+        jdbc.update("""
+                UPDATE creche SET lifecycle = CASE WHEN lifecycle = 'PROSPECT' THEN 'CLIENT' ELSE lifecycle END,
+                    client_since = coalesce(client_since, ?), updated_at = ? WHERE id = ?""", java.sql.Date.valueOf(since), Timestamp.from(now), id);
+    }
+
     /** Crèche connue, ou enregistrée (avec son client) à sa première apparition ; vrai si elle vient d'être créée. */
     public boolean ensure(String slug, String name, String lifecycle, Instant now) {
         if (find(slug).isPresent()) {

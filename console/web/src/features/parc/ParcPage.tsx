@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useCreateProspect, useParc, type Parc, type Row } from "./api";
 import { ago, backupPill, diskTone, formatDay, moduleLabels, shortStamp, subscriptionPill } from "./labels";
 
-type Filter = "toutes" | "alerte" | "surveiller" | "renouveler" | "evaluation" | "arretees";
+type Filter = "toutes" | "alerte" | "surveiller" | "renouveler" | "evaluation" | "impayes" | "arretees";
 type SortKey = "nom" | "contact" | "version" | "echeance" | "disque" | "sante";
 
 const levelOrder = { BAD: 0, WARN: 1, OK: 2, OFF: 3 } as const;
@@ -69,6 +69,7 @@ export function ParcPage() {
     surveiller: summary.warn,
     renouveler: summary.renewals,
     evaluation: query.data.creches.filter((r) => r.licenseState === "EVALUATION").length,
+    impayes: summary.unpaid,
     arretees: summary.off,
   };
   const chips: { id: Filter; label: string }[] = [
@@ -77,6 +78,7 @@ export function ParcPage() {
     { id: "surveiller", label: "À surveiller" },
     { id: "renouveler", label: "À renouveler" },
     { id: "evaluation", label: "Évaluation" },
+    { id: "impayes", label: "Impayés" },
     { id: "arretees", label: "Arrêtées ou hors parc" },
   ];
 
@@ -155,6 +157,7 @@ export function ParcPage() {
                   <th scope="col" className="px-3 py-2.5 text-right font-semibold text-muted-foreground">Tablettes</th>
                   <th scope="col" className="px-3 py-2.5 text-left font-semibold text-muted-foreground">Sauvegarde</th>
                   {header("disque", "Disque")}
+                  <th scope="col" className="px-3 py-2.5 text-right font-semibold text-muted-foreground">Solde dû</th>
                   <th scope="col" className="px-3 py-2.5 text-left font-semibold text-muted-foreground">Alertes</th>
                 </tr>
               </thead>
@@ -169,7 +172,7 @@ export function ParcPage() {
       </section>
       <p className="m-0 text-small text-muted-foreground">
         Pastille : rouge = alerte ouverte ; orange = à surveiller (PC ou tablettes au-delà du contrat, version en retard, état
-        manquant) ; vert = en ordre ; gris = arrêtée, prospect ou résiliée. Les impayés s’y ajouteront avec les factures.
+        manquant, facture en retard) ; vert = en ordre ; gris = arrêtée, prospect ou résiliée.
       </p>
     </>
   );
@@ -185,6 +188,8 @@ function matches(row: Row, filter: Filter): boolean {
       return row.health.level === "WARN";
     case "evaluation":
       return row.licenseState === "EVALUATION";
+    case "impayes":
+      return row.daysLate > 0;
     case "arretees":
       return row.health.level === "OFF";
     case "renouveler": {
@@ -254,6 +259,10 @@ function ParcRow({ row, latest, onOpen }: { row: Row; latest: string | null; onO
       </td>
       <td className={cn(cell, "tabular-nums", diskTone(row.diskUsedPercent) === "bad" && "font-bold text-danger-700")}>
         {row.diskUsedPercent != null ? `${row.diskUsedPercent} %` : "—"}
+      </td>
+      <td className={cn(cell, "text-right tabular-nums")}>
+        {row.balanceDue > 0 ? <b>{row.balanceDue.toLocaleString("fr-FR")} F</b> : row.lifecycle === "CLIENT" ? "0 F" : "—"}
+        {row.daysLate > 0 && <div className="text-small text-danger-700">J+{row.daysLate}</div>}
       </td>
       <td className={cell}>
         {row.alerts.length > 0 ? (
@@ -423,10 +432,10 @@ export function slugify(name: string): string {
 /** Export du parc pour un tableur (séparateur « ; », UTF-8 avec BOM). */
 function exportCsv(rows: Row[]) {
   const head = ["Crèche", "Identifiant", "Commune", "Santé", "Motifs", "Dernier contact", "Version", "Formule", "Modules", "Licence",
-    "Échéance", "Places", "Enfants actifs", "PC", "PC permis", "Tablettes", "Tablettes permises", "Dernière sauvegarde", "Disque (%)", "Alertes"];
+    "Échéance", "Places", "Enfants actifs", "PC", "PC permis", "Tablettes", "Tablettes permises", "Dernière sauvegarde", "Disque (%)", "Solde dû (F)", "Retard (j)", "Alertes"];
   const lines = rows.map((r) => [r.name, r.slug, r.city, r.health.level, r.health.reasons.join(" / "), r.lastContactAt, r.version, r.plan,
     r.modules.join(" "), r.licenseState, formatDay(r.validUntil), r.places, r.activeChildren, r.desktops, r.desktopLimit, r.tablets,
-    r.tabletLimit, r.backupAt, r.diskUsedPercent, r.alerts.map((a) => a.label).join(" / ")]);
+    r.tabletLimit, r.backupAt, r.diskUsedPercent, r.balanceDue, r.daysLate || null, r.alerts.map((a) => a.label).join(" / ")]);
   const csv = [head, ...lines]
     .map((line) => line.map((v) => (v == null ? "" : `"${String(v).replace(/"/g, '""')}"`)).join(";"))
     .join("\r\n");
