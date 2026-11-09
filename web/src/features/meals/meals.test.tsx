@@ -179,3 +179,22 @@ describe("récapitulatif trimestriel", () => {
     expect(screen.getByRole("button", { name: "Clore le trimestre" })).toBeDisabled();
   });
 });
+
+describe("relevés de températures", () => {
+  it("exige une mesure corrective hors seuil", async () => {
+    const { calls } = server(director, {
+      "GET /haccp/points": { body: [{ id: "p-1", label: "Frigo cuisine", kind: "FRIGO", minTenths: 0, maxTenths: 40, active: true }] },
+      "GET /haccp/readings": { body: [] },
+      "POST /haccp/readings": { status: 201, body: {} },
+    });
+    renderAt("/repas/temperatures");
+    const input = await screen.findByLabelText("Température de Frigo cuisine");
+    await userEvent.type(input, "6,2");
+    const note = screen.getByRole("button", { name: "Noter" });
+    expect(note).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("Mesure corrective"), "Porte refermée, produits jetés");
+    await userEvent.click(note);
+    await waitFor(() => expect(calls.find((c) => c.key === "POST /haccp/readings")?.body)
+      .toEqual({ pointId: "p-1", tenths: 62, action: "Porte refermée, produits jetés" }));
+  });
+});

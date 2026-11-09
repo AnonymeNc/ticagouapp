@@ -54,6 +54,8 @@ public class SecurityConfig {
                                 "/api/v1/devices/pair", "/api/v1/devices/session").permitAll()
                         // Pré-inscription en ligne (ADR 0020) : formulaire public, anti-abus côté service.
                         .requestMatchers("/api/v1/public/preinscription").permitAll()
+                        // Agenda du personnel (lot 4) : lien privé à jeton, lu par les applications d'agenda.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/calendar/*").permitAll()
                         .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/error").permitAll()

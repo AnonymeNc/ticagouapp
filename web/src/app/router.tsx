@@ -29,6 +29,8 @@ import { PlanningPage } from "@/features/staff/PlanningPage";
 import { StaffRecordPage } from "@/features/staff/StaffRecordPage";
 import { TeamPage } from "@/features/staff/TeamPage";
 import { TimesheetsPage } from "@/features/staff/TimesheetsPage";
+import { MySpacePage } from "@/features/staff/MySpacePage";
+import { HaccpPage } from "@/features/meals/HaccpPage";
 import { SetupWizard } from "@/features/setup/SetupWizard";
 import { AppShell } from "./layout/AppShell";
 import { PlaceholderPage } from "./layout/PlaceholderPage";
@@ -79,6 +81,7 @@ export const routes: RouteObject[] = [
           { path: "repas", element: <KitchenPage /> },
           { path: "repas/menus", element: <MenusPage /> },
           { path: "repas/recapitulatif", element: <QuarterPage /> },
+          { path: "repas/temperatures", element: <HaccpPage /> },
           { path: "facturation", element: <BillingMonthPage /> },
           { path: "facturation/factures/:id", element: <InvoicePage /> },
           { path: "facturation/financeurs", element: <FunderRequestsPage /> },
@@ -88,6 +91,7 @@ export const routes: RouteObject[] = [
           { path: "personnel", element: <TeamPage /> },
           { path: "personnel/planning", element: <PlanningPage /> },
           { path: "personnel/heures", element: <TimesheetsPage /> },
+          { path: "personnel/mon-espace", element: <MySpacePage /> },
           { path: "personnel/:id", element: <StaffRecordPage /> },
           { path: "messages", element: <MessagesPage /> },
           { path: "messages/actualites", element: <NewsPage /> },
