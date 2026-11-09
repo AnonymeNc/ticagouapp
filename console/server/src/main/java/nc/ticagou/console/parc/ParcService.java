@@ -51,9 +51,11 @@ public class ParcService {
 
     private final ParcRepository repository;
     private final AuditService audit;
+    private final nc.ticagou.console.billing.BillingStats billing;
     private final Clock clock;
 
-    public ParcService(ParcRepository repository, AuditService audit, Clock clock) {
+    public ParcService(ParcRepository repository, AuditService audit, nc.ticagou.console.billing.BillingStats billing, Clock clock) {
+        this.billing = billing;
         this.repository = repository;
         this.audit = audit;
         this.clock = clock;
@@ -159,7 +161,8 @@ public class ParcService {
     // --- Calculs
 
     private record Context(List<Creche> creches, Map<UUID, List<Alert>> open, Map<UUID, String> clientNames,
-                           Map<UUID, Instant> calls, String latest, boolean hostReporting) {
+                           Map<UUID, Instant> calls, String latest, boolean hostReporting,
+                           Map<UUID, nc.ticagou.console.billing.BillingStats.Balance> balances) {
     }
 
     private Context context() {
@@ -168,7 +171,8 @@ public class ParcService {
         var hostReporting = host.lastSuccessAt() != null && host.lastSuccessAt().isAfter(clock.instant().minus(HOST_SILENCE));
         var latest = Versions.latest(creches.stream()
                 .flatMap(c -> Stream.of(Json.text(c.supervisionStatus(), "/version"), Json.text(c.host(), "/image"))).toList());
-        return new Context(creches, repository.openAlerts(), repository.clientNames(), repository.lastCalls(), latest, hostReporting);
+        return new Context(creches, repository.openAlerts(), repository.clientNames(), repository.lastCalls(), latest, hostReporting,
+                billing.balances());
     }
 
     private Row row(Creche c, Context context) {
@@ -176,8 +180,9 @@ public class ParcService {
         var host = c.host();
         var subscription = host == null ? null : host.get("subscription");
         var alerts = context.open().getOrDefault(c.id(), List.of()).stream().map(ParcService::view).toList();
+        var balance = context.balances().getOrDefault(c.id(), new nc.ticagou.console.billing.BillingStats.Balance(0, 0, null));
         var health = Health.evaluate(new Health.Input(c.lifecycle(), c.supervisionSeenAt(), c.supervisionSuspended(), status, host,
-                alerts.stream().map(AlertView::label).toList(), context.latest(), context.hostReporting()));
+                alerts.stream().map(AlertView::label).toList(), context.latest(), context.hostReporting(), balance.daysLate()));
         var licenseState = Json.text(status, "/license/state");
         var version = Json.text(status, "/version");
         var places = Json.integer(subscription, "/places");
@@ -191,12 +196,12 @@ public class ParcService {
                 Json.integer(status, "/tablets/paired"), Json.integer(subscription, "/tablets"),
                 Json.instant(status, "/backup/lastSuccessAt"), status != null && status.at("/backup/stale").asBoolean(false),
                 diskPercent(Json.number(status, "/disk/dataFreeBytes"), Json.number(status, "/disk/dataTotalBytes")),
-                Json.text(host, "/container"), alerts, context.calls().get(c.id()));
+                Json.text(host, "/container"), alerts, context.calls().get(c.id()), balance.due(), balance.daysLate());
     }
 
     private Summary summary(List<Row> rows, String latest) {
         var today = LocalDate.now(clock);
-        int ok = 0, warn = 0, bad = 0, off = 0, evaluations = 0, renewals = 0, behind = 0;
+        int ok = 0, warn = 0, bad = 0, off = 0, evaluations = 0, renewals = 0, behind = 0, unpaid = 0;
         for (var row : rows) {
             switch (row.health().level()) {
                 case OK -> ok++;
@@ -212,11 +217,14 @@ public class ParcService {
                         && !row.validUntil().isBefore(today) && !row.validUntil().isAfter(today.plusDays(30))))) {
                 renewals++;
             }
+            if (row.daysLate() > 0) {
+                unpaid++;
+            }
             if (latest != null && Versions.readable(row.version()) && Versions.compare(row.version(), latest) < 0) {
                 behind++;
             }
         }
-        return new Summary(rows.size(), ok, warn, bad, off, evaluations, renewals, behind, latest);
+        return new Summary(rows.size(), ok, warn, bad, off, evaluations, renewals, behind, latest, unpaid);
     }
 
     private Sources sources() {

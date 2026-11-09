@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { IssuerTab, PriceListTab } from "@/features/billing/SettingsTabs";
 
 type AuditEvent = { id: number; at: string; operatorLogin: string | null; action: string; target: string | null; detail: string | null; ip: string | null };
 
@@ -23,11 +24,36 @@ const actionLabels: Record<string, string> = {
   DECONNEXION: "Déconnexion",
   CONFIRMATION: "Code confirmé",
   TOTP_REINITIALISE: "Double authentification réinitialisée (serveur)",
+  CRECHE_ENREGISTREE: "Crèche apparue dans le parc",
+  PROSPECT_CREE: "Prospect enregistré",
+  FICHE_MODIFIEE: "Fiche crèche modifiée",
+  NOTE_AJOUTEE: "Note ajoutée",
+  APPEL_NOTE: "Appel noté",
+  CONTRAT_SIGNE: "Contrat signé",
+  CONTRAT_MODIFIE: "Contrat corrigé",
+  CONTRAT_AVENANT: "Avenant au contrat",
+  CONTRAT_RESILIE: "Contrat résilié",
+  RENOUVELLEMENT_PREPARE: "Renouvellement préparé",
+  FACTURE_BROUILLON: "Brouillon de facture",
+  FACTURE_BROUILLON_SUPPRIME: "Brouillon supprimé",
+  FACTURE_VALIDEE: "Facture validée",
+  AVOIR_EMIS: "Avoir émis",
+  PAIEMENT: "Paiement enregistré",
+  PAIEMENT_SUPPRIME: "Paiement supprimé",
+  RELANCES_SUSPENDUES: "Relances suspendues",
+  RELANCES_REPRISES: "Relances reprises",
+  ENVOI: "E-mail envoyé",
+  ENVOI_ECHEC: "Envoi refusé par la messagerie",
+  ENVOI_ECARTE: "E-mail écarté",
+  ENVOI_MODIFIE: "E-mail modifié",
+  BAREME_VERSION: "Nouvelle version du barème",
+  TGC_TAUX: "Nouveau taux de TGC",
+  EDITEUR_MODIFIE: "Mentions de l’éditeur modifiées",
 };
 
 /** Paramètres (maquette) : onglets du plan ; le journal est disponible dès la phase 1. */
 export function SettingsPage() {
-  const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("journal");
+  const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("bareme");
   const current = tabs.find((t) => t.id === tab)!;
   return (
     <>
@@ -52,7 +78,11 @@ export function SettingsPage() {
           </button>
         ))}
       </div>
-      {tab === "journal" ? (
+      {tab === "bareme" ? (
+        <PriceListTab />
+      ) : tab === "editeur" ? (
+        <IssuerTab />
+      ) : tab === "journal" ? (
         <Journal />
       ) : tab === "comptes" ? (
         <section className="rounded-lg border border-border-subtle bg-card p-6 text-muted-foreground shadow-1">
@@ -96,7 +126,7 @@ function Journal() {
                     <span
                       className={cn(
                         "rounded-full px-2.5 py-0.5 text-small font-semibold whitespace-nowrap",
-                        event.action === "CONNEXION_ECHEC" ? "bg-danger-100 text-danger-700" : "bg-lagon-100 text-lagon-700",
+                        event.action === "CONNEXION_ECHEC" || event.action === "ENVOI_ECHEC" ? "bg-danger-100 text-danger-700" : "bg-lagon-100 text-lagon-700",
                       )}
                     >
                       {actionLabels[event.action] ?? event.action}

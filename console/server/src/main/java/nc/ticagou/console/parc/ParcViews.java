@@ -22,7 +22,7 @@ public final class ParcViews {
                       Integer activeChildren, String licenseState, LocalDate validUntil, LocalDate deadline,
                       Integer desktops, Integer desktopLimit, Integer tablets, Integer tabletLimit,
                       Instant backupAt, boolean backupStale, Integer diskUsedPercent, String container,
-                      List<AlertView> alerts, Instant lastCallAt) {
+                      List<AlertView> alerts, Instant lastCallAt, long balanceDue, long daysLate) {
     }
 
     public record AlertView(long id, String kind, String label, String detail, Instant openedAt, Instant closedAt) {
@@ -30,7 +30,7 @@ public final class ParcViews {
 
     /** Bandeau du haut et santé du parc. */
     public record Summary(int total, int ok, int warn, int bad, int off, int evaluationsEnding, int renewals,
-                          int versionsBehind, String latestVersion) {
+                          int versionsBehind, String latestVersion, int unpaid) {
     }
 
     /** Dernières lectures des sources (pied de la barre latérale). */

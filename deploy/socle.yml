@@ -80,6 +80,14 @@ services:
       CONSOLE_PORTAL_ADMIN_TOKEN: ${PORTAL_ADMIN_TOKEN:-}
       # Rapport de l'hôte : creche.sh rapport-console (cron), sur 127.0.0.1:8095/interne/v1/hote.
       CONSOLE_HOST_TOKEN: ${CONSOLE_HOST_TOKEN:-}
+      # Factures et relances : préparées dans la boîte d'envoi, envoyées au clic (ADR 0017).
+      CONSOLE_MAIL_FROM: ${CONSOLE_MAIL_FROM:-}
+      CONSOLE_SMTP_HOST: ${CONSOLE_SMTP_HOST:-${PORTAL_SMTP_HOST:-}}
+      CONSOLE_SMTP_PORT: ${CONSOLE_SMTP_PORT:-${PORTAL_SMTP_PORT:-587}}
+      CONSOLE_SMTP_USER: ${CONSOLE_SMTP_USER:-${PORTAL_SMTP_USER:-}}
+      CONSOLE_SMTP_PASSWORD: ${CONSOLE_SMTP_PASSWORD:-${PORTAL_SMTP_PASSWORD:-}}
+      CONSOLE_SMTP_AUTH: "true"
+      CONSOLE_SMTP_STARTTLS: "true"
       CONSOLE_FORWARD_HEADERS: native
     networks: [ticagou]
 

@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  *       ou rapport de l'hôte manquant ;</li>
  *   <li>{@code OK} (vert) : en ordre.</li>
  * </ul>
- * Les impayés s'ajouteront à l'orange avec la facturation (phase 3).
+ * Une facture en retard met aussi la crèche en orange (« Impayé »).
  */
 public record Health(Level level, List<String> reasons) {
 
@@ -33,9 +33,10 @@ public record Health(Level level, List<String> reasons) {
      * @param openAlerts         libellés des alertes ouvertes
      * @param latestVersion      version la plus récente du parc
      * @param hostReporting      l'hôte envoie bien ses rapports (sinon, son absence n'est pas reprochée à la crèche)
+     * @param daysLate           retard de la plus ancienne facture impayée (0 : aucune)
      */
     record Input(String lifecycle, Instant supervisionSeenAt, boolean supervisionSuspended, JsonNode status, JsonNode host,
-                 List<String> openAlerts, String latestVersion, boolean hostReporting) {
+                 List<String> openAlerts, String latestVersion, boolean hostReporting, long daysLate) {
     }
 
     static Health evaluate(Input in) {
@@ -81,6 +82,9 @@ public record Health(Level level, List<String> reasons) {
             if (in.latestVersion() != null && Versions.readable(version) && Versions.compare(version, in.latestVersion()) < 0) {
                 warn.add("Version en retard (%s, courante %s)".formatted(version, in.latestVersion()));
             }
+        }
+        if (in.daysLate() > 0) {
+            warn.add("Impayé, J+%d".formatted(in.daysLate()));
         }
         if (in.hostReporting() && in.host() == null) {
             warn.add("Absente du rapport de l’hôte");

@@ -4,6 +4,7 @@ import { LogOut, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HealthDot } from "@/components/ui/pill";
 import { useAuth, useOperator } from "@/features/auth/AuthProvider";
+import { useOutbox } from "@/features/billing/api";
 import { useParc, useSearch } from "@/features/parc/api";
 import { formatStamp, formatTime, initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,8 @@ export function AppShell() {
 }
 
 function Sidebar() {
+  const outbox = useOutbox();
+  const pending = outbox.data?.pending ?? 0;
   return (
     <nav aria-label="Navigation principale" className="flex w-sidebar shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 pb-4">
       <div className="flex h-topbar items-baseline gap-2 px-2 pt-4">
@@ -48,6 +51,11 @@ function Sidebar() {
             >
               <Icon aria-hidden className="size-5" strokeWidth={1.75} />
               {label}
+              {path === "/envoi" && pending > 0 && (
+                <span aria-label={`${pending} en attente`} className="ml-auto rounded-full bg-terre-600 px-2 py-px text-caption text-white">
+                  {pending}
+                </span>
+              )}
             </NavLink>
           </li>
         ))}

@@ -30,7 +30,14 @@ instances.
   publiée (accès par tunnel SSH). `/actuator` reste bloqué.
 - **Journal** (`audit_event`) de toute connexion et de toute écriture.
 
-**Aucun e-mail ne part sans clic** de l'éditeur : factures et relances sont préparées dans une boîte d'envoi.
+**Aucun e-mail ne part sans clic** de l'éditeur : factures et relances sont préparées dans une boîte d'envoi. L'envoi
+passe par le SMTP de la console (`CONSOLE_SMTP_*`, expéditeur `CONSOLE_MAIL_FROM`) ; un refus du serveur de messagerie
+laisse le message en attente avec l'erreur.
+
+**Facturation** (phase 3) : montants en francs entiers, barème et TGC en tables datées, facture validée immuable (en base
+aussi) et corrigée par avoir, numérotation continue par série et par exercice, PDF produit une fois à la validation et
+conservé avec son empreinte SHA-256, mentions de l'éditeur recopiées dans la facture. Valider une facture et émettre un
+avoir redemandent le code.
 
 **La console ne touche jamais Docker** : elle dépose des ordres que `creche.sh appliquer` (cron de l'hôte) exécute, sur
 une liste blanche (phase 5).

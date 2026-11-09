@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ContractCard, CrecheInvoices } from "@/features/billing/ContractCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthDot, Pill } from "@/components/ui/pill";
@@ -98,9 +99,9 @@ function Fiche({ slug }: { slug: string }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" disabled title="Avec les factures (phase 3)">
+          <Link to={`/factures?nouvelle=${row.slug}`} className={buttonVariants({ variant: "outline" })}>
             Facture
-          </Button>
+          </Link>
           <Button
             variant="outline"
             onClick={() => {
@@ -136,13 +137,14 @@ function Fiche({ slug }: { slug: string }) {
 
       <div role="tabpanel">
         {tab === "sante" && <HealthTab detail={detail} />}
-        {tab === "abonnement" && <SubscriptionTab detail={detail} />}
-        {tab === "usage" && <UsageTab detail={detail} />}
-        {tab === "factures" && (
-          <Card>
-            <p className="m-0 text-muted-foreground">Les factures de l’éditeur à cette crèche arrivent avec la phase 3 du plan.</p>
-          </Card>
+        {tab === "abonnement" && (
+          <div className="flex flex-col gap-4">
+            <ContractCard slug={row.slug} places={row.places} />
+            <SubscriptionTab detail={detail} />
+          </div>
         )}
+        {tab === "usage" && <UsageTab detail={detail} />}
+        {tab === "factures" && <CrecheInvoices slug={row.slug} />}
         {tab === "contacts" && <ContactsTab key={detail.row.slug} detail={detail} noteKind={noteKind} onNoteKind={setNoteKind} />}
         {tab === "journal" && <JournalTab detail={detail} />}
       </div>
