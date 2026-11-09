@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <title th:text="${title}">Document</title>
+    <style>
+        @page { size: A4; margin: 22mm; @bottom-center { content: element(footer); } }
+        body { font: 11pt/1.55 Helvetica, sans-serif; color: #2b2620; }
+        .logo { max-height: 42pt; max-width: 120pt; margin-bottom: 4pt; }
+        .structure { font-weight: bold; margin: 0; }
+        .structure-line { color: #665b4e; margin: 0 0 22pt 0; }
+        h1 { font-size: 17pt; color: #08585c; margin: 14pt 0 10pt 0; }
+        p { margin: 0 0 9pt 0; }
+        .signature { margin-top: 28pt; width: 60%; margin-left: 40%; }
+        .signature p { margin: 0 0 4pt 0; }
+        .stamp { max-height: 80pt; max-width: 180pt; margin-top: 6pt; }
+        .footer { position: running(footer); font-size: 8.5pt; color: #8a7f72; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="footer" th:text="${footer}">Structure · Document</div>
+<img class="logo" th:if="${logo}" th:src="${logo}" alt=""/>
+<p class="structure" th:text="${structureName}">Les P’tits Niaoulis</p>
+<p class="structure-line" th:if="${structureLine}" th:text="${structureLine}">Adresse · Ville · Téléphone</p>
+<th:block th:each="block : ${blocks}">
+    <h1 th:if="${block.heading}" th:text="${block.lines[0]}">Titre</h1>
+    <p th:unless="${block.heading}"><th:block th:each="line, state : ${block.lines}"><span th:text="${line}">Ligne</span><br th:unless="${state.last}"/></th:block></p>
+</th:block>
+<div class="signature">
+    <p th:text="${signatory}">La direction</p>
+    <img class="stamp" th:if="${stamp}" th:src="${stamp}" alt=""/>
+</div>
+</body>
+</html>

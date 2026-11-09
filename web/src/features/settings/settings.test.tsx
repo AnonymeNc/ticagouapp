@@ -225,3 +225,27 @@ describe("paramètres", () => {
     expect(call.headers["X-Ticagou-Poste-Nom"]).toBe("Navigateur");
   });
 });
+
+describe("Paramètres › Modèles de documents", () => {
+  it("crée les modèles de départ puis un modèle avec un champ de fusion", async () => {
+    const { calls } = server(director, {
+      "GET /document-templates": { body: [] },
+      "GET /document-settings": { body: { signatory: null, hasStamp: false } },
+      "GET /document-templates/fields": { body: [{ key: "enfant.prenom", label: "Prénom de l’enfant" }, { key: "date.jour", label: "Date du jour" }] },
+      "POST /document-templates/starters": { status: 201, body: [] },
+      "POST /document-templates": { status: 201, body: {} },
+    });
+    renderAt("/parametres");
+    const nav = await screen.findByRole("navigation", { name: "Rubriques des paramètres" });
+    await userEvent.click(within(nav).getByRole("button", { name: /^Modèles de documents/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /Créer les modèles de départ/ }));
+    await waitFor(() => expect(calls.some((c) => c.key === "POST /document-templates/starters")).toBe(true));
+    await userEvent.click(screen.getByRole("button", { name: /Nouveau modèle/ }));
+    await userEvent.type(screen.getByLabelText("Titre"), "Attestation CAFAT");
+    await userEvent.type(screen.getByLabelText(/^Texte/), "Pour ");
+    await userEvent.click(await screen.findByRole("button", { name: "Prénom de l’enfant" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer le modèle" }));
+    await waitFor(() => expect(calls.find((c) => c.key === "POST /document-templates")?.body)
+      .toEqual({ subject: "ENFANT", title: "Attestation CAFAT", body: "Pour {{enfant.prenom}}" }));
+  });
+});
