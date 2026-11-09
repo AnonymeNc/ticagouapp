@@ -193,6 +193,29 @@ describe("pointage des enfants", () => {
     ]);
   });
 
+  it("raconte la journée de l’enfant au parent qui vient le chercher", async () => {
+    pair();
+    const entry = (id: string, kind: string, time: string, details: Record<string, string>, text: string | null = null, childId = "c-noa") => ({
+      id, day, occurredAt: at(time), kind, text, details, hasPhoto: kind === "PHOTO", shared: true,
+      children: [{ id: childId, firstName: "x", lastName: "y" }], authorName: "Maëva", updatedAt: at(time),
+    });
+    server({
+      "GET /kiosk/journal": { body: { photoConsents: [], reportedAbsences: [], entries: [
+        entry("e-2", "SIESTE", "12:20", { from: "12:20", to: "14:05" }),
+        entry("e-1", "REPAS", "11:30", { meal: "DEJEUNER", quantity: "BIEN" }),
+        entry("e-3", "PHOTO", "15:00", {}, "Atelier peinture"),
+        entry("e-4", "CHANGE", "10:00", { change: "SELLES" }, null, "c-kenzo"),
+      ] } },
+    });
+    renderAt("/kiosk");
+    await loginAsMaeva();
+    await userEvent.click(screen.getByRole("button", { name: /Noa Wahéo, présent depuis 07:42/ }));
+    const recap = (await screen.findByRole("heading", { name: "La journée de Noa" })).closest("section")!;
+    const lines = within(recap).getAllByRole("listitem").map((li) => li.textContent);
+    expect(lines).toEqual(["11:30Repas · Déjeuner · bien mangé", "12:20Sieste · de 12:20 à 14:05"]);
+    expect(within(recap).getByText("1 photo prise aujourd’hui")).toBeInTheDocument();
+  });
+
   it("bloque le départ avec une personne non autorisée jusqu’au code de la directrice", async () => {
     pair();
     const { calls } = server();

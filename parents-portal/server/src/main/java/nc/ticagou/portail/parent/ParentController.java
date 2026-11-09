@@ -29,6 +29,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import nc.ticagou.portail.auth.ParentSessionInterceptor;
 import nc.ticagou.portail.parent.ParentService.Content;
+import nc.ticagou.portail.push.PushService;
 
 /** API de l'application parents : tout est restreint aux familles de la session. */
 @RestController
@@ -56,10 +57,20 @@ public class ParentController {
         }
     }
 
-    private final ParentService parents;
+    /** Abonnement de cet appareil aux notifications (ADR 0018) : clés fournies par le navigateur, catégories choisies. */
+    public record PushRequest(@NotBlank @Size(max = 1000) String endpoint, @NotBlank @Size(max = 120) String p256dh,
+                              @NotBlank @Size(max = 40) String auth, @NotNull List<String> categories) {
+    }
 
-    public ParentController(ParentService parents) {
+    public record PushEndpoint(@NotBlank @Size(max = 1000) String endpoint) {
+    }
+
+    private final ParentService parents;
+    private final PushService push;
+
+    public ParentController(ParentService parents, PushService push) {
         this.parents = parents;
+        this.push = push;
     }
 
     @GetMapping
@@ -68,7 +79,7 @@ public class ParentController {
     }
 
     @GetMapping("/children/{structureId}/{childId}/photo")
-    public ResponseEntity<byte[]> childPhoto(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+    public ResponseEntity<org.springframework.core.io.Resource> childPhoto(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
                                              @PathVariable UUID structureId, @PathVariable UUID childId) {
         return file(parents.childPhoto(email, structureId, childId));
     }
@@ -78,6 +89,17 @@ public class ParentController {
                                    @PathVariable UUID structureId, @PathVariable UUID childId,
                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return parents.day(email, structureId, childId, date);
+    }
+
+    @GetMapping("/children/{structureId}/{childId}/photos")
+    public List<Map<String, Object>> photos(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                                            @PathVariable UUID structureId, @PathVariable UUID childId) {
+        return parents.photos(email, structureId, childId);
+    }
+
+    @GetMapping("/news")
+    public List<Map<String, Object>> news(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email) {
+        return parents.news(email);
     }
 
     @GetMapping("/invoices")
@@ -96,7 +118,7 @@ public class ParentController {
     }
 
     @GetMapping("/files/{structureId}/{itemId}")
-    public ResponseEntity<byte[]> file(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+    public ResponseEntity<org.springframework.core.io.Resource> file(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
                                        @PathVariable UUID structureId, @PathVariable UUID itemId) {
         return file(parents.file(email, structureId, itemId));
     }
@@ -129,9 +151,39 @@ public class ParentController {
                 request.reason());
     }
 
-    private static ResponseEntity<byte[]> file(Content content) {
+    /** Clé publique VAPID et catégories choisies pour cet appareil ({@code categories} vide : pas abonné). */
+    @GetMapping("/push")
+    public Map<String, Object> pushState(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                                         @RequestParam(required = false) String endpoint) {
+        var state = new java.util.LinkedHashMap<String, Object>();
+        state.put("publicKey", push.publicKey());
+        state.put("categories", endpoint == null ? null : push.categories(email, endpoint));
+        return state;
+    }
+
+    @PostMapping("/push")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void subscribe(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                          @Valid @RequestBody PushRequest request) {
+        push.subscribe(email, request.endpoint(), request.p256dh(), request.auth(),
+                nc.ticagou.portail.push.PushService.parseCategories(request.categories()));
+    }
+
+    @PostMapping("/push/unsubscribe")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void unsubscribe(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                            @Valid @RequestBody PushEndpoint request) {
+        push.unsubscribe(email, request.endpoint());
+    }
+
+    /**
+     * Fichier servi par plages ({@code Range}) : Safari sur iPhone ne lit une vidéo qu'ainsi (ADR 0019). Le contenu est
+     * une {@link org.springframework.core.io.Resource}, que Spring découpe selon la plage demandée.
+     */
+    private static ResponseEntity<org.springframework.core.io.Resource> file(Content content) {
         var type = content.type() == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(content.type());
         return ResponseEntity.ok().contentType(type).cacheControl(CacheControl.noStore())
-                .header("X-Content-Type-Options", "nosniff").body(content.bytes());
+                .header("X-Content-Type-Options", "nosniff").header("Accept-Ranges", "bytes")
+                .body(new org.springframework.core.io.ByteArrayResource(content.bytes()));
     }
 }

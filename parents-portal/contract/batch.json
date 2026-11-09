@@ -132,6 +132,23 @@
       "id": "0b9a3c1e-0000-4000-8000-000000000200",
       "deleted": true,
       "payload": null
+    },
+    {
+      "seq": 11,
+      "type": "NEWS",
+      "id": "0b9a3c1e-0000-4000-8000-000000007000",
+      "deleted": false,
+      "payload": {
+        "familyIds": ["0b9a3c1e-0000-4000-8000-000000000100"],
+        "title": "Menu de la semaine",
+        "body": "Le menu de la semaine du 02/11 est en pièce jointe. Bon appétit !",
+        "author": "Sandrine",
+        "publishedAt": "2026-11-02T04:00:00Z",
+        "expiresOn": "2026-11-08",
+        "file": "JVBERi0xLjQK",
+        "fileType": "application/pdf",
+        "fileName": "menu-semaine-45.pdf"
+      }
     }
   ]
 }

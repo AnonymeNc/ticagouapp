@@ -5,12 +5,13 @@ import { errorMessage, fileUrl, portal } from "../api";
 import { Badge, Banner, Page } from "../components";
 import { dateFr } from "../format";
 import { useSession } from "../session";
+import { publishedOn, useNews } from "./ActualitesPage";
 
 export const documentsKey = ["documents"] as const;
 
 /**
- * Documents et autorisations (maquette « Documents et autorisations »). Écart : la rubrique « De la crèche » (menus,
- * projet pédagogique) n'est pas encore alimentée par le logiciel.
+ * Documents et autorisations (maquette « Documents et autorisations »). La rubrique « De la crèche » (menus, projet
+ * pédagogique) reprend les pièces jointes des actualités publiées par la direction.
  */
 export function DocumentsPage() {
   const { family } = useSession();
@@ -18,6 +19,7 @@ export function DocumentsPage() {
   const list = (documents.data ?? []).filter((d) => d.structureId === family.structureId);
   const toSign = list.filter((d) => d.data.status === "A_SIGNER");
   const done = list.filter((d) => d.data.status !== "A_SIGNER");
+  const fromCreche = useNews().list.filter((n) => n.hasFile);
 
   return (
     <Page title="Documents" subtitle="Lisez et signez directement depuis votre téléphone.">
@@ -54,6 +56,26 @@ export function DocumentsPage() {
                     {d.data.signedAt && <span className="tabular text-[15px] text-ink-muted">Répondu le {dateFr(d.data.signedAt)}</span>}
                   </span>
                   {d.data.status === "REFUSE" ? <Badge tone="neutral">Refusée</Badge> : <Badge tone="success" check>Signé</Badge>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {fromCreche.length > 0 && (
+        <>
+          <h2 className="m-0 text-[19px] font-semibold">De la crèche</h2>
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {fromCreche.map((n) => (
+              <li key={n.id}>
+                <a href={fileUrl(family.structureId, n.id)} target="_blank" rel="noreferrer"
+                  className="flex min-h-[64px] items-center gap-3 rounded-lg border border-border-subtle bg-surface px-4 py-2 text-ink no-underline">
+                  <FileText aria-hidden className="size-5 shrink-0 text-ink-muted" />
+                  <span className="flex grow flex-col">
+                    <span className="text-[17px] font-semibold">{n.data.title}</span>
+                    <span className="tabular text-[15px] text-ink-muted">{n.data.fileName ?? "Pièce jointe"} · {publishedOn(n)}</span>
+                  </span>
                 </a>
               </li>
             ))}

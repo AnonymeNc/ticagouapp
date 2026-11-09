@@ -31,7 +31,13 @@ import jakarta.persistence.Table;
 @Table(name = "daily_entry")
 public class DailyEntry {
 
-    public enum Kind { REPAS, SIESTE, CHANGE, ACTIVITE, PHOTO, MOT, MEDICAMENT }
+    public enum Kind { REPAS, SIESTE, CHANGE, ACTIVITE, PHOTO, VIDEO, MOT, MEDICAMENT;
+
+        /** Photo ou vidéo : un fichier, l'autorisation de photographier pour la partager (ADR 0019). */
+        public boolean isMedia() {
+            return this == PHOTO || this == VIDEO;
+        }
+    }
 
     @Id
     private UUID id;

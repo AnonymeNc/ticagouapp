@@ -173,7 +173,7 @@ export type StaffPunchResult = {
 
 // --- Transmissions du jour (onglet « Journée ») ---------------------------------------------
 
-export type EntryKind = "REPAS" | "SIESTE" | "CHANGE" | "MEDICAMENT" | "ACTIVITE" | "PHOTO" | "MOT";
+export type EntryKind = "REPAS" | "SIESTE" | "CHANGE" | "MEDICAMENT" | "ACTIVITE" | "PHOTO" | "VIDEO" | "MOT";
 
 /** Transmission saisie : détails admis par type (repas, quantité, heures de sieste, change, médicament). */
 export type EntryInput = {
@@ -214,6 +214,13 @@ export const kioskApi = {
     form.append("operation", new Blob([JSON.stringify(operation)], { type: "application/json" }));
     form.append("photo", photo, "photo.jpg");
     return apiUpload<OperationResult>("/kiosk/journal/photo", form, "POST", "device");
+  },
+  /** Vidéo de 30 s au plus (ADR 0019), en ligne seulement comme une photo. */
+  video: (operation: Operation, video: Blob) => {
+    const form = new FormData();
+    form.append("operation", new Blob([JSON.stringify(operation)], { type: "application/json" }));
+    form.append("video", video, video.type.includes("mp4") ? "video.mp4" : "video.webm");
+    return apiUpload<OperationResult>("/kiosk/journal/video", form, "POST", "device");
   },
   today: (signal?: AbortSignal) => api<KioskToday>("/kiosk/today", { signal, auth: "device" }),
   operations: (operations: Operation[]) =>

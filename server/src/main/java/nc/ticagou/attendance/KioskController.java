@@ -90,6 +90,14 @@ public class KioskController {
         return kiosk.processPhoto(operation, photo.getBytes());
     }
 
+    @PostMapping(path = "/journal/video", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('APPAREIL')")
+    @Operation(summary = "Vidéo filmée sur la tablette (30 s, 5 Mo au plus), avec son opération TRANSMISSION (en ligne seulement)")
+    public OperationResult video(@Valid @RequestPart("operation") nc.ticagou.attendance.AttendanceDtos.Operation operation,
+                                 @RequestPart("video") MultipartFile video) throws IOException {
+        return kiosk.processPhoto(operation, video.getBytes());
+    }
+
     @GetMapping("/journal/{id}/photo")
     @PreAuthorize("hasRole('APPAREIL')")
     @Operation(summary = "Vignette d'une photo du jour")

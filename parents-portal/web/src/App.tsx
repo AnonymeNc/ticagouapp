@@ -4,11 +4,15 @@ import { Navigate, Outlet, RouterProvider, createBrowserRouter, type RouteObject
 import { errorMessage, portal } from "./api";
 import { Banner, BottomNav } from "./components";
 import { AbsencePage } from "./screens/AbsencePage";
+import { ActualitesPage } from "./screens/ActualitesPage";
+import { AlbumPage } from "./screens/AlbumPage";
 import { DocumentsPage } from "./screens/DocumentsPage";
 import { FacturesPage } from "./screens/FacturesPage";
 import { JourneePage } from "./screens/JourneePage";
 import { LoginPage } from "./screens/LoginPage";
 import { MessagesPage } from "./screens/MessagesPage";
+import { NotificationsPage } from "./screens/NotificationsPage";
+import { disablePush } from "./push";
 import { SignaturePage } from "./screens/SignaturePage";
 import { SessionProvider, isUnauthenticated, useMe } from "./session";
 
@@ -32,6 +36,8 @@ function Shell() {
           <Outlet />
           <button type="button" className="mx-auto mb-4 min-h-11 text-[15px] text-ink-muted underline"
             onClick={async () => {
+              // Un téléphone partagé ne reçoit plus rien après la déconnexion.
+              await disablePush();
               await portal.logout().catch(() => {});
               queryClient.removeQueries();
               window.location.assign("/connexion");
@@ -51,7 +57,10 @@ export const routes: RouteObject[] = [
     element: <Shell />,
     children: [
       { index: true, element: <JourneePage /> },
+      { path: "actualites", element: <ActualitesPage /> },
+      { path: "album", element: <AlbumPage /> },
       { path: "messages", element: <MessagesPage /> },
+      { path: "notifications", element: <NotificationsPage /> },
       { path: "absence", element: <AbsencePage /> },
       { path: "factures", element: <FacturesPage /> },
       { path: "documents", element: <DocumentsPage /> },

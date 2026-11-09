@@ -71,7 +71,7 @@ export type Me = { email: string; families: Family[] };
 export type Item<T> = { id: string; type: string; at: string | null; data: T; hasFile: boolean; structureId?: string; familyId?: string };
 
 export type AttendanceData = { day: string; arrivedAt: string | null; departedAt: string | null; childId: string };
-export type EntryData = { day: string; at: string; kind: "REPAS" | "SIESTE" | "CHANGE" | "MEDICAMENT" | "ACTIVITE" | "PHOTO" | "MOT"; text: string | null; details: Record<string, string> };
+export type EntryData = { day: string; at: string; kind: "REPAS" | "SIESTE" | "CHANGE" | "MEDICAMENT" | "ACTIVITE" | "PHOTO" | "VIDEO" | "MOT"; text: string | null; details: Record<string, string> };
 export type Day = { day: string; items: Item<AttendanceData | EntryData>[]; days: string[] };
 
 export type InvoiceData = {
@@ -96,6 +96,10 @@ export type DocumentData = {
 };
 
 export type MessageData = { author: string; body: string; sentAt: string; fromFamily: boolean; readAt?: string };
+/** Actualité de la crèche ; la pièce jointe (PDF ou image) se lit par fileUrl. */
+export type NewsData = { title: string; body: string; author: string; publishedAt: string; expiresOn: string | null; fileName?: string | null };
+export type NewsItem = Item<NewsData> & { fileType: string | null };
+
 export type AbsenceData = { childId: string; fromDay: string; toDay: string; reason: string | null; reportedAt: string };
 
 // --- Appels --------------------------------------------------------------------------------
@@ -109,6 +113,14 @@ export const portal = {
   me: (signal?: AbortSignal) => call<Me>("/me", { signal }),
   day: (structureId: string, childId: string, date?: string, signal?: AbortSignal) =>
     call<Day>(`/me/children/${structureId}/${childId}/day${date ? `?date=${date}` : ""}`, { signal }),
+  photos: (structureId: string, childId: string, signal?: AbortSignal) =>
+    call<(Item<EntryData> & { fileType: string | null })[]>(`/me/children/${structureId}/${childId}/photos`, { signal }),
+  news: (signal?: AbortSignal) => call<NewsItem[]>("/me/news", { signal }),
+  pushState: (endpoint?: string, signal?: AbortSignal) =>
+    call<{ publicKey: string; categories: string[] | null }>(`/me/push${endpoint ? `?endpoint=${encodeURIComponent(endpoint)}` : ""}`, { signal }),
+  subscribePush: (body: { endpoint: string; p256dh: string; auth: string; categories: string[] }) =>
+    call<void>("/me/push", { method: "POST", body }),
+  unsubscribePush: (endpoint: string) => call<void>("/me/push/unsubscribe", { method: "POST", body: { endpoint } }),
   invoices: (signal?: AbortSignal) => call<Item<InvoiceData>[]>("/me/invoices", { signal }),
   documents: (signal?: AbortSignal) => call<Item<DocumentData>[]>("/me/documents", { signal }),
   absences: (signal?: AbortSignal) => call<Item<AbsenceData>[]>("/me/absences", { signal }),

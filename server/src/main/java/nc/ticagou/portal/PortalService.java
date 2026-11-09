@@ -306,6 +306,7 @@ public class PortalService {
         documents.findByFamilyIdOrderByProposedAtDesc(familyId).stream()
                 .filter(d -> d.getStatus() != PortalDocument.Status.RETIRE)
                 .forEach(d -> publisher.enqueue(new PortalChange(structureId, PortalItemType.DOCUMENT, d.getId())));
+        publisher.enqueueVisibleNews(structureId);
     }
 
     // --- Santé partagée -----------------------------------------------------------------------

@@ -57,6 +57,12 @@ public abstract class PortalTest {
     /** E-mails envoyés pendant le test. */
     protected static final List<SimpleMailMessage> MAILS = new CopyOnWriteArrayList<>();
 
+    /** Notifications envoyées aux services de notification pendant le test (ADR 0018). */
+    protected record SentPush(String endpoint, Map<String, String> headers, byte[] body) {
+    }
+
+    protected static final List<SentPush> PUSHES = new CopyOnWriteArrayList<>();
+
     @TestConfiguration(proxyBeanMethods = false)
     static class Config {
 
@@ -64,6 +70,19 @@ public abstract class PortalTest {
         @ServiceConnection
         PostgreSQLContainer<?> postgres() {
             return new PostgreSQLContainer<>("postgres:17-alpine");
+        }
+
+        /** Service de notification simulé : un abonnement dont l'adresse contient « expire » répond 410. */
+        @Bean
+        @Primary
+        nc.ticagou.portail.push.PushTransport capturingPushTransport() {
+            return new nc.ticagou.portail.push.PushTransport() {
+                @Override
+                public int post(String endpoint, Map<String, String> headers, byte[] body) {
+                    PUSHES.add(new SentPush(endpoint, headers, body));
+                    return endpoint.contains("expire") ? 410 : 201;
+                }
+            };
         }
 
         @Bean
@@ -96,9 +115,10 @@ public abstract class PortalTest {
     @BeforeEach
     void reset() {
         jdbc.execute("TRUNCATE portal_structure, activation_code, guardian, child, item, item_family, item_child, inbox, "
-                + "login_request, parent_session, supervision_code, supervision_site, supervision_alert CASCADE");
+                + "login_request, parent_session, supervision_code, supervision_site, supervision_alert, push_subscription CASCADE");
         limiter.reset();
         MAILS.clear();
+        PUSHES.clear();
     }
 
     // --- Structure de crèche ------------------------------------------------------------------

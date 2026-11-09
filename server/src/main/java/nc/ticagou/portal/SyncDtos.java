@@ -80,6 +80,14 @@ public final class SyncDtos {
     public record MessagePayload(UUID familyId, String author, String body, Instant sentAt) {
     }
 
+    /**
+     * Actualité de la crèche, pour les familles visées (toute la crèche ou une section). {@code expiresOn} : dernier
+     * jour d'affichage, vide pour la durée de conservation du portail. Pièce jointe facultative (PDF ou image).
+     */
+    public record NewsPayload(List<UUID> familyIds, String title, String body, String author, Instant publishedAt,
+                              LocalDate expiresOn, byte[] file, String fileType, String fileName) {
+    }
+
     // --- Remontée -----------------------------------------------------------------------------
 
     public enum InboxType { ABSENCE, MESSAGE, SIGNATURE }

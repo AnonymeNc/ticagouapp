@@ -87,6 +87,24 @@ public final class PortalDtos {
     public record Thread(UUID familyId, String familyLabel, boolean portalAccess, List<MessageDto> messages) {
     }
 
+    /** Message à toutes les familles invitées ({@code sectionId} vide) ou à celles d'une section. */
+    public record BroadcastRequest(UUID sectionId, @NotBlank @Size(max = 2000) String body) {
+    }
+
+    public record BroadcastResult(int families) {
+    }
+
+    // --- Actualités ---------------------------------------------------------------------------
+
+    /** {@code status} : PUBLIEE, EXPIREE ou RETIREE ; {@code families} : familles qui la voient (publiée seulement). */
+    public record NewsDto(UUID id, UUID sectionId, String sectionName, String title, String body, String fileName,
+                          String publishedBy, Instant publishedAt, LocalDate expiresOn, Instant withdrawnAt,
+                          String status, int families) {
+    }
+
+    public record FileContent(byte[] content, String contentType, String fileName) {
+    }
+
     // --- Absences signalées -------------------------------------------------------------------
 
     public record ReportedAbsenceDto(UUID id, UUID childId, String childName, String guardianName, LocalDate fromDay,

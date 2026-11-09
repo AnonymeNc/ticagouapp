@@ -38,7 +38,7 @@ const journal: KioskJournal = {
   reportedAbsences: [{ childId: "c-lea", reason: "Fièvre", guardianName: "Sandrine Wahéo" }],
 };
 
-function server() {
+function server(extra: Parameters<typeof mockApi>[0] = {}) {
   window.localStorage.setItem("ticagou.device", JSON.stringify({ deviceId: "d-1", secret: "secret", name: "Accueil", structureName: "Les P’tits Niaoulis" }));
   return mockApi({
     "GET /setup/status": { body: installed },
@@ -48,6 +48,7 @@ function server() {
     "POST /auth/pin": { body: { ...session(maeva, "refresh-pin"), sessionId: "session-1" } },
     "GET /kiosk/today": { body: today },
     "GET /kiosk/journal": { body: journal },
+    ...extra,
     "POST /kiosk/operations": (body) => ({
       body: {
         serverTime: new Date().toISOString(),
@@ -154,6 +155,54 @@ describe("onglet Journée de la tablette", () => {
     await userEvent.click(screen.getByRole("button", { name: "Photo" }));
     expect(screen.getByRole("checkbox", { name: /Partager avec les familles/ })).toBeDisabled();
     expect(screen.getByText(/l’autorisation de photographier manque pour Léa/)).toBeInTheDocument();
+  });
+
+  it("filme une vidéo de 30 s au plus et l’envoie à part, partagée seulement si autorisée", async () => {
+    class FakeRecorder {
+      static isTypeSupported = (t: string) => t === "video/mp4";
+      static last: FakeRecorder;
+      mimeType = "video/mp4";
+      ondataavailable: ((e: { data: Blob }) => void) | null = null;
+      onstop: (() => void) | null = null;
+      constructor(public stream: unknown, public options: MediaRecorderOptions) {
+        FakeRecorder.last = this;
+      }
+      start() {}
+      stop() {
+        this.ondataavailable?.({ data: new Blob(["video"], { type: "video/mp4" }) });
+        this.onstop?.();
+      }
+    }
+    const stopTrack = vi.fn();
+    vi.stubGlobal("MediaRecorder", FakeRecorder);
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true,
+      value: { getUserMedia: vi.fn(async () => ({ getTracks: () => [{ stop: stopTrack }] })) } });
+    URL.createObjectURL = vi.fn(() => "blob:video");
+    URL.revokeObjectURL = vi.fn();
+    const { calls } = server({
+      "POST /kiosk/journal/video": { body: { clientId: "x", outcome: "APPLIQUEE", code: null, message: null, needsReview: false } },
+    });
+    renderAt("/kiosk");
+    await login();
+    await userEvent.click(screen.getByRole("button", { name: /Journée/ }));
+    const children = await screen.findByRole("region", { name: /Pour qui/ });
+    await userEvent.click(within(children).getByRole("button", { name: /Noa/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Vidéo" }));
+    expect(screen.getByRole("checkbox", { name: /Partager avec les familles/ })).not.toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: /Filmer \(30 s au plus\)/ }));
+    expect(await screen.findByRole("timer")).toHaveTextContent("00 s / 30 s");
+    expect(FakeRecorder.last.options).toMatchObject({ mimeType: "video/mp4", videoBitsPerSecond: 900_000 });
+    await userEvent.click(screen.getByRole("button", { name: /Arrêter/ }));
+    expect(await screen.findByRole("button", { name: /Refaire la vidéo/ })).toBeInTheDocument();
+    expect(stopTrack).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("checkbox", { name: /Partager avec les familles/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(await screen.findByText("Vidéo enregistrée pour Noa.")).toBeInTheDocument();
+    const form = calls.find((c) => c.key === "POST /kiosk/journal/video")?.body as FormData;
+    const operation = JSON.parse(await (form.get("operation") as Blob).text());
+    expect(operation.entry).toMatchObject({ kind: "VIDEO", childIds: ["c-noa"], shared: true });
+    expect((form.get("video") as File).name).toBe("video.mp4");
+    vi.unstubAllGlobals();
   });
 });
 

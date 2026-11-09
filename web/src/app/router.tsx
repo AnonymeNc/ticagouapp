@@ -23,6 +23,7 @@ import { KioskHomePage } from "@/features/kiosk/KioskHomePage";
 import { KioskShell } from "@/features/kiosk/KioskShell";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { MessagesPage } from "@/features/portal/MessagesPage";
+import { NewsPage } from "@/features/portal/NewsPage";
 import { PlanningPage } from "@/features/staff/PlanningPage";
 import { StaffRecordPage } from "@/features/staff/StaffRecordPage";
 import { TeamPage } from "@/features/staff/TeamPage";
@@ -86,6 +87,7 @@ export const routes: RouteObject[] = [
           { path: "personnel/heures", element: <TimesheetsPage /> },
           { path: "personnel/:id", element: <StaffRecordPage /> },
           { path: "messages", element: <MessagesPage /> },
+          { path: "messages/actualites", element: <NewsPage /> },
           ...navItems
             .filter(({ path }) => !["/", "/presences", "/enfants", "/inscriptions", "/repas", "/facturation", "/personnel", "/parametres", "/messages", "/statistiques"].includes(path))
             .map(({ path, label }) => ({ path: path.slice(1), element: <PlaceholderPage title={label} /> })),

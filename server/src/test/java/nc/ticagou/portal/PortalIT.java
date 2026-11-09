@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -272,6 +273,113 @@ class PortalIT extends IntegrationTest {
         assertThat(jdbc.queryForObject("SELECT granted FROM consent WHERE child_id = ?::uuid AND type = 'SORTIES'",
                 Boolean.class, childId)).isTrue();
         assertThat(auditCount("PORTAL_SIGNATURE_RECORDED")).isEqualTo(1);
+    }
+
+    /** Début d'un fichier MP4 (boîte « ftyp »). */
+    private static final byte[] MP4 = {0, 0, 0, 0x18, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm', 0, 0, 2, 0};
+
+    private MvcResult sendVideo(List<String> children, boolean shared, byte[] video) throws Exception {
+        var op = transmission("VIDEO", children, Map.of(), "Premiers pas", shared);
+        var request = multipart("/api/v1/kiosk/journal/video")
+                .file(new MockMultipartFile("operation", "", MediaType.APPLICATION_JSON_VALUE, json.writeValueAsBytes(op)))
+                .file(new MockMultipartFile("video", "video.mp4", "video/mp4", video))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + tablet.token());
+        return mvc.perform(request).andReturn();
+    }
+
+    @Test
+    void videoPartageePuisEffaceeApres60Jours() throws Exception {
+        activate();
+        perform(post("/api/v1/guardians/" + guardianId + "/portal-access"), director, null);
+
+        var tooBig = new byte[(int) nc.ticagou.document.Uploads.MAX_VIDEO_BYTES + 1];
+        System.arraycopy(MP4, 0, tooBig, 0, MP4.length);
+        assertThat(body(sendVideo(List.of(childId), true, tooBig)).get("code").asText()).isEqualTo("video_size");
+        assertThat(body(sendVideo(List.of(childId), true, JPEG)).get("code").asText()).isEqualTo("video_type");
+        var sent = sendVideo(List.of(childId), true, MP4);
+        assertThat(body(sent).get("outcome").asText()).as(sent.getResponse().getContentAsString()).isEqualTo("APPLIQUEE");
+        sync();
+
+        var video = received("ENTRY").stream().filter(e -> !e.get("deleted").asBoolean()).findFirst().orElseThrow();
+        assertThat(video.at("/payload/kind").asText()).isEqualTo("VIDEO");
+        assertThat(video.at("/payload/photoType").asText()).isEqualTo("video/mp4");
+        var entryId = video.get("id").asText();
+        var media = getAs(director, "/api/v1/journal/" + entryId + "/photo");
+        assertThat(media.getResponse().getContentType()).isEqualTo("video/mp4");
+
+        // 60 jours plus tard : le fichier est effacé, la transmission reste, le portail l'efface aussi.
+        jdbc.update("UPDATE daily_entry SET day = day - 61 WHERE id = ?::uuid", entryId);
+        assertThat(videoRetention.run()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT photo_file_id FROM daily_entry WHERE id = ?::uuid", String.class, entryId)).isNull();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM daily_entry WHERE id = ?::uuid", Long.class, entryId)).isEqualTo(1);
+        assertThat(videoRetention.run()).isZero();
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private nc.ticagou.journal.VideoRetentionJob videoRetention;
+
+    private MvcResult publishNews(String title, String section, byte[] file) throws Exception {
+        var request = multipart("/api/v1/portal/news");
+        request.param("title", title).param("body", "Venez nombreux samedi !");
+        if (section != null) {
+            request.param("sectionId", section);
+        }
+        if (file != null) {
+            request.file(new MockMultipartFile("file", "menu semaine.pdf", MediaType.APPLICATION_PDF_VALUE, file));
+        }
+        return mvc.perform(request.header(HttpHeaders.AUTHORIZATION, "Bearer " + director)).andReturn();
+    }
+
+    @Test
+    void actualitesEtMessagesAPlusieursFamilles() throws Exception {
+        var pdf = "%PDF-1.4 menu".getBytes(StandardCharsets.US_ASCII);
+        // Portail désactivé : rien ne se publie.
+        assertThat(body(publishNews("Fête du lagon", null, null)).get("code").asText()).isEqualTo("portal_inactive");
+
+        activate();
+        perform(post("/api/v1/guardians/" + guardianId + "/portal-access"), director, null);
+        var all = publishNews("Menu de la semaine", null, pdf);
+        assertThat(status(all)).as(all.getResponse().getContentAsString()).isEqualTo(201);
+        assertThat(body(all).get("families").asInt()).isEqualTo(1);
+        // Section sans famille invitée : publiée, mais personne ne la voit.
+        var grands = publishNews("Sortie des Grands", sectionId(director, "Grands"), null);
+        assertThat(body(grands).get("families").asInt()).isZero();
+        assertThat(body(publishNews(" ", null, null)).get("code").asText()).isEqualTo("news_title");
+        assertThat(body(publishNews("Image piégée", null, "<script>".getBytes(StandardCharsets.US_ASCII))).get("code").asText())
+                .isEqualTo("document_type");
+
+        assertThat(status(perform(post("/api/v1/messages/broadcast"), director,
+                Map.of("sectionId", sectionId(director, "Moyens"), "body", "Pensez aux chapeaux demain.")))).isEqualTo(200);
+        assertThat(body(perform(post("/api/v1/messages/broadcast"), director,
+                Map.of("sectionId", sectionId(director, "Grands"), "body", "Bonjour"))).get("code").asText()).isEqualTo("no_family");
+        sync();
+
+        var sent = received("NEWS").stream().filter(n -> !n.get("deleted").asBoolean()).toList();
+        assertThat(sent).hasSize(1);
+        assertThat(sent.getFirst().at("/payload/familyIds/0").asText()).isEqualTo(familyId);
+        assertThat(sent.getFirst().at("/payload/fileName").asText()).isEqualTo("menu semaine.pdf");
+        assertThat(sent.getFirst().at("/payload/fileType").asText()).isEqualTo("application/pdf");
+        assertThat(sent.getFirst().at("/payload/author").asText()).isEqualTo("Nathalie");
+        assertThat(received("MESSAGE")).extracting(m -> m.at("/payload/body").asText()).containsExactly("Pensez aux chapeaux demain.");
+        assertThat(body(getAs(director, "/api/v1/families/" + familyId + "/messages")).at("/messages/0/direction").asText())
+                .isEqualTo("EQUIPE");
+
+        // Retirée : effacée du portail.
+        portal.batches.clear();
+        var id = body(all).get("id").asText();
+        assertThat(body(perform(post("/api/v1/portal/news/" + id + "/withdraw"), director, null)).get("status").asText())
+                .isEqualTo("RETIREE");
+        sync();
+        assertThat(received("NEWS")).singleElement().matches(n -> n.get("deleted").asBoolean());
+        assertThat(auditCount("PORTAL_NEWS_PUBLISHED")).isEqualTo(2);
+        assertThat(auditCount("PORTAL_NEWS_WITHDRAWN")).isEqualTo(1);
+        assertThat(auditCount("FAMILY_MESSAGE_BROADCAST")).isEqualTo(1);
+
+        // La direction seule publie.
+        createUser(director, "EDUCATRICE", "lina.wema", "Tamanou-2026!", null);
+        var educatrice = accessToken("lina.wema", "Tamanou-2026!");
+        assertThat(status(getAs(educatrice, "/api/v1/portal/news"))).isEqualTo(403);
+        assertThat(status(perform(post("/api/v1/messages/broadcast"), educatrice, Map.of("body", "Bonjour")))).isEqualTo(403);
     }
 
     @Test

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CircleAlert, IdCard, Phone, ShieldX, UserRoundPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { instructionLabels, type Candidate, type KioskChild } from "./api";
+import { instructionLabels, kioskApi, type Candidate, type KioskChild } from "./api";
+import { JOURNAL_KEY, entrySummary, kindLabels } from "./JournalScreen";
 import { HealthDetails, Initials, TouchButton, hhmm, hm } from "./components";
 import { useKiosk } from "./KioskContext";
 import { PinPad } from "./PinPad";
@@ -82,6 +84,8 @@ export function DepartureScreen({ child, onDone }: { child: KioskChild; onDone: 
           </ul>
         </section>
       )}
+
+      <DayRecap childId={child.id} firstName={child.firstName} />
 
       <section aria-labelledby="qui-vient" className="flex flex-col gap-3">
         <h2 id="qui-vient" className="m-0 text-touch-label">Qui vient chercher {child.firstName} ?</h2>
@@ -287,5 +291,44 @@ function UnauthorizedScreen({
         Annuler le départ, {child.firstName} reste
       </TouchButton>
     </div>
+  );
+}
+
+/**
+ * Récap de la journée au départ (lot 1) : ce que l'équipe a noté pour l'enfant, à raconter au parent qui vient le
+ * chercher. Hors connexion, la liste déjà chargée reste affichée ; sans liste, rien. Écart : pas dans la maquette
+ * « Départ, choix de la personne ».
+ */
+function DayRecap({ childId, firstName }: { childId: string; firstName: string }) {
+  const journal = useQuery({ queryKey: JOURNAL_KEY, queryFn: ({ signal }) => kioskApi.journal(signal), refetchInterval: 60_000 });
+  const entries = (journal.data?.entries ?? [])
+    .filter((e) => e.children.some((c) => c.id === childId))
+    .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+  if (entries.length === 0) return null;
+  const photos = entries.filter((e) => e.kind === "PHOTO").length;
+  const videos = entries.filter((e) => e.kind === "VIDEO").length;
+  const told = entries.filter((e) => e.kind !== "PHOTO" && e.kind !== "VIDEO");
+  const taken = [photos > 0 && `${photos} photo${photos > 1 ? "s" : ""}`, videos > 0 && `${videos} vidéo${videos > 1 ? "s" : ""}`]
+    .filter(Boolean).join(" et ");
+  return (
+    <section aria-labelledby="journee" className="flex flex-col gap-2 rounded-lg border border-border bg-card p-5">
+      <h2 id="journee" className="m-0 text-touch-label">La journée de {firstName}</h2>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0 text-touch-body">
+        {told.map((e) => {
+          const summary = entrySummary(e);
+          return (
+            <li key={e.id} className="flex gap-3">
+              <span className="w-14 shrink-0 tabular-nums text-muted-foreground">{hm(e.occurredAt)}</span>
+              <span><strong className="font-semibold">{kindLabels[e.kind]}</strong>{summary ? ` · ${summary}` : ""}</span>
+            </li>
+          );
+        })}
+      </ul>
+      {taken && (
+        <p className="m-0 text-touch-body text-muted-foreground">
+          {taken} {photos + videos > 1 ? "prises" : "prise"} aujourd’hui
+        </p>
+      )}
+    </section>
   );
 }

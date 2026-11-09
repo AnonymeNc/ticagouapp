@@ -1,5 +1,8 @@
 package nc.ticagou.portal;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +38,7 @@ import nc.ticagou.portal.SyncDtos.GuardianPayload;
 import nc.ticagou.portal.SyncDtos.InvoiceLinePayload;
 import nc.ticagou.portal.SyncDtos.InvoicePayload;
 import nc.ticagou.portal.SyncDtos.MessagePayload;
+import nc.ticagou.portal.SyncDtos.NewsPayload;
 import nc.ticagou.portal.SyncDtos.SharedHealth;
 import nc.ticagou.portal.SyncDtos.StructurePayload;
 import nc.ticagou.license.LicenseService;
@@ -49,6 +53,8 @@ import nc.ticagou.structure.StructureRepository;
  */
 @Component
 public class PortalProjections {
+
+    private static final ZoneId NOUMEA = ZoneId.of("Pacific/Noumea");
 
     /** Contenu à envoyer ; {@code payload == null} : suppression côté portail. */
     public record Projection(boolean deleted, Object payload) {
@@ -82,6 +88,8 @@ public class PortalProjections {
     private final EncryptedFileStore fileStore;
     private final StoredFileRepository files;
     private final LicenseService licenses;
+    private final StructureNewsRepository news;
+    private final Clock clock;
 
     public PortalProjections(StructureRepository structures, GuardianRepository guardians,
                              GuardianPortalAccessRepository accesses, ChildRepository children,
@@ -91,7 +99,7 @@ public class PortalProjections {
                              InvoiceLineRepository invoiceLines, CreditNoteLineRepository creditNoteLines,
                              BillingDocuments billingDocuments, PortalDocumentRepository documents,
                              FamilyMessageRepository messages, EncryptedFileStore fileStore, StoredFileRepository files,
-                             LicenseService licenses) {
+                             LicenseService licenses, StructureNewsRepository news, Clock clock) {
         this.structures = structures;
         this.guardians = guardians;
         this.accesses = accesses;
@@ -112,6 +120,8 @@ public class PortalProjections {
         this.fileStore = fileStore;
         this.files = files;
         this.licenses = licenses;
+        this.news = news;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -126,6 +136,7 @@ public class PortalProjections {
             case INVOICE -> settings.isShareInvoices() ? invoice(structureId, id) : Projection.delete();
             case DOCUMENT -> settings.isShareDocuments() ? document(structureId, id) : Projection.delete();
             case MESSAGE -> settings.isShareMessages() ? message(structureId, id) : Projection.delete();
+            case NEWS -> settings.isShareMessages() ? news(structureId, id) : Projection.delete();
             case PURGE_FAMILY, PURGE_STRUCTURE -> Projection.delete();
         };
     }
@@ -201,9 +212,12 @@ public class PortalProjections {
         var concerned = children.findAllById(entry.getChildIds());
         byte[] photo = null;
         String photoType = null;
-        if (entry.getKind() == DailyEntry.Kind.PHOTO) {
-            // Une photo ne sort que si chaque enfant photographié est autorisé.
+        if (entry.getKind().isMedia()) {
+            // Une photo ou une vidéo ne sort que si chaque enfant est autorisé (ADR 0019). Vidéo effacée : plus rien.
             if (!settings.isSharePhotos() || !photoAllowed(settings.getStructureId(), entry.getChildIds())) {
+                return Projection.delete();
+            }
+            if (entry.getPhotoFileId() == null) {
                 return Projection.delete();
             }
             photo = fileStore.read(files.findById(entry.getPhotoFileId()).orElseThrow());
@@ -268,6 +282,47 @@ public class PortalProjections {
                 .map(m -> Projection.of(new MessagePayload(m.getFamilyId(), firstName(m.getAuthorName()), m.getBody(),
                         m.getSentAt())))
                 .orElseGet(Projection::delete);
+    }
+
+    private Projection news(UUID structureId, UUID id) {
+        var found = news.findByIdAndStructureId(id, structureId)
+                .filter(n -> n.isVisibleOn(LocalDate.now(clock.withZone(NOUMEA))));
+        if (found.isEmpty()) {
+            return Projection.delete();
+        }
+        var n = found.get();
+        var families = newsFamilies(n);
+        if (families.isEmpty()) {
+            return Projection.delete();
+        }
+        byte[] file = null;
+        String fileType = null;
+        if (n.getFileId() != null) {
+            file = fileStore.read(files.findById(n.getFileId()).orElseThrow());
+            fileType = Uploads.detectType(file);
+        }
+        return Projection.of(new NewsPayload(families, n.getTitle(), n.getBody(), firstName(n.getPublishedBy()),
+                n.getPublishedAt(), n.getExpiresOn(), file, fileType, file == null ? null : n.getFileName()));
+    }
+
+    List<UUID> newsFamilies(StructureNews n) {
+        return invitedFamilies(n.getStructureId(), n.getSectionId());
+    }
+
+    /**
+     * Familles dont un responsable est invité au portail ; pour une section, celles qui y ont un enfant inscrit
+     * aujourd'hui. Sert aux actualités et aux messages adressés à plusieurs familles.
+     */
+    List<UUID> invitedFamilies(UUID structureId, UUID sectionId) {
+        var invited = accesses.findByStructureId(structureId).stream().map(GuardianPortalAccess::getFamilyId)
+                .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+        if (sectionId == null) {
+            return List.copyOf(invited);
+        }
+        var today = LocalDate.now(clock.withZone(NOUMEA));
+        return children.findByStructureId(structureId).stream()
+                .filter(c -> sectionId.equals(c.getSectionId()) && c.isEnrolledOn(today))
+                .map(Child::getFamilyId).filter(invited::contains).distinct().sorted().toList();
     }
 
     /** Autorisation PHOTOS accordée pour chacun des enfants. */
