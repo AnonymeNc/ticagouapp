@@ -68,12 +68,17 @@ class MonitoringIT extends IntegrationTest {
                     reply(exchange, 200, "{\"siteId\":\"" + siteId + "\"}");
                 } else {
                     var headers = exchange.getRequestHeaders();
+                    var method = exchange.getRequestMethod();
                     var ok = siteId.toString().equals(headers.getFirst(PortalSigner.HEADER_STRUCTURE))
-                            && PortalSigner.verify(key, "POST", path, Instant.parse(headers.getFirst(PortalSigner.HEADER_DATE)),
+                            && PortalSigner.verify(key, method, path, Instant.parse(headers.getFirst(PortalSigner.HEADER_DATE)),
                                     body, headers.getFirst(PortalSigner.HEADER_SIGNATURE));
                     if (!ok) {
                         signatureErrors.add(path);
                         reply(exchange, 401, "{\"detail\":\"Signature invalide\"}");
+                        return;
+                    }
+                    if (path.endsWith("/group")) {
+                        reply(exchange, 200, "[{\"name\":\"Les Cagous de Dumbéa\",\"occupancyPercent\":81,\"self\":false}]");
                         return;
                     }
                     statuses.add(json.readTree(body));
@@ -148,6 +153,32 @@ class MonitoringIT extends IntegrationTest {
     }
 
     @Test
+    void groupeAvecConsentementPuisRetrait() throws Exception {
+        perform(post("/api/v1/monitoring/activate"), director, Map.of("serviceUrl", service.url(), "activationCode", "S123-4567-89AB"));
+        assertThat(body(perform(post("/api/v1/monitoring/group"), director, Map.of("code", "court"))).get("code").asText())
+                .isEqualTo("group_code");
+        var joined = body(perform(post("/api/v1/monitoring/group"), director,
+                Map.of("code", "groupe-niaoulis-2026", "url", "https://niaoulis.ticagou.nc/parametres")));
+        assertThat(joined.get("joined").asBoolean()).isTrue();
+        assertThat(joined.at("/creches/0/name").asText()).isEqualTo("Les Cagous de Dumbéa");
+        assertThat(service.signatureErrors).isEmpty();
+
+        var group = service.statuses.getLast().get("group");
+        var fields = new java.util.HashSet<String>();
+        group.fieldNames().forEachRemaining(fields::add);
+        assertThat(fields).containsExactlyInAnyOrder("codeHash", "name", "url", "activeChildren", "places", "occupancyPercent",
+                "invoicedLastMonth", "outstanding", "ratioBreaches7d", "asOf");
+        assertThat(group.get("codeHash").asText()).hasSize(64).doesNotContain("niaoulis");
+        assertThat(group.get("url").asText()).isEqualTo("https://niaoulis.ticagou.nc");
+        assertThat(group.toString()).doesNotContain("Noa", "Wahéo");
+        assertThat(auditCount("GROUP_JOINED")).isEqualTo(1);
+
+        var left = body(perform(post("/api/v1/monitoring/group/leave"), director, null));
+        assertThat(left.get("joined").asBoolean()).isFalse();
+        assertThat(service.statuses.getLast().has("group")).as("plus rien n'est partagé").isFalse();
+    }
+
+    @Test
     void echecPuisReprise() throws Exception {
         perform(post("/api/v1/monitoring/activate"), director, Map.of("serviceUrl", service.url(), "activationCode", "S123-4567-89AB"));
         service.down = true;
@@ -163,7 +194,10 @@ class MonitoringIT extends IntegrationTest {
         assertThat(off.get("state").asText()).isEqualTo("DESACTIVE");
         perform(post("/api/v1/monitoring/send"), director, null);
         assertThat(service.statuses).as("plus rien n'est envoyé").hasSize(2);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM server_secret WHERE name LIKE 'monitor-%'", Integer.class)).isZero();
+        // Les clés de cette crèche (d'autres tests laissent celles de leur crèche).
+        var structureId = jdbc.queryForObject("SELECT structure_id::text FROM monitoring_settings", String.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM server_secret WHERE name LIKE 'monitor-%' AND name LIKE ?", Integer.class,
+                "%" + structureId)).isZero();
     }
 
     @Test

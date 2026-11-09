@@ -62,6 +62,49 @@ class SupervisionIT extends PortalTest {
         return status(signed(site, "POST", "/supervision/v1/status", json.writeValueAsBytes(status), Instant.now()));
     }
 
+    Creche other(String name) throws Exception {
+        var keys = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+        var result = mvc.perform(post("/supervision/v1/activate").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(
+                Map.of("activationCode", supervision.newCode(name), "name", name,
+                        "publicKey", Base64.getEncoder().encodeToString(keys.getPublic().getEncoded()))))).andReturn();
+        return new Creche(UUID.fromString(body(result).get("siteId").asText()), keys);
+    }
+
+    Map<String, Object> withGroup(String hash, String name, long outstanding) {
+        var status = new java.util.HashMap<>(healthy());
+        var group = new java.util.LinkedHashMap<String, Object>(Map.of("codeHash", hash, "name", name,
+                "url", "https://" + name.toLowerCase().replace(' ', '-') + ".ticagou.nc", "activeChildren", 30, "places", 36,
+                "occupancyPercent", 81, "invoicedLastMonth", 1_250_000L, "outstanding", outstanding, "ratioBreaches7d", 1,
+                "asOf", "2026-11-10"));
+        group.put("childName", "ne doit pas sortir");
+        status.put("group", group);
+        return status;
+    }
+
+    @Test
+    void vueGroupeReserveeAuxCrechesDuMemeGroupe() throws Exception {
+        var hash = "a".repeat(64);
+        var sister = other("Les Cagous de Dumbéa");
+        var stranger = other("Crèche voisine");
+        assertThat(send(withGroup(hash, "Les P'tits Niaoulis", 85_000))).isEqualTo(204);
+        assertThat(status(signed(sister, "POST", "/supervision/v1/status", json.writeValueAsBytes(withGroup(hash, "Les Cagous de Dumbéa", 0)),
+                Instant.now()))).isEqualTo(204);
+        assertThat(status(signed(stranger, "POST", "/supervision/v1/status", json.writeValueAsBytes(withGroup("b".repeat(64), "Crèche voisine", 0)),
+                Instant.now()))).isEqualTo(204);
+
+        var group = body(signed(site, "GET", "/supervision/v1/group", new byte[0], Instant.now()));
+        assertThat(group).extracting(g -> g.get("name").asText()).containsExactly("Les Cagous de Dumbéa", "Les P'tits Niaoulis");
+        assertThat(group.get(1).get("self").asBoolean()).isTrue();
+        assertThat(group.get(1).get("outstanding").asLong()).isEqualTo(85_000);
+        assertThat(group.toString()).doesNotContain("childName", "Crèche voisine");
+
+        // La crèche quitte le groupe : son état suivant part sans le bloc, plus personne ne la voit.
+        assertThat(send(healthy())).isEqualTo(204);
+        var after = body(signed(sister, "GET", "/supervision/v1/group", new byte[0], Instant.now()));
+        assertThat(after).extracting(g -> g.get("name").asText()).containsExactly("Les Cagous de Dumbéa");
+        assertThat(body(signed(site, "GET", "/supervision/v1/group", new byte[0], Instant.now()))).isEmpty();
+    }
+
     @Test
     void etatSigneEnregistreSansChampInconnu() throws Exception {
         assertThat(send(healthy())).isEqualTo(204);

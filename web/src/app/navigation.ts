@@ -1,4 +1,5 @@
 import {
+  Building2,
   ChartColumn,
   ClipboardCheck,
   ClipboardList,
@@ -35,6 +36,7 @@ export const navItems: NavItem[] = [
   { path: "/statistiques", label: "Statistiques", icon: ChartColumn, roles: ["DIRECTION", "COMPTABILITE"], module: "FACTURATION" },
   { path: "/repas", label: "Repas", icon: UtensilsCrossed, roles: ["DIRECTION", "EDUCATRICE", "CUISINE"], module: "REPAS" },
   { path: "/personnel", label: "Personnel", icon: IdCard, module: "PERSONNEL" },
+  { path: "/groupe", label: "Vue groupe", icon: Building2, roles: ["DIRECTION"] },
   { path: "/messages", label: "Messages", icon: MessagesSquare, roles: ["DIRECTION", "EDUCATRICE"], module: "PORTAIL_PARENTS" },
   { path: "/parametres", label: "Paramètres", icon: Settings, roles: ["DIRECTION", "COMPTABILITE"] },
 ];

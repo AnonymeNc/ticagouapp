@@ -23,6 +23,7 @@ import { KioskHomePage } from "@/features/kiosk/KioskHomePage";
 import { KioskShell } from "@/features/kiosk/KioskShell";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { MessagesPage } from "@/features/portal/MessagesPage";
+import { GroupPage } from "@/features/group/GroupPage";
 import { PreinscriptionPage } from "@/features/enrollment/PreinscriptionPage";
 import { NewsPage } from "@/features/portal/NewsPage";
 import { PlanningPage } from "@/features/staff/PlanningPage";
@@ -94,9 +95,10 @@ export const routes: RouteObject[] = [
           { path: "personnel/mon-espace", element: <MySpacePage /> },
           { path: "personnel/:id", element: <StaffRecordPage /> },
           { path: "messages", element: <MessagesPage /> },
+          { path: "groupe", element: <GroupPage /> },
           { path: "messages/actualites", element: <NewsPage /> },
           ...navItems
-            .filter(({ path }) => !["/", "/presences", "/enfants", "/inscriptions", "/repas", "/facturation", "/personnel", "/parametres", "/messages", "/statistiques"].includes(path))
+            .filter(({ path }) => !["/", "/presences", "/enfants", "/inscriptions", "/repas", "/facturation", "/personnel", "/parametres", "/messages", "/statistiques", "/groupe"].includes(path))
             .map(({ path, label }) => ({ path: path.slice(1), element: <PlaceholderPage title={label} /> })),
         ],
       },

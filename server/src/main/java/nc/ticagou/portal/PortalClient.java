@@ -92,6 +92,16 @@ public class PortalClient {
         send(baseUrl, "POST", "/supervision/v1/status", status, siteId, key, null);
     }
 
+    /** Crèches du même groupe que ce site (lot 7) : indicateurs agrégés, signés comme l'état. */
+    public java.util.List<com.fasterxml.jackson.databind.JsonNode> supervisionGroup(String baseUrl, UUID siteId, PrivateKey key) {
+        var node = send(baseUrl, "GET", "/supervision/v1/group", null, siteId, key, com.fasterxml.jackson.databind.JsonNode.class);
+        var list = new java.util.ArrayList<com.fasterxml.jackson.databind.JsonNode>();
+        if (node != null) {
+            node.forEach(list::add);
+        }
+        return list;
+    }
+
     private <T> T send(String baseUrl, String method, String path, Object body, UUID portalStructureId, PrivateKey key,
                        Class<T> type) {
         try {
