@@ -13,6 +13,11 @@ Remplacez `Essentiel` par `Gestion` ou `Complet`. La relance garde les données 
 portail (Essentiel) efface ce que le portail détient, comme chez un client qui retire le module : revenir en Gestion ou
 Complet recharge tout.
 
+**Sans PC de démonstration** : depuis la console de l'éditeur, Ordres › Démonstration… crée une instance hébergée
+`demo-…` avec ce même jeu de données, dans la formule choisie, en 2 à 4 minutes. Son adresse s'affiche dans l'ordre ; les
+comptes sont les mêmes (bureau ci-dessous ; la tablette s'appaire avec un code du bureau). Supprimez-la depuis sa fiche
+après le rendez-vous.
+
 | Accès | Adresse | Compte |
 |---|---|---|
 | Bureau | http://localhost:1420 | `nathalie.kaloi` / `Niaouli-2026!` |

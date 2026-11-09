@@ -73,6 +73,20 @@ public class ParcRepository {
         return jdbc.query(CRECHE + " WHERE id = ?", this::creche, id).stream().findFirst();
     }
 
+    public void lifecycle(String slug, String lifecycle, Instant now) {
+        jdbc.update("UPDATE creche SET lifecycle = ?, updated_at = ? WHERE slug = ?", lifecycle, Timestamp.from(now), slug);
+    }
+
+    /** Démonstration supprimée : sa fiche disparaît, avec son client (une démo n'a ni contrat ni facture). */
+    public void deleteDemo(String slug) {
+        var clientId = jdbc.queryForList("SELECT client_id FROM creche WHERE slug = ? AND lifecycle = 'DEMO'", UUID.class, slug);
+        if (clientId.isEmpty()) {
+            return;
+        }
+        jdbc.update("DELETE FROM creche WHERE slug = ? AND lifecycle = 'DEMO'", slug);
+        jdbc.update("DELETE FROM client c WHERE id = ? AND NOT EXISTS (SELECT 1 FROM creche k WHERE k.client_id = c.id)", clientId.getFirst());
+    }
+
     /** Contrat signé : un prospect devient client, à la date de début du contrat si rien n'était noté. */
     public void becomesClient(UUID id, LocalDate since, Instant now) {
         jdbc.update("""

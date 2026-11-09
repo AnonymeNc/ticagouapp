@@ -39,8 +39,11 @@ aussi) et corrigée par avoir, numérotation continue par série et par exercice
 conservé avec son empreinte SHA-256, mentions de l'éditeur recopiées dans la facture. Valider une facture et émettre un
 avoir redemandent le code.
 
-**La console ne touche jamais Docker** : elle dépose des ordres que `creche.sh appliquer` (cron de l'hôte) exécute, sur
-une liste blanche (phase 5).
+**La console ne touche jamais Docker** : elle dépose des ordres que `creche.sh appliquer` (cron de l'hôte, chaque minute)
+exécute, sur une liste blanche revérifiée par le script : créer une crèche, lancer ou supprimer une démonstration,
+abonnement, suspendre, reprendre, mettre à jour. Chaque ordre est pris une seule fois et rend compte (sortie, lien de
+démarrage). Les ordres donnés demandent le code ; ceux que la console propose attendent une confirmation. Supprimer une
+crèche cliente n'en fait pas partie : c'est irréversible, cela reste en ligne de commande.
 
 **Supervision** : reste dans le portail ; la console la lit par l'API d'administration, sur le réseau Docker interne,
 toutes les 5 minutes (`PORTAL_ADMIN_TOKEN`). L'hôte, lui, envoie son rapport (`creche.sh rapport-console`, cron toutes les

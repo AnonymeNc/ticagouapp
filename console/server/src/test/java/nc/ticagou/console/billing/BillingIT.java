@@ -69,15 +69,15 @@ import nc.ticagou.console.parc.ParcRepository;
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {"console.scheduling=false", "console.secret-key=AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
         "console.mail-from=Ti'Cagou <facturation@ticagou.nc>"})
-class BillingIT {
+public class BillingIT {
 
     /** 08/11/2026 à 09:00, heure de Nouméa. */
-    static final Instant START = Instant.parse("2026-11-07T22:00:00Z");
+    public static final Instant START = Instant.parse("2026-11-07T22:00:00Z");
 
-    static final class MovableClock extends Clock {
-        Instant now = START;
+    public static final class MovableClock extends Clock {
+        public Instant now = START;
 
-        void on(String day) {
+        public void on(String day) {
             now = LocalDate.parse(day).atTime(9, 0).atZone(ZoneId.of("Pacific/Noumea")).toInstant();
         }
 
@@ -98,7 +98,7 @@ class BillingIT {
     }
 
     /** Serveur de messagerie factice : garde les messages, ou refuse tout. */
-    static final class FakeMail implements JavaMailSender {
+    public static final class FakeMail implements JavaMailSender {
         final List<MimeMessage> sent = new CopyOnWriteArrayList<>();
         volatile boolean down;
 
@@ -127,7 +127,7 @@ class BillingIT {
     }
 
     @TestConfiguration(proxyBeanMethods = false)
-    static class Config {
+    public static class Config {
         @Bean
         @ServiceConnection
         PostgreSQLContainer<?> postgres() {

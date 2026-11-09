@@ -41,9 +41,12 @@ public class PaymentService {
     private final InvoiceRepository invoices;
     private final ParcRepository parc;
     private final AuditService audit;
+    private final nc.ticagou.console.orders.OrderService orders;
     private final Clock clock;
 
-    public PaymentService(PaymentRepository payments, InvoiceRepository invoices, ParcRepository parc, AuditService audit, Clock clock) {
+    public PaymentService(PaymentRepository payments, InvoiceRepository invoices, ParcRepository parc, AuditService audit,
+                          @org.springframework.context.annotation.Lazy nc.ticagou.console.orders.OrderService orders, Clock clock) {
+        this.orders = orders;
         this.payments = payments;
         this.invoices = invoices;
         this.parc = parc;
@@ -99,6 +102,14 @@ public class PaymentService {
         allocations.forEach(a -> payments.allocate(id, a.invoiceId(), a.amount()));
         audit.record("PAIEMENT", "creche:" + creche.slug(), Map.of("montant", input.amount(), "moyen", input.method(),
                 "affecte", total, "tropPercu", input.amount() - total));
+        // Abonnement payé : la prolongation de l'instance est proposée, à confirmer (D6).
+        for (var a : allocations) {
+            var invoice = invoices.find(a.invoiceId()).orElseThrow();
+            var s = invoices.settlement(invoice.id());
+            if ("ABONNEMENT".equals(invoice.kind()) && invoice.totalTtc() - s.paid() - s.credited() <= 0) {
+                orders.proposeAfterPayment(creche.slug(), invoice.number());
+            }
+        }
         var payment = payments.find(id).orElseThrow();
         return new View(payment, parc.client(clientId).name(), payments.allocationsFrom(id));
     }

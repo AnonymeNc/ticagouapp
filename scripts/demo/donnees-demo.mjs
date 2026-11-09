@@ -8,6 +8,7 @@
  *   node scripts/demo/donnees-demo.mjs [--url http://localhost:8080]
  *   node scripts/demo/donnees-demo.mjs --aujourdhui     (démonstration déjà chargée : pointages et transmissions du jour)
  *   node scripts/demo/donnees-demo.mjs --portail http://localhost:8090 --code XXXX     (relie aussi le portail parents)
+ *   node scripts/demo/donnees-demo.mjs --url http://creche-demo:8080 --jeton XXXX     (instance hébergée : jeton du lien de démarrage)
  *
  * Le script refuse une installation qui a déjà des enfants. Il n'est pas livré aux crèches : il sert au PC de
  * démonstration (scripts\tester-en-local.ps1 -Demo) et aux essais.
@@ -28,6 +29,8 @@ const ZONE = "Pacific/Noumea";
 const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : null);
 const PORTAL_URL = option("--portail");
 const PORTAL_CODE = option("--code");
+// Instance hébergée (creche.sh demo) : l'assistant de démarrage exige le jeton du lien de démarrage.
+const SETUP_TOKEN = option("--jeton");
 
 // Comptes de la démonstration (README, docs/TESTER-EN-LOCAL.md § 8).
 const DIRECTOR = { login: "nathalie.kaloi", password: "Niaouli-2026!", pin: "2580" };
@@ -75,6 +78,7 @@ let token = null;
 async function call(method, path, body, { auth = token, form = null, expect = [200, 201, 204] } = {}) {
   const headers = { Accept: "application/json", "X-Ticagou-Poste": "demo-script", "X-Ticagou-Poste-Nom": "Script%20de%20d%C3%A9monstration" };
   if (auth) headers.Authorization = `Bearer ${auth}`;
+  if (SETUP_TOKEN && path === "/setup") headers["X-Ticagou-Setup"] = SETUP_TOKEN;
   if (body !== undefined && !form) headers["Content-Type"] = "application/json";
   const response = await fetch(`${BASE}/api/v1${path}`, { method, headers, body: form ?? (body === undefined ? undefined : JSON.stringify(body)) });
   const text = await response.text();

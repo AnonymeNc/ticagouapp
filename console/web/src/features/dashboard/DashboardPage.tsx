@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { AlertTriangle, Clock, Info, Mail, PhoneCall, Plus, Receipt, RefreshCw, Send, Server } from "lucide-react";
+import { AlertTriangle, Clock, Info, Mail, PhoneCall, Plus, Receipt, RefreshCw, Send, Server, SquareTerminal } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { HealthDot } from "@/components/ui/pill";
 import { useOperator } from "@/features/auth/AuthProvider";
 import { useBoard, type Board } from "@/features/billing/api";
 import { monthShort, xpf } from "@/features/billing/labels";
+import { typeLabels, useOrders, type OrdersBoard } from "@/features/orders/api";
 import { useParc, type Parc, type Row } from "@/features/parc/api";
 import { ago, formatDay, levelLabels } from "@/features/parc/labels";
 import { errorMessage } from "@/lib/api";
@@ -23,6 +24,7 @@ export function DashboardPage() {
   const firstName = operator.displayName.split(/\s+/)[0];
   const parc = useParc();
   const board = useBoard();
+  const orders = useOrders();
 
   return (
     <>
@@ -47,7 +49,7 @@ export function DashboardPage() {
           {errorMessage(parc.error ?? board.error)}
         </p>
       )}
-      {parc.data && <Overview parc={parc.data} board={board.data} />}
+      {parc.data && <Overview parc={parc.data} board={board.data} orders={orders.data} />}
     </>
   );
 }
@@ -63,11 +65,11 @@ function subtitle(parc: Parc, board?: Board): string {
   return waiting ? `${base} ${waiting} message${waiting > 1 ? "s attendent" : " attend"} votre clic.` : base;
 }
 
-function Overview({ parc, board }: { parc: Parc; board?: Board }) {
+function Overview({ parc, board, orders }: { parc: Parc; board?: Board; orders?: OrdersBoard }) {
   const { summary } = parc;
   const clients = parc.creches.filter((c) => c.lifecycle === "CLIENT").length;
   const alertKinds = count(parc.creches.flatMap((c) => c.alerts.map((a) => a.label)));
-  const todos = buildTodos(parc, new Date(), board);
+  const todos = buildTodos(parc, new Date(), board, orders);
 
   return (
     <>
@@ -209,7 +211,7 @@ function count(labels: string[]): [string, number][] {
 const icon = (Icon: typeof Server) => <Icon aria-hidden className="size-[18px]" strokeWidth={1.75} />;
 
 /** Alertes d'abord, puis fins d'évaluation, renouvellements et points à surveiller. */
-export function buildTodos(parc: Parc, now: Date = new Date(), board?: Board): Todo[] {
+export function buildTodos(parc: Parc, now: Date = new Date(), board?: Board, orders?: OrdersBoard): Todo[] {
   const todos: Todo[] = [];
   const clients = parc.creches.filter((c) => c.lifecycle === "CLIENT");
   for (const row of clients.filter((c) => c.health.level === "BAD")) {
@@ -278,7 +280,7 @@ export function buildTodos(parc: Parc, now: Date = new Date(), board?: Board): T
     return todos;
   }
   const alerts = todos.filter((t) => t.key.startsWith("alerte"));
-  return [...alerts, ...billingTodos(board), ...todos.filter((t) => !t.key.startsWith("alerte"))];
+  return [...alerts, ...billingTodos(board), ...(orders ? orderTodos(orders, now) : []), ...todos.filter((t) => !t.key.startsWith("alerte"))];
 }
 
 /** Facturation : messages à envoyer, brouillons à valider, factures en retard (les trois plus anciennes). */
@@ -357,4 +359,45 @@ function usage(row: Row): string {
 /** Motifs à la suite d'un nom : première lettre en minuscule, sigles gardés (« PC au-delà du contrat »). */
 function reasons(row: Row): string {
   return row.health.reasons.map((r) => (/^[A-Z]{2}/.test(r) ? r : r.charAt(0).toLowerCase() + r.slice(1))).join(", ");
+}
+
+/** Ordres : propositions à confirmer, échecs récents, abonnements non alignés sur le contrat. */
+function orderTodos(board: OrdersBoard, now: Date): Todo[] {
+  const todos: Todo[] = [];
+  const toConfirm = board.orders.filter((o) => o.status === "A_CONFIRMER");
+  if (toConfirm.length > 0) {
+    todos.push({
+      key: "ordres-a-confirmer",
+      tone: "info",
+      icon: icon(SquareTerminal),
+      title: <><b>{toConfirm.length} ordre{toConfirm.length > 1 ? "s" : ""} à confirmer</b> : {toConfirm.slice(0, 3).map((o) => `${typeLabels[o.type].toLowerCase()} ${o.crecheName ?? o.slug}`).join(", ")}</>,
+      hint: toConfirm[0].reason ?? "Proposé par la console",
+      to: "/ordres",
+      action: "Confirmer",
+    });
+  }
+  const week = now.getTime() - 7 * 86_400_000;
+  for (const o of board.orders.filter((x) => x.status === "ECHEC" && new Date(x.finishedAt ?? x.createdAt).getTime() > week).slice(0, 3)) {
+    todos.push({
+      key: `ordre-echec-${o.id}`,
+      tone: "bad",
+      icon: icon(SquareTerminal),
+      title: <><b>{o.crecheName ?? o.slug}</b> : ordre « {typeLabels[o.type].toLowerCase()} » en échec</>,
+      hint: (o.output ?? "").trim().split("\n").pop() ?? "Voir la sortie",
+      to: "/ordres",
+      action: "Voir",
+    });
+  }
+  for (const m of board.misaligned.slice(0, 3)) {
+    todos.push({
+      key: `aligner-${m.slug}`,
+      tone: "warn",
+      icon: icon(RefreshCw),
+      title: <><b>{m.name}</b> : abonnement de l’instance non aligné sur le contrat</>,
+      hint: m.differences.join(" · "),
+      to: `/parc/${m.slug}`,
+      action: "Aligner",
+    });
+  }
+  return todos;
 }

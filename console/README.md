@@ -27,7 +27,12 @@ indicateurs (`BillingStats`). Une facture validée est protégée par un trigger
 
 **Livré (phase 4)** : relances (`ReminderPlanner` pour le calendrier, testé seul ; `ReminderService` pour la préparation de
 6 h, regroupée par client ; `ReminderRepository`) ; règles datées, fériés et règles par client dans Paramètres ; au clic,
-une facture soldée entre-temps retire la relance (`OutboxService`). Les autres écrans annoncent leur phase.
+une facture soldée entre-temps retire la relance (`OutboxService`).
+
+**Livré (phase 5)** : ordres aux instances (`orders/`) — liste blanche (`OrderRules`, testée seule), proposés ou donnés avec
+le code, pris une seule fois par `creche.sh appliquer` sur `/interne/v1/ordres` (`OrderController`) ; créer une crèche,
+démonstrations (`creche.sh demo`), abonnement aligné sur le contrat (proposé après paiement), suspendre, reprendre,
+mettre à jour. Le reporting annonce sa phase.
 
 ## Lancer en développement
 

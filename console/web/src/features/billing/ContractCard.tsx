@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { billingApi, useBillingWrite, useContract, useInvoices, type Contract, type ContractInput, type ContractSaved, type Quote } from "./api";
 import { planLabels, statePill, tierLabels, today, xpf } from "./labels";
+import { ordersApi, useOrderAction } from "@/features/orders/api";
 
 const modules = ["INSCRIPTIONS", "FACTURATION", "COMPTABILITE", "PERSONNEL", "REPAS", "PORTAIL_PARENTS"];
 
@@ -121,7 +122,10 @@ export function ContractCard({ slug, places }: { slug: string; places: number | 
               ))}
             </ul>
           )}
-          <p className="m-0 mt-3 text-small text-muted-foreground">À aligner avec <span className="font-mono">./creche.sh abonnement {slug} …</span> ; la console le fera par ordre en phase 5.</p>
+          {view.expected.differences.length > 0 && view.expected.validUntil && <AlignButton slug={slug} />}
+          {!view.expected.validUntil && (
+            <p className="m-0 mt-3 text-small text-muted-foreground">Rien à reporter tant qu’aucune période d’abonnement n’est payée.</p>
+          )}
         </Card>
       )}
     </div>
@@ -281,5 +285,17 @@ export function CrecheInvoices({ slug }: { slug: string }) {
         <Link to={`/factures?paiement=${slug}`} className="text-lagon-600 hover:underline">Saisir un paiement</Link>
       </div>
     </Card>
+  );
+}
+
+/** Ordre « abonnement » : formule, modules, places, PC, tablettes et échéance payée, reportés dans l'instance (code redemandé). */
+function AlignButton({ slug }: { slug: string }) {
+  const give = useOrderAction(() => ordersApi.give({ type: "ABONNEMENT", slug, reason: "Abonnement aligné sur le contrat" }));
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <Button size="sm" disabled={give.isPending || give.isSuccess} onClick={() => give.mutate(undefined)}>Reporter le contrat dans l’instance</Button>
+      {give.isSuccess && <span role="status" className="text-small text-success-700">Ordre transmis : l’hôte l’exécute dans la minute.</span>}
+      {give.isError && <span role="alert" className="text-small text-danger-700">{errorMessage(give.error)}</span>}
+    </div>
   );
 }

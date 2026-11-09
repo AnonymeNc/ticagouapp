@@ -154,7 +154,7 @@ describe("parc des crèches", () => {
     expect(await screen.findByRole("heading", { name: /Lagon Bleu/ })).toBeInTheDocument();
     expect(screen.getByText("non prévue (un seul hébergeur)")).toBeInTheDocument();
     expect(screen.getAllByText("118").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Suspendre…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Suspendre…" })).toBeEnabled();
 
     await user.click(screen.getByRole("tab", { name: "Abonnement" }));
     expect(screen.getByText("Inscriptions, Facturation, Portail parents, Repas")).toBeInTheDocument();

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { Link, useParams } from "react-router";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ContractCard, CrecheInvoices } from "@/features/billing/ContractCard";
+import { CrecheOrders, InstanceActions } from "@/features/orders/InstanceActions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthDot, Pill } from "@/components/ui/pill";
@@ -99,9 +100,11 @@ function Fiche({ slug }: { slug: string }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to={`/factures?nouvelle=${row.slug}`} className={buttonVariants({ variant: "outline" })}>
-            Facture
-          </Link>
+          {row.lifecycle !== "DEMO" && (
+            <Link to={`/factures?nouvelle=${row.slug}`} className={buttonVariants({ variant: "outline" })}>
+              Facture
+            </Link>
+          )}
           <Button
             variant="outline"
             onClick={() => {
@@ -111,9 +114,7 @@ function Fiche({ slug }: { slug: string }) {
           >
             Noter un appel
           </Button>
-          <Button variant="destructive" disabled title="Avec les ordres aux instances (phase 5)">
-            Suspendre…
-          </Button>
+          <InstanceActions row={row} />
         </div>
       </div>
 
@@ -140,6 +141,7 @@ function Fiche({ slug }: { slug: string }) {
         {tab === "abonnement" && (
           <div className="flex flex-col gap-4">
             <ContractCard slug={row.slug} places={row.places} />
+            <CrecheOrders slug={row.slug} />
             <SubscriptionTab detail={detail} />
           </div>
         )}

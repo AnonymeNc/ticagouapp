@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 export type Level = "OK" | "WARN" | "BAD" | "OFF";
-export type Lifecycle = "PROSPECT" | "CLIENT" | "RESILIE";
+export type Lifecycle = "PROSPECT" | "CLIENT" | "RESILIE" | "DEMO";
 export type ClientKind = "PRIVE" | "ASSOCIATION" | "COLLECTIVITE" | "ENTREPRISE";
 
 export type AlertView = { id: number; kind: string; label: string; detail: string; openedAt: string; closedAt: string | null };
