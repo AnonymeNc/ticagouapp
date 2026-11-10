@@ -4,6 +4,7 @@ import { CircleCheck } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/api";
@@ -111,10 +112,10 @@ export function PreinscriptionPage() {
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label={child.unborn ? "Naissance prévue" : "Date de naissance"} hint="JJ/MM/AAAA">
-            <Input value={child.birth} inputMode="numeric" onChange={(e) => setChild({ ...child, birth: e.target.value })} />
+            <DateInput value={child.birth} inputMode="numeric" onChange={(e) => setChild({ ...child, birth: e.target.value })} />
           </FormField>
           <FormField label="Entrée souhaitée" hint="JJ/MM/AAAA">
-            <Input value={child.start} inputMode="numeric" onChange={(e) => setChild({ ...child, start: e.target.value })} />
+            <DateInput value={child.start} inputMode="numeric" onChange={(e) => setChild({ ...child, start: e.target.value })} />
           </FormField>
         </div>
         <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">

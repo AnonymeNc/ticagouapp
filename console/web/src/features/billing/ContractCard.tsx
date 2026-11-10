@@ -12,8 +12,6 @@ import { billingApi, useBillingWrite, useContract, useInvoices, type Contract, t
 import { planLabels, statePill, tierLabels, today, xpf } from "./labels";
 import { ordersApi, useOrderAction } from "@/features/orders/api";
 
-const modules = ["INSCRIPTIONS", "FACTURATION", "COMPTABILITE", "PERSONNEL", "REPAS", "PORTAIL_PARENTS"];
-
 function Card({ title, aside, children, className }: { title: string; aside?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={cn("rounded-lg border border-border-subtle bg-card p-5 shadow-1", className)}>
@@ -70,10 +68,12 @@ export function ContractCard({ slug, places }: { slug: string; places: number | 
         <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5">
           <dt className="text-muted-foreground">Formule</dt>
           <dd className="m-0 font-semibold">{planLabels[c.plan]} {view.monthly ? tierLabels[view.monthly.tier] : ""} · {c.places} places</dd>
-          <dt className="text-muted-foreground">Modules ajoutés</dt>
-          <dd className="m-0 font-semibold">{c.modules.length ? c.modules.map((m) => moduleLabels[m] ?? m).join(", ") : "aucun"}</dd>
+          {c.modules.length > 0 && <>
+            <dt className="text-muted-foreground">Modules (ancien contrat)</dt>
+            <dd className="m-0 font-semibold">{c.modules.map((m) => moduleLabels[m] ?? m).join(", ")} · un avenant passe à la formule unique</dd>
+          </>}
           <dt className="text-muted-foreground">Équipement en plus</dt>
-          <dd className="m-0 font-semibold">{c.extraDesktops} PC · {c.extraTablets} tablette{c.extraTablets > 1 ? "s" : ""}{c.premiumSupport ? " · support Premium" : ""}</dd>
+          <dd className="m-0 font-semibold">{c.extraDesktops} PC · {c.extraTablets} tablette{c.extraTablets > 1 ? "s" : ""}{c.premiumSupport ? " · support Premium (ancien contrat)" : " · support rapide compris"}</dd>
           <dt className="text-muted-foreground">Engagement</dt>
           <dd className="m-0 font-semibold">{c.engagementYears} an{c.engagementYears > 1 ? "s" : ""} · paiement {c.rhythm === "ANNUEL" ? "annuel d’avance" : "mensuel"}</dd>
           <dt className="text-muted-foreground">Depuis le</dt>
@@ -106,8 +106,8 @@ export function ContractCard({ slug, places }: { slug: string; places: number | 
       {view.expected && (
         <Card title="Abonnement attendu de l’instance">
           <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5">
-            <dt className="text-muted-foreground">Modules</dt>
-            <dd className="m-0 font-semibold">{view.expected.modules.map((m) => moduleLabels[m] ?? m).join(", ") || "base seule"}</dd>
+            <dt className="text-muted-foreground">Formule</dt>
+            <dd className="m-0 font-semibold">Ti’Cagou, tout compris</dd>
             <dt className="text-muted-foreground">Places, PC, tablettes</dt>
             <dd className="m-0 font-semibold">{view.expected.places} · {view.expected.desktops} · {view.expected.tablets}</dd>
             <dt className="text-muted-foreground">Payé jusqu’au</dt>
@@ -134,12 +134,14 @@ export function ContractCard({ slug, places }: { slug: string; places: number | 
 
 function ContractForm({ slug, places, current, onDone, onCancel }: { slug: string; places: number | null; current: Contract | null; onDone: (s: ContractSaved) => void; onCancel: () => void }) {
   const [form, setForm] = useState<ContractInput>(() => ({
-    plan: current?.plan ?? "GESTION",
+    // Une seule formule (ADR 0021) : un avenant d'un ancien contrat passe à la formule unique, sans module.
+    plan: "COMPLET",
     places: current?.places ?? places ?? 20,
-    modules: current?.modules ?? [],
+    modules: [],
     extraDesktops: current?.extraDesktops ?? 0,
     extraTablets: current?.extraTablets ?? 0,
-    premiumSupport: current?.premiumSupport ?? false,
+    // Support rapide compris dans la formule (barème de la formule unique) : plus d'option Premium.
+    premiumSupport: false,
     engagementYears: current?.engagementYears ?? 1,
     rhythm: current?.rhythm ?? "ANNUEL",
     extraStructure: current?.extraStructure ?? false,
@@ -175,9 +177,7 @@ function ContractForm({ slug, places, current, onDone, onCancel }: { slug: strin
       <form onSubmit={(e) => { e.preventDefault(); save.mutate(form, { onSuccess: onDone }); }}>
         <Card title={current ? "Avenant ou correction du contrat" : "Nouveau contrat"}>
           <div className="grid gap-3 md:grid-cols-3">
-            {field("c-plan", "Formule", <select id="c-plan" className={select} value={form.plan} onChange={(e) => set("plan", e.target.value as ContractInput["plan"])}>
-              {Object.entries(planLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>)}
+            {field("c-plan", "Formule", <Input id="c-plan" readOnly value="Ti’Cagou, tout compris" />, "Une seule formule, support rapide compris, au prix du barème en vigueur à la signature.")}
             {field("c-places", "Places agréées", <Input id="c-places" type="number" min={1} value={form.places} onChange={(e) => set("places", Number(e.target.value))} />)}
             {field("c-rythme", "Paiement", <select id="c-rythme" className={select} value={form.rhythm} onChange={(e) => set("rhythm", e.target.value as ContractInput["rhythm"])}>
               <option value="ANNUEL">Annuel d’avance</option>
@@ -190,19 +190,7 @@ function ContractForm({ slug, places, current, onDone, onCancel }: { slug: strin
               <option value={3}>3 ans</option>
             </select>)}
           </div>
-          <fieldset className="m-0 mt-4 border-0 p-0">
-            <legend className="mb-1.5 text-label">Modules ajoutés à la formule</legend>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-              {modules.map((m) => (
-                <label key={m} className="flex items-center gap-1.5">
-                  <input type="checkbox" checked={form.modules.includes(m)} onChange={(e) => set("modules", e.target.checked ? [...form.modules, m] : form.modules.filter((x) => x !== m))} />
-                  {moduleLabels[m]}
-                </label>
-              ))}
-            </div>
-          </fieldset>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-            <label className="flex items-center gap-1.5"><input type="checkbox" checked={form.premiumSupport} onChange={(e) => set("premiumSupport", e.target.checked)} /> Support Premium</label>
             <label className="flex items-center gap-1.5"><input type="checkbox" checked={form.extraStructure} onChange={(e) => set("extraStructure", e.target.checked)} /> Structure supplémentaire du même client</label>
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
@@ -288,7 +276,7 @@ export function CrecheInvoices({ slug }: { slug: string }) {
   );
 }
 
-/** Ordre « abonnement » : formule, modules, places, PC, tablettes et échéance payée, reportés dans l'instance (code redemandé). */
+/** Ordre « abonnement » : places, PC, tablettes et échéance payée, reportés dans l'instance (code redemandé). */
 function AlignButton({ slug }: { slug: string }) {
   const give = useOrderAction(() => ordersApi.give({ type: "ABONNEMENT", slug, reason: "Abonnement aligné sur le contrat" }));
   return (

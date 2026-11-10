@@ -82,8 +82,13 @@ public abstract class IntegrationTest {
     @Autowired
     private LoginThrottle loginThrottle;
 
+    @Autowired
+    protected nc.ticagou.staffing.StaffingBroadcaster staffingBroadcaster;
+
     @BeforeEach
     void resetDatabase() throws IOException {
+        // Une diffusion de l'encadrement du test précédent ne doit pas écrire après la remise à zéro.
+        staffingBroadcaster.awaitPending();
         pairingThrottle.reset();
         loginThrottle.reset();
         try (var files = Files.list(BACKUPS)) {
@@ -260,6 +265,8 @@ public abstract class IntegrationTest {
         request.put("validFrom", validFrom);
         request.put("bands", List.of(Map.of("lowerBound", 0, "hourlyRate", 620),
                 Map.of("lowerBound", 20 * 60, "hourlyRate", 560), Map.of("lowerBound", 35 * 60 + 15, "hourlyRate", 510)));
+        request.put("formulas", List.of(Map.of("label", "Temps plein", "monthlyFee", 98_500),
+                Map.of("label", "Matins seulement", "monthlyFee", 60_000)));
         var result = perform(post("/api/v1/tariff-schedules"), token, request);
         if (result.getResponse().getStatus() != 201) {
             throw new IllegalStateException("Barème impossible : " + result.getResponse().getContentAsString());

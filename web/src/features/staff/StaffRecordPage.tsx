@@ -6,6 +6,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { useCurrentUser } from "@/features/auth/AuthProvider";
 import { roleLabels } from "@/features/auth/types";
@@ -265,7 +266,7 @@ function ProfileDialog({ profile, onClose, onSaved }: { profile: Profile; onClos
           <DialogDescription>Fonction, section et encadrement se modifient dans Paramètres › Utilisateurs et rôles.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Né(e) le"><Input value={f.birthDate} onChange={(e) => set({ birthDate: e.target.value })} /></FormField>
+          <FormField label="Né(e) le"><DateInput value={f.birthDate} onChange={(e) => set({ birthDate: e.target.value })} /></FormField>
           <FormField label="Téléphone"><Input value={f.phone} maxLength={30} onChange={(e) => set({ phone: e.target.value })} /></FormField>
           <FormField label="Courriel"><Input value={f.email} maxLength={254} onChange={(e) => set({ email: e.target.value })} /></FormField>
           <FormField label="N° CAFAT"><Input value={f.cafatNumber} maxLength={30} onChange={(e) => set({ cafatNumber: e.target.value })} /></FormField>
@@ -279,8 +280,8 @@ function ProfileDialog({ profile, onClose, onSaved }: { profile: Profile; onClos
           </FormField>
           <FormField label="Heures par semaine"><Input value={f.weekly} disabled={f.hourly} inputMode="decimal" onChange={(e) => set({ weekly: e.target.value })} /></FormField>
           <label className="flex items-end gap-2 pb-2"><input type="checkbox" checked={f.hourly} onChange={(e) => set({ hourly: e.target.checked })} />Rémunération à l’heure</label>
-          <FormField label="Entrée le"><Input value={f.hiredOn} onChange={(e) => set({ hiredOn: e.target.value })} /></FormField>
-          <FormField label="Fin le (CDD)"><Input value={f.endsOn} onChange={(e) => set({ endsOn: e.target.value })} /></FormField>
+          <FormField label="Entrée le"><DateInput value={f.hiredOn} onChange={(e) => set({ hiredOn: e.target.value })} /></FormField>
+          <FormField label="Fin le (CDD)"><DateInput value={f.endsOn} onChange={(e) => set({ endsOn: e.target.value })} /></FormField>
         </div>
         {error && <Alert>{error}</Alert>}
         <div className="flex gap-3">
@@ -330,7 +331,7 @@ function ScheduleDialog({ userId, profile, onClose, onSaved }: { userId: string;
           <DialogTitle>Semaine type</DialogTitle>
           <DialogDescription>S’applique à partir de la date choisie ; les semaines précédentes gardent l’ancien planning.</DialogDescription>
         </DialogHeader>
-        <FormField label="À partir du"><Input value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" /></FormField>
+        <FormField label="À partir du"><DateInput value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" /></FormField>
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="text-label text-muted-foreground"><th className="py-1">Jour</th><th>Début</th><th>Fin</th><th>Pause (min)</th><th>Section</th></tr>
@@ -404,8 +405,8 @@ function QualificationDialog({ userId, qualification, onClose, onSaved }: { user
         </FormField>
         <FormField label="Intitulé"><Input value={label} maxLength={160} onChange={(e) => setLabel(e.target.value)} /></FormField>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Obtenue le"><Input value={obtained} onChange={(e) => setObtained(e.target.value)} /></FormField>
-          <FormField label="Valable jusqu’au" hint="Vide : sans limite"><Input value={until} onChange={(e) => setUntil(e.target.value)} /></FormField>
+          <FormField label="Obtenue le"><DateInput value={obtained} onChange={(e) => setObtained(e.target.value)} /></FormField>
+          <FormField label="Valable jusqu’au" hint="Vide : sans limite"><DateInput value={until} onChange={(e) => setUntil(e.target.value)} /></FormField>
         </div>
         <label className="flex items-center gap-2"><input type="checkbox" checked={verified} onChange={(e) => setVerified(e.target.checked)} />Justificatif vérifié</label>
         {error && <Alert>{error}</Alert>}
@@ -452,8 +453,8 @@ function TrainingDialog({ userId, training, onClose, onSaved }: { userId: string
         <FormField label="Intitulé"><Input value={label} maxLength={200} onChange={(e) => setLabel(e.target.value)} /></FormField>
         <div className="grid grid-cols-3 gap-3">
           <FormField label="Durée (h)"><Input value={hours} inputMode="decimal" onChange={(e) => setHours(e.target.value)} /></FormField>
-          <FormField label="Du"><Input value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
-          <FormField label="Au" hint="Vide : même jour"><Input value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
+          <FormField label="Du"><DateInput value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
+          <FormField label="Au" hint="Vide : même jour"><DateInput value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
         </div>
         <FormField label="Organisme"><Input value={organization} maxLength={160} onChange={(e) => setOrganization(e.target.value)} /></FormField>
         <label className="flex items-center gap-2"><input type="checkbox" checked={done} onChange={(e) => setDone(e.target.checked)} />Formation suivie</label>

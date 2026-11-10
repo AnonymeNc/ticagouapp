@@ -4,11 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { FormField } from "@/components/FormField";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { familiesApi } from "@/features/children/api";
 import { RelationshipOptions } from "@/features/children/NewChildPage";
 import type { Section } from "@/features/structure/useSections";
-import { ageInMonths, formatAge } from "@/lib/age";
+import { ageInMonths, formatAge, todayIso } from "@/lib/age";
 import { parseDateFr } from "@/lib/datetime";
 import { DAY_NAMES, span } from "@/lib/format";
 import {
@@ -52,6 +53,14 @@ const schema = z
         code: "custom",
         path: ["birthDate"],
         message: v.born === "oui" ? "Indiquez la date de naissance." : "Indiquez la date de naissance prévue.",
+      });
+    }
+    const birth = parseDateFr(v.birthDate);
+    if (birth && v.born === "oui" && birth > todayIso()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["birthDate"],
+        message: "La date de naissance est dans le futur : pour un enfant à naître, choisissez « À naître ».",
       });
     }
     if (v.arrivesAt && v.leavesAt && span(v.arrivesAt, v.leavesAt) <= 0) {
@@ -180,7 +189,7 @@ export function RequestFormSections({ form, sections, disabled, familyLabel }: {
             <Input {...form.register("childLastName")} />
           </FormField>
           <FormField label={born === "oui" ? "Date de naissance" : "Naissance prévue le"} error={errors.birthDate?.message}>
-            <Input placeholder="JJ/MM/AAAA" inputMode="numeric" {...form.register("birthDate")} />
+            <DateInput placeholder="JJ/MM/AAAA" inputMode="numeric" {...form.register("birthDate")} />
           </FormField>
         </div>
         {age !== null && (
@@ -194,7 +203,7 @@ export function RequestFormSections({ form, sections, disabled, familyLabel }: {
       <Block title="Accueil souhaité">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           <FormField label="Date d’entrée souhaitée" error={errors.desiredStart?.message}>
-            <Input placeholder="JJ/MM/AAAA" inputMode="numeric" {...form.register("desiredStart")} />
+            <DateInput placeholder="JJ/MM/AAAA" inputMode="numeric" {...form.register("desiredStart")} />
           </FormField>
           <FormField label="Section prévue">
             <select className={selectClass} {...form.register("sectionId")}>

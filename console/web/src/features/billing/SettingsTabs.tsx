@@ -4,18 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pill } from "@/components/ui/pill";
-import { formatDay, moduleLabels } from "@/features/parc/labels";
+import { formatDay } from "@/features/parc/labels";
 import { errorMessage } from "@/lib/api";
 import { billingApi, useBillingSettings, useBillingWrite, type Issuer, type PriceItem, type PriceList, type TgcNature } from "./api";
 import { natureLabels, rate, today, xpf } from "./labels";
 
 const tiers = ["MICRO", "STRUCTURE", "GRANDE"] as const;
-const kinds: { kind: PriceItem["kind"]; title: string }[] = [
-  { kind: "FORMULE", title: "Formules (par mois)" },
-  { kind: "MODULE", title: "Modules à la carte (par mois)" },
-  { kind: "EQUIPEMENT", title: "Équipement supplémentaire (par mois)" },
-  { kind: "SUPPORT", title: "Support (par mois)" },
-  { kind: "PRESTATION", title: "Prestations ponctuelles" },
+/** La formule unique, tout compris (ADR 0021), sous son code historique. */
+const OFFER = "COMPLET";
+/** Anciennes formules et modules à la carte : encore au barème des contrats signés avant, plus dans les nouveaux. */
+const legacy = (i: PriceItem) => (i.kind === "FORMULE" && i.code !== OFFER) || i.kind === "MODULE";
+const kinds: { key: string; title: string; filter: (i: PriceItem) => boolean; byTier: boolean }[] = [
+  { key: "formule", title: "Formule Ti’Cagou, tout compris (par mois)", filter: (i) => i.kind === "FORMULE" && i.code === OFFER, byTier: true },
+  { key: "equipement", title: "Équipement supplémentaire (par mois)", filter: (i) => i.kind === "EQUIPEMENT", byTier: false },
+  { key: "support", title: "Support (par mois)", filter: (i) => i.kind === "SUPPORT", byTier: false },
+  { key: "prestation", title: "Prestations ponctuelles", filter: (i) => i.kind === "PRESTATION", byTier: false },
+  { key: "anciennes", title: "Anciennes formules et modules (contrats signés avant la formule unique)", filter: legacy, byTier: true },
 ];
 
 function Section({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
@@ -83,22 +87,21 @@ function PriceListView({ list, items }: { list: PriceList; items: PriceItem[] })
         tablettes. Remises : engagement 3 ans {rate(list.engagement3Discount)}, structure supplémentaire {rate(list.extraStructureDiscount)}. Les
         contrats gardent le prix de la version en vigueur à leur signature.
       </p>
-      {kinds.map(({ kind, title }) => {
-        const rows = items.filter((i) => i.kind === kind);
+      {kinds.map(({ key, title, filter, byTier }) => {
+        const rows = items.filter(filter);
         if (rows.length === 0) {
           return null;
         }
-        const byTier = kind === "FORMULE" || kind === "MODULE";
         const codes = [...new Set(rows.map((r) => r.code))];
         return (
-          <div key={kind}>
+          <div key={key}>
             <h3 className="m-0 mb-1.5 text-title-3">{title}</h3>
             <table className="w-full border-collapse">
               <thead className="text-left text-label text-muted-foreground">
                 <tr>
                   <th className="py-1.5 pr-3">Libellé</th>
                   {byTier ? tiers.map((t) => <th key={t} className="py-1.5 pr-3 text-right">{t.charAt(0) + t.slice(1).toLowerCase()}</th>) : <th className="py-1.5 pr-3 text-right">Prix HT</th>}
-                  <th className="py-1.5">{kind === "FORMULE" ? "Modules compris" : "TGC"}</th>
+                  <th className="py-1.5">TGC</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,9 +123,7 @@ function PriceListView({ list, items }: { list: PriceList; items: PriceItem[] })
                         </td>
                       )}
                       <td className="py-1.5 text-small text-muted-foreground">
-                        {kind === "FORMULE"
-                          ? (first.includes ?? "").split(",").filter(Boolean).map((m) => moduleLabels[m] ?? m).join(", ") || "base seule"
-                          : natureLabels[first.tgcNature]}
+                        {natureLabels[first.tgcNature]}
                       </td>
                     </tr>
                   );
@@ -139,7 +140,8 @@ function PriceListView({ list, items }: { list: PriceList; items: PriceItem[] })
 function PriceListEditor({ base, items: initial, onDone }: { base: PriceList; items: PriceItem[]; onDone: () => void }) {
   const nextYear = `${Number(today().slice(0, 4)) + 1}-01-01`;
   const [list, setList] = useState({ ...base, label: `Barème ${nextYear.slice(0, 4)}`, validFrom: nextYear });
-  const [items, setItems] = useState(initial.map((i) => ({ ...i })));
+  // Une nouvelle version ne reprend ni les anciennes formules ni les modules à la carte (ADR 0021).
+  const [items, setItems] = useState(initial.filter((i) => !legacy(i)).map((i) => ({ ...i })));
   const save = useBillingWrite(billingApi.newPriceList);
   const num = (key: keyof PriceList) => (
     <Input id={`b-${key}`} type="number" min={0} value={list[key] as number} onChange={(e) => setList((l) => ({ ...l, [key]: Number(e.target.value) }))} />

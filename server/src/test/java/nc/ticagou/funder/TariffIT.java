@@ -55,11 +55,36 @@ class TariffIT extends IntegrationTest {
 
         assertThat(status(copy)).isEqualTo(201);
         assertThat(body(copy).get("bands")).hasSize(3);
+        assertThat(body(copy).get("formulas")).extracting(f -> f.get("label").asText())
+                .containsExactly("Temps plein", "Matins seulement");
         var list = body(getAs(director, "/api/v1/tariff-schedules"));
         assertThat(list).hasSize(2);
         assertThat(list.get(0).get("label").asText()).isEqualTo("Barème 2027");
         assertThat(list.get(1).get("validTo").asText()).isEqualTo("2026-12-31");
         assertThat(auditCount("TARIFF_CREATED")).isEqualTo(2);
+    }
+
+    @Test
+    void formulesDeFacturationEnregistreesDansLOrdre() throws Exception {
+        var request = quotientTariff("2026-01-01", null);
+        request.put("formulas", List.of(Map.of("label", "Temps plein", "monthlyFee", 98_500),
+                Map.of("label", "Après-midi seulement", "monthlyFee", 60_000),
+                Map.of("label", "3 jours par semaine", "monthlyFee", 65_000)));
+
+        var created = perform(post("/api/v1/tariff-schedules"), director, request);
+
+        assertThat(status(created)).isEqualTo(201);
+        assertThat(body(created).get("formulas")).extracting(f -> f.get("label").asText() + " " + f.get("monthlyFee").asLong())
+                .containsExactly("Temps plein 98500", "Après-midi seulement 60000", "3 jours par semaine 65000");
+    }
+
+    @Test
+    void deuxFormulesNePortentPasLeMemeLibelle() throws Exception {
+        var request = quotientTariff("2026-01-01", null);
+        request.put("formulas", List.of(Map.of("label", "Temps plein", "monthlyFee", 98_500),
+                Map.of("label", "Temps plein ", "monthlyFee", 90_000)));
+
+        assertThat(status(perform(post("/api/v1/tariff-schedules"), director, request))).isEqualTo(400);
     }
 
     @Test

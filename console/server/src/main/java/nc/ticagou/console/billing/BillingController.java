@@ -96,7 +96,7 @@ class BillingController {
     }
 
     record ContractRequest(
-            @NotNull @Pattern(regexp = "ESSENTIEL|GESTION|COMPLET", message = "Formule inconnue.") String plan,
+            @NotNull @Pattern(regexp = "COMPLET", message = "Une seule formule : Ti’Cagou, tout compris.") String plan,
             @Min(value = 1, message = "Places : 1 au moins.") @Max(1000) int places,
             Set<String> modules,
             @Min(0) @Max(50) int extraDesktops,

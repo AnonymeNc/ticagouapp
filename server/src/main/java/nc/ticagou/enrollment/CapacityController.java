@@ -17,14 +17,11 @@ import jakarta.validation.Valid;
 import nc.ticagou.enrollment.CapacityDtos.CapacityDto;
 import nc.ticagou.enrollment.CapacityDtos.TestRequest;
 import nc.ticagou.enrollment.CapacityDtos.TestResult;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 @RestController
 @RequestMapping("/api/v1/capacity")
 @Tag(name = "Capacité", description = "Places libres par section, par jour et par mois sur 6 mois")
 @PreAuthorize(EnrollmentController.READERS)
-@RequiresModule(LicenseModule.INSCRIPTIONS)
 public class CapacityController {
 
     private final CapacityService capacity;

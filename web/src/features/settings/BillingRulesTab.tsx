@@ -5,6 +5,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import {
   billingApi,
@@ -185,8 +186,8 @@ function RuleDialog({ rule, base, onClose, onSaved }: { rule: BillingRule | null
           <DialogDescription>S’applique aux factures générées à partir de maintenant pour les mois de sa période ; les factures déjà émises ne changent pas.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Valide du" hint="JJ/MM/AAAA"><Input value={form.validFrom} onChange={(e) => set({ validFrom: e.target.value })} /></FormField>
-          <FormField label="Jusqu’au (facultatif)"><Input value={form.validTo} onChange={(e) => set({ validTo: e.target.value })} /></FormField>
+          <FormField label="Valide du" hint="JJ/MM/AAAA"><DateInput value={form.validFrom} onChange={(e) => set({ validFrom: e.target.value })} /></FormField>
+          <FormField label="Jusqu’au (facultatif)"><DateInput value={form.validTo} onChange={(e) => set({ validTo: e.target.value })} /></FormField>
           <FormField label="Tarif des heures complémentaires">
             <select className={selectClass} value={form.extraRateMode} onChange={(e) => set({ extraRateMode: e.target.value as "CONTRAT" | "FIXE" })}>
               <option value="CONTRAT">Tarif horaire du contrat</option>
@@ -397,7 +398,7 @@ function TgcDialog({ rate, onClose, onSaved }: { rate: TgcRate; onClose: () => v
         </DialogHeader>
         <label className="flex items-center gap-2"><input type="checkbox" checked={exempt} onChange={(e) => setExempt(e.target.checked)} />Prestation exonérée</label>
         {!exempt && <FormField label="Taux (%)" hint="Par exemple 6 ou 3"><Input value={value} inputMode="decimal" onChange={(e) => setValue(e.target.value)} /></FormField>}
-        <FormField label="Valide du"><Input value={validFrom} onChange={(e) => setValidFrom(e.target.value)} /></FormField>
+        <FormField label="Valide du"><DateInput value={validFrom} onChange={(e) => setValidFrom(e.target.value)} /></FormField>
         {error && <Alert>{error}</Alert>}
         <div className="flex gap-3">
           <Button

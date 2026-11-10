@@ -139,6 +139,52 @@ class ContractIT extends IntegrationTest {
     }
 
     @Test
+    void formuleDeFacturationALaPlaceDuCalculALHeure() throws Exception {
+        var withFormula = planning(MAELYS);
+        withFormula.put("formula", "Temps plein");
+        withFormula.put("billingMode", "REEL");
+
+        var q = body(perform(post("/api/v1/contracts/quote"), director, Map.of("effectiveFrom", START.toString(),
+                "planning", withFormula)));
+
+        assertThat(q.get("monthlyFee").asLong()).as("montant de la formule").isEqualTo(98_500);
+        assertThat(q.get("hourlyRate").asLong()).as("tarif des heures complémentaires").isEqualTo(510);
+        assertThat(q.get("formula").asText()).isEqualTo("Temps plein");
+        assertThat(q.get("hourlyFee").asLong()).as("forfait à l’heure, pour comparer").isEqualTo(78_901);
+        assertThat(q.get("billingMode").asText()).as("une formule est mensualisée").isEqualTo("MENSUALISE");
+        assertThat(q.get("formulas")).extracting(f -> f.get("label").asText()).containsExactly("Temps plein", "Matins seulement");
+
+        var draft = draft(START, START.plusYears(1).minusDays(1));
+        var matins = planning(List.of(day(1, "07:30", "12:00"), day(2, "07:30", "12:00"), day(3, "07:30", "12:00"),
+                day(4, "07:30", "12:00"), day(5, "07:30", "12:00")));
+        matins.put("formula", "Matins seulement");
+        draft.put("planning", matins);
+        var created = perform(post("/api/v1/contracts"), director, Map.of("childId",
+                createChild(director, "Noa", "Wahéo", "2024-07-22", moyens), "contract", draft));
+        assertThat(status(created)).as(created.getResponse().getContentAsString()).isEqualTo(201);
+        var version = contract(body(created).get("id").asText()).get("versions").get(0);
+        assertThat(version.get("formula").asText()).isEqualTo("Matins seulement");
+        assertThat(version.get("monthlyFee").asLong()).isEqualTo(60_000);
+    }
+
+    @Test
+    void formuleInconnueOuPlanningVariableRefuses() throws Exception {
+        var unknown = planning(MAELYS);
+        unknown.put("formula", "Mercredis");
+        var refused = perform(post("/api/v1/contracts/quote"), director, Map.of("effectiveFrom", START.toString(), "planning", unknown));
+        assertThat(status(refused)).isEqualTo(422);
+        assertThat(body(refused).get("code").asText()).isEqualTo("formula_unknown");
+
+        var variable = new LinkedHashMap<String, Object>();
+        variable.put("mode", "VARIABLE");
+        variable.put("days", List.of());
+        variable.put("monthlyReservedMinutes", 80 * 60);
+        variable.put("formula", "Temps plein");
+        assertThat(status(perform(post("/api/v1/contracts/quote"), director,
+                Map.of("effectiveFrom", START.toString(), "planning", variable)))).isEqualTo(400);
+    }
+
+    @Test
     void problemesDePlanningSignales() throws Exception {
         var quote = body(perform(post("/api/v1/contracts/quote"), director, Map.of("effectiveFrom", START.toString(),
                 "planning", planning(List.of(day(1, "06:00", "16:30"), day(6, "08:00", "12:00"))))));

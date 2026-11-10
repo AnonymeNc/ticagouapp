@@ -6,6 +6,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { childKeys, type ChildRecord } from "@/features/children/api";
 import { TonePill, type Tone } from "@/features/enrollment/components";
@@ -17,7 +18,7 @@ import { DAY_NAMES, formatMinutes, formatMinutesDelta, formatXpf, hhmm, span } f
 import { selectClass } from "@/lib/formFields";
 import { cn } from "@/lib/utils";
 import { contractKeys, contractsApi, stateLabels, type BillingMode, type Contract, type ContractState, type ContractVersion } from "./api";
-import { BillingModeChoice, PlanningEditor, initialDays, toDayInputs, weeklyMinutes } from "./PlanningEditor";
+import { BillingModeChoice, FormulaChoice, PlanningEditor, initialDays, toDayInputs, weeklyMinutes } from "./PlanningEditor";
 
 const stateTones: Record<ContractState, Tone> = { BROUILLON: "neutral", A_VENIR: "info", EN_COURS: "success", TERMINE: "neutral" };
 
@@ -151,7 +152,9 @@ function ContractCard({ contract, canEdit }: { contract: Contract; canEdit: bool
                 <td className="py-2 pr-3 text-right tabular-nums">{formatMinutes(v.weeklyMinutes)}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">
                   {v.billingMode === "REEL" && v.planningMode === "FIXE" ? `${formatXpf(v.hourlyRate)} / h` : formatXpf(v.monthlyFee)}
-                  <span className="block text-small text-muted-foreground">{v.billingMode === "REEL" && v.planningMode === "FIXE" ? "au réel, selon le mois" : "mensualisé"}</span>
+                  <span className="block text-small text-muted-foreground">
+                    {v.formula ? `formule « ${v.formula} »` : v.billingMode === "REEL" && v.planningMode === "FIXE" ? "au réel, selon le mois" : "mensualisé"}
+                  </span>
                 </td>
                 <td className="py-2 pr-3">
                   {v.status === "BROUILLON" ? <TonePill tone="neutral">Brouillon</TonePill>
@@ -234,7 +237,7 @@ function SignDialog({ contract, version, onClose, onDone }: {
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <FormField label="Date de signature">
-            <Input placeholder="JJ/MM/AAAA" inputMode="numeric" value={date} onChange={(e) => setDate(e.target.value)} />
+            <DateInput placeholder="JJ/MM/AAAA" inputMode="numeric" value={date} onChange={(e) => setDate(e.target.value)} />
           </FormField>
           <FormField label="Exemplaire signé numérisé" hint="Facultatif : PDF, JPEG ou PNG, 10 Mo maximum. Joint au dossier de l’enfant, chiffré.">
             <Input type="file" accept="application/pdf,image/jpeg,image/png" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
@@ -272,9 +275,11 @@ function AmendmentDialog({ contract, base, draft, onClose, onDone }: {
   const inputs = toDayInputs(days);
   const valid = inputs.length > 0 && inputs.every((d) => span(d.arrivesAt, d.leavesAt) > 0);
   const [billingMode, setBillingMode] = useState<BillingMode>((draft ?? base).billingMode);
-  const planning = { mode: "FIXE" as const, days: inputs, monthlyReservedMinutes: null, planningNoticeDays: null, familyQuotient: base.familyQuotient, billingMode };
+  // La formule de la version en vigueur est reprise ; l'avenant peut en changer (passage aux matins seulement…).
+  const [formula, setFormula] = useState<string | null>((draft ?? base).formula);
+  const planning = { mode: "FIXE" as const, days: inputs, monthlyReservedMinutes: null, planningNoticeDays: null, familyQuotient: base.familyQuotient, billingMode, formula };
   const quote = useQuery({
-    queryKey: ["contract-quote", "avenant", effectiveIso, JSON.stringify(inputs)],
+    queryKey: ["contract-quote", "avenant", effectiveIso, JSON.stringify(inputs), billingMode, formula],
     queryFn: ({ signal }) => contractsApi.quote({ effectiveFrom: effectiveIso!, planning }, signal),
     enabled: Boolean(effectiveIso) && valid,
     placeholderData: (previous) => previous,
@@ -314,7 +319,7 @@ function AmendmentDialog({ contract, base, draft, onClose, onDone }: {
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Date d’effet" hint={`Après le ${isoToDateFr(base.effectiveFrom)}, avant le ${isoToDateFr(contract.endDate)}.`}>
-              <Input placeholder="JJ/MM/AAAA" inputMode="numeric" value={effective} onChange={(e) => setEffective(e.target.value)} />
+              <DateInput placeholder="JJ/MM/AAAA" inputMode="numeric" value={effective} onChange={(e) => setEffective(e.target.value)} />
             </FormField>
             <FormField label="Motif">
               <select className={selectClass} value={reason} onChange={(e) => setReason(e.target.value)}>
@@ -359,6 +364,10 @@ function AmendmentDialog({ contract, base, draft, onClose, onDone }: {
             </tbody>
           </table>
           {quote.error instanceof ApiError && <Alert>{quote.error.message}</Alert>}
+          {quote.error instanceof ApiError && quote.error.code === "formula_unknown" && (
+            <Button variant="outline" className="self-start" onClick={() => setFormula(null)}>Revenir au calcul à l’heure</Button>
+          )}
+          {q && <FormulaChoice value={formula} quote={q} onChange={setFormula} />}
           {q && (
             <table className="w-full border-collapse text-left">
               <caption className="mb-1 text-left text-label">Effet sur la facture</caption>
@@ -377,7 +386,7 @@ function AmendmentDialog({ contract, base, draft, onClose, onDone }: {
             </table>
           )}
           {q && <p className="m-0">Écart pour la famille : <strong className="tabular-nums">{q.monthlyFee - base.monthlyFee >= 0 ? "+ " : "− "}{formatXpf(Math.abs(q.monthlyFee - base.monthlyFee))}</strong> par mois, avant aides.</p>}
-          {q && <BillingModeChoice value={billingMode} quote={q} onChange={setBillingMode} />}
+          {q && !formula && <BillingModeChoice value={billingMode} quote={q} onChange={setBillingMode} />}
           {q && q.hourlyRate !== base.hourlyRate && (
             <p role="status" className="m-0 flex items-center gap-2 rounded-md bg-warning-100 px-4 py-2 text-warning-700">
               <TriangleAlert aria-hidden className="size-4 shrink-0" />

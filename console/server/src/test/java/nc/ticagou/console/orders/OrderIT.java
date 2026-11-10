@@ -227,7 +227,7 @@ class OrderIT {
     @Test
     void paiementDeLAbonnementProposeLOrdreAConfirmer() throws Exception {
         parc.ensure("lagon-bleu", "Lagon Bleu", "PROSPECT", clock.instant());
-        var contract = new HashMap<String, Object>(Map.of("plan", "GESTION", "places", 12, "modules", List.of("REPAS"), "extraDesktops", 0,
+        var contract = new HashMap<String, Object>(Map.of("plan", "COMPLET", "places", 12, "modules", List.of(), "extraDesktops", 0,
                 "extraTablets", 1, "premiumSupport", false, "engagementYears", 1, "rhythm", "ANNUEL", "extraStructure", false, "freeDiscount", 0));
         contract.put("startsOn", "2026-11-01");
         contract.put("signedOn", "2026-10-15");
@@ -250,8 +250,9 @@ class OrderIT {
         assertThat(proposed.get("reason").asText()).isEqualTo("Après paiement de F2026-0001");
         assertThat(proposed.at("/params/jusqu_au").asText()).isEqualTo("2027-10-31");
         assertThat(proposed.at("/params/tablettes").asText()).as("2 comprises + 1").isEqualTo("3");
-        assertThat(proposed.at("/params/modules").asText()).isEqualTo("REPAS");
-        assertThat(board.at("/misaligned/0/differences").toString()).contains("Tablettes : 2 dans l’instance, 3 au contrat");
+        assertThat(proposed.at("/params").has("modules")).isFalse();
+        assertThat(board.at("/misaligned/0/differences").toString()).contains("Tablettes : 2 dans l’instance, 3 au contrat",
+                "Formule : Gestion dans l’instance, Ti’Cagou au contrat");
         assertThat(host(get("/interne/v1/ordres")).getResponse().getContentAsString(StandardCharsets.UTF_8)).as("pas avant confirmation").isEmpty();
 
         session.removeAttribute("console.confirmedAt");
@@ -259,7 +260,7 @@ class OrderIT {
         confirmed();
         assertThat(ok(post("/api/v1/ordres/" + proposed.get("id").asText() + "/confirmer"), null).get("status").asText()).isEqualTo("EN_ATTENTE");
         assertThat(host(get("/interne/v1/ordres")).getResponse().getContentAsString(StandardCharsets.UTF_8))
-                .contains("\tABONNEMENT\tlagon-bleu\tnumero=C-", "offre=gestion;places=12;pc=1;tablettes=3;jusqu_au=2027-10-31;modules=REPAS");
+                .contains("\tABONNEMENT\tlagon-bleu\tnumero=C-", ";places=12;pc=1;tablettes=3;jusqu_au=2027-10-31\n");
         assertThat(ok(get("/api/v1/parc/lagon-bleu/ordres/abonnement"), null).get("jusqu_au").asText()).isEqualTo("2027-10-31");
 
         ok(post("/api/v1/ordres/" + proposed.get("id").asText() + "/annuler"), null);
@@ -284,5 +285,39 @@ class OrderIT {
         assertThat(ok(post("/api/v1/ordres/" + suspend.get("id").asText() + "/annuler"), null).get("status").asText()).isEqualTo("ANNULE");
         host(post("/interne/v1/ordres/" + suspend.get("id").asText() + "/fin").param("ok", "true").content("tard"));
         assertThat(ok(get("/api/v1/ordres"), null).at("/orders/0/status").asText()).as("compte rendu tardif ignoré").isEqualTo("ANNULE");
+    }
+
+    @Test
+    void motDePasseOublieEtCodeDuPortailRendusDansLOrdre() throws Exception {
+        confirmed();
+        parc.ensure("niaoulis", "Les Niaoulis", "CLIENT", clock.instant());
+        var reset = ok(post("/api/v1/ordres"), Map.of("type", "MOT_DE_PASSE", "slug", "niaoulis", "params", Map.of("identifiant", "nathalie.kaloi")));
+        var id = reset.get("id").asText();
+        assertThat(host(get("/interne/v1/ordres")).getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .isEqualTo(id + "\tMOT_DE_PASSE\tniaoulis\tidentifiant=nathalie.kaloi\n");
+        host(post("/interne/v1/ordres/" + id + "/debut"));
+        host(post("/interne/v1/ordres/" + id + "/fin").param("ok", "true").content(
+                "Lien de réinitialisation du mot de passe de nathalie.kaloi (usage unique, valable 24 heures) :\n"
+                        + "  https://niaoulis.ticagou.nc/reinitialiser?jeton=0a1b2c3d4e5f\n"));
+        var done = ok(get("/api/v1/parc/niaoulis/ordres"), null);
+        assertThat(done.at("/0/result/resetLink").asText()).isEqualTo("https://niaoulis.ticagou.nc/reinitialiser?jeton=0a1b2c3d4e5f");
+
+        var code = ok(post("/api/v1/ordres"), Map.of("type", "CODE_PORTAIL", "slug", "niaoulis"));
+        host(post("/interne/v1/ordres/" + code.get("id").asText() + "/debut"));
+        host(post("/interne/v1/ordres/" + code.get("id").asText() + "/fin").param("ok", "true").content(
+                "Code d'activation du portail parents : K7M2-P9QX\nÀ saisir par la direction dans Paramètres › Portail parents.\n"));
+        var portalCode = "";
+        for (var o : ok(get("/api/v1/parc/niaoulis/ordres"), null)) {
+            if (o.get("id").asText().equals(code.get("id").asText())) {
+                portalCode = o.at("/result/portalCode").asText();
+            }
+        }
+        assertThat(portalCode).isEqualTo("K7M2-P9QX");
+
+        // Rubriques et téléphone perdu : acceptés par la base aussi (V10).
+        var rubriques = ok(post("/api/v1/ordres"), Map.of("type", "RUBRIQUES", "slug", "niaoulis", "params", Map.of("masquer", "REPAS,COMPTABILITE")));
+        assertThat(rubriques.at("/params/masquer").asText()).isEqualTo("COMPTABILITE,REPAS");
+        assertThat(ok(post("/api/v1/ordres"), Map.of("type", "TELEPHONE_PERDU", "slug", "niaoulis", "params", Map.of("identifiant", "nathalie.kaloi")))
+                .get("status").asText()).isEqualTo("EN_ATTENTE");
     }
 }

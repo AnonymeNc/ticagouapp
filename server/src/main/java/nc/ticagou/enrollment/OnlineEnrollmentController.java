@@ -28,13 +28,10 @@ import nc.ticagou.enrollment.OnlineEnrollmentService.PublicForm;
 import nc.ticagou.enrollment.OnlineEnrollmentService.Question;
 import nc.ticagou.enrollment.OnlineEnrollmentService.QuestionKind;
 import nc.ticagou.enrollment.OnlineEnrollmentService.Settings;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** Pré-inscription en ligne (lot 3, ADR 0020) : formulaire public et réglages de la direction. */
 @RestController
 @RequestMapping("/api/v1")
-@RequiresModule(LicenseModule.INSCRIPTIONS)
 @Tag(name = "Inscriptions", description = "Pré-inscription en ligne : formulaire public, questions, réglages")
 public class OnlineEnrollmentController {
 

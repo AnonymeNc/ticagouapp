@@ -9,6 +9,7 @@ import { todayIso } from "@/lib/age";
 import { errorMessage } from "@/lib/api";
 import { enrollmentApi, enrollmentKeys } from "./api";
 import { CriteriaFields, RequestFormSections, toBody, useRequestForm } from "./RequestForm";
+import { NoTariffNotice } from "./NoTariffNotice";
 
 /** Saisie d'une demande reçue au bureau (appel, visite, courrier). */
 export function NewRequestPage() {
@@ -37,6 +38,7 @@ export function NewRequestPage() {
         Retour aux demandes
       </Link>
       <h1 className="m-0 font-display text-display">Nouvelle demande</h1>
+      <NoTariffNotice />
       <form onSubmit={onSubmit} noValidate className="flex max-w-4xl flex-col gap-4">
         <RequestFormSections form={form} sections={sections.data ?? []} />
         {criteria.data && <CriteriaFields form={form} criteria={criteria.data.filter((c) => !c.validTo || c.validTo >= todayIso())} />}

@@ -5,6 +5,8 @@ import type { TariffCriterion } from "@/features/contracts/api";
 import type { Criterion } from "@/features/enrollment/api";
 
 export type Band = { lowerBound: number; hourlyRate: number };
+/** Formule de facturation : forfait mensuel nommé (« Temps plein », « Matins seulement »…), en francs entiers. */
+export type Formula = { label: string; monthlyFee: number };
 
 export type TariffSchedule = {
   id: string;
@@ -15,6 +17,7 @@ export type TariffSchedule = {
   validFrom: string;
   validTo: string | null;
   bands: Band[];
+  formulas: Formula[];
   used: boolean;
   version: number;
 };

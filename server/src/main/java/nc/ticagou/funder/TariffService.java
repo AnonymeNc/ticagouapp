@@ -85,13 +85,13 @@ public class TariffService {
         if (source.getValidTo() == null || !source.getValidTo().isBefore(request.validFrom())) {
             source.update(source.getLabel(), source.getCriterion(), source.getWeeksPerYear(),
                     source.getRegistrationFee(), source.getValidFrom(), request.validFrom().minusDays(1),
-                    source.getBands());
+                    source.getBands(), source.getFormulas());
             schedules.saveAndFlush(source);
         }
         var copy = new TariffSchedule(source.getStructureId());
         checkOverlap(copy, request.validFrom(), null);
         copy.update(request.label().trim(), source.getCriterion(), source.getWeeksPerYear(),
-                source.getRegistrationFee(), request.validFrom(), null, source.getBands());
+                source.getRegistrationFee(), request.validFrom(), null, source.getBands(), source.getFormulas());
         schedules.saveAndFlush(copy);
         audit.record(AuditAction.TARIFF_CREATED, "tariff_schedule", copy.getId(),
                 Map.of("label", copy.getLabel(), "duplicatedFrom", id.toString()));
@@ -112,7 +112,8 @@ public class TariffService {
     private void apply(TariffSchedule schedule, TariffScheduleRequest r) {
         checkOverlap(schedule, r.validFrom(), r.validTo());
         schedule.update(r.label().trim(), r.criterion(), r.weeksPerYear(), r.registrationFee(), r.validFrom(),
-                r.validTo(), r.bands().stream().map(b -> new TariffBand(b.lowerBound(), b.hourlyRate())).toList());
+                r.validTo(), r.bands().stream().map(b -> new TariffBand(b.lowerBound(), b.hourlyRate())).toList(),
+                r.formulas() == null ? List.of() : r.formulas().stream().map(f -> new TariffFormula(f.label().trim(), f.monthlyFee())).toList());
         schedules.saveAndFlush(schedule);
     }
 

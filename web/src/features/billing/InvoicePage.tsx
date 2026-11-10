@@ -6,6 +6,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { todayIso } from "@/lib/age";
 import { errorMessage } from "@/lib/api";
@@ -208,7 +209,7 @@ function SentDialog({ invoice, onClose, onDone }: { invoice: Invoice; onClose: (
           <DialogTitle>Noter la facture comme envoyée</DialogTitle>
           <DialogDescription>Aucun e-mail n’est envoyé par le logiciel : imprimez le PDF, remettez-le ou postez-le, puis notez-le ici.</DialogDescription>
         </DialogHeader>
-        <FormField label="Envoyée le"><Input value={date} onChange={(e) => setDate(e.target.value)} inputMode="numeric" /></FormField>
+        <FormField label="Envoyée le"><DateInput value={date} onChange={(e) => setDate(e.target.value)} inputMode="numeric" /></FormField>
         <FormField label="Comment">
           <Input value={channel} maxLength={80} onChange={(e) => setChannel(e.target.value)} />
         </FormField>

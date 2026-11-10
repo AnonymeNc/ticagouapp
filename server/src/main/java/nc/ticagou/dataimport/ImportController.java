@@ -20,7 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import nc.ticagou.dataimport.ImportDtos.Counts;
 import nc.ticagou.dataimport.ImportDtos.Preview;
 
-/** Reprise des données : direction uniquement, sans module requis (enfants et familles sont dans la base, ADR 0016). */
+/** Reprise des données : direction uniquement (enfants et familles sont dans la base, ADR 0016). */
 @RestController
 @RequestMapping("/api/v1/data-import")
 @Tag(name = "Reprise des données", description = "Modèle Excel, aperçu et import des familles et des enfants")

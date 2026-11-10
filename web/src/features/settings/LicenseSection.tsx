@@ -4,8 +4,8 @@ import { Alert } from "@/components/FocusLayout";
 import { Button } from "@/components/ui/button";
 import { TonePill, type Tone } from "@/features/enrollment/components";
 import { errorMessage } from "@/lib/api";
-import { moduleLabels, type LicenseModule } from "@/features/license/useModules";
 import { isoToDateFr } from "@/lib/datetime";
+import { useRubriques } from "@/features/structure/useRubriques";
 import { systemApi, systemKeys, type LicenseState } from "./systemApi";
 
 export const licenseStates: Record<LicenseState, { tone: Tone; label: string }> = {
@@ -20,6 +20,7 @@ export const licenseStates: Record<LicenseState, { tone: Tone; label: string }> 
 /** Abonnement (géré par Ti'Cagou, ADR 0013) et version en service. */
 export function LicenseSection() {
   const license = useQuery({ queryKey: systemKeys.license, queryFn: ({ signal }) => systemApi.license(signal) });
+  const rubriques = useRubriques();
   const data = license.data;
   if (!data) return license.isError ? <Alert>{errorMessage(license.error)}</Alert> : null;
   const l = data.license;
@@ -34,11 +35,11 @@ export function LicenseSection() {
             <dt className="text-muted-foreground">Formule</dt><dd className="m-0">{l.plan}</dd>
             <dt className="text-muted-foreground">Numéro</dt><dd className="m-0 tabular-nums">{l.number}</dd>
             <dt className="text-muted-foreground">Titulaire</dt><dd className="m-0">{l.holder}</dd>
-            <dt className="text-muted-foreground">Modules</dt>
-            <dd className="m-0">Base{(l.modules ?? (Object.keys(moduleLabels) as LicenseModule[])).map((m) => ` · ${moduleLabels[m]}`).join("")}</dd>
-            {l.modules && l.modules.length < Object.keys(moduleLabels).length && <>
-              <dt className="text-muted-foreground">Non compris</dt>
-              <dd className="m-0 text-muted-foreground">{(Object.keys(moduleLabels) as LicenseModule[]).filter((m) => !l.modules!.includes(m)).map((m) => moduleLabels[m]).join(" · ")} : contactez Ti’Cagou pour les ajouter.</dd>
+            <dt className="text-muted-foreground">Compris</dt>
+            <dd className="m-0">Tout Ti’Cagou : inscriptions, facturation, comptabilité, personnel, repas, portail parents</dd>
+            {rubriques.labels.length > 0 && <>
+              <dt className="text-muted-foreground">Masqué à votre demande</dt>
+              <dd className="m-0">{rubriques.labels.join(" · ")} — contactez Ti’Cagou pour les réafficher, rien n’a été effacé.</dd>
             </>}
             <dt className="text-muted-foreground">Postes</dt>
             <dd className="m-0">{data.desktops} PC sur {data.desktopLimit} · {data.pairedTablets} tablette{data.pairedTablets > 1 ? "s" : ""} sur {l.tablets}</dd>

@@ -21,15 +21,12 @@ import jakarta.validation.Valid;
 import nc.ticagou.funder.TariffDtos.DuplicateRequest;
 import nc.ticagou.funder.TariffDtos.TariffScheduleDto;
 import nc.ticagou.funder.TariffDtos.TariffScheduleRequest;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** Barèmes : direction et comptabilité (maquette Droits par rôle, ligne Paramètres « Barème et financeurs »). */
 @RestController
 @RequestMapping("/api/v1/tariff-schedules")
 @Tag(name = "Barèmes", description = "Tarif horaire par tranche, datés")
 @PreAuthorize("hasAnyRole('DIRECTION', 'COMPTABILITE')")
-@RequiresModule(LicenseModule.INSCRIPTIONS)
 public class TariffController {
 
     private final TariffService tariffs;

@@ -13,7 +13,7 @@ import nc.ticagou.common.Formats;
  *   <li>une licence est à renouveler {@value #RENEWAL_DAYS} jours avant son échéance ;</li>
  *   <li>après l'échéance, {@code graceDays} jours de grâce : tout fonctionne, sauf l'appairage de tablettes ;</li>
  *   <li>ensuite, lecture seule : seules restent possibles les sauvegardes, l'export des données d'une famille et
- *       l'activation d'une nouvelle clé ({@link ModuleGuard}).</li>
+ *       l'activation d'une nouvelle clé ({@link LicenseGuard}).</li>
  * </ul>
  */
 public record LicenseTerms(int evaluationDays, int graceDays) {

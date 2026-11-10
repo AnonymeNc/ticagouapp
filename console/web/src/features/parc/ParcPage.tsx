@@ -8,7 +8,7 @@ import { HealthDot, Pill } from "@/components/ui/pill";
 import { errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useCreateProspect, useParc, type Parc, type Row } from "./api";
-import { ago, backupPill, diskTone, formatDay, moduleLabels, shortStamp, subscriptionPill } from "./labels";
+import { ago, backupPill, diskTone, formatDay, shortStamp, subscriptionPill } from "./labels";
 
 type Filter = "toutes" | "alerte" | "surveiller" | "renouveler" | "evaluation" | "impayes" | "arretees";
 type SortKey = "nom" | "contact" | "version" | "echeance" | "disque" | "sante";
@@ -242,7 +242,6 @@ function ParcRow({ row, latest, onOpen }: { row: Row; latest: string | null; onO
       </td>
       <td className={cell}>
         {row.plan ?? "—"}
-        {extras(row).length > 0 && <div className="text-small text-muted-foreground">+ {extras(row).join(", ")}</div>}
       </td>
       <td className={cell}>
         <Pill tone={subscription.tone}>{subscription.label}</Pill>
@@ -281,20 +280,6 @@ function ParcRow({ row, latest, onOpen }: { row: Row; latest: string | null; onO
       </td>
     </tr>
   );
-}
-
-/** Modules ajoutés à la formule (au-delà de Gestion : la maquette écrit « Gestion + Repas »). */
-function extras(row: Row): string[] {
-  const included: Record<string, string[]> = {
-    Essentiel: [],
-    Gestion: ["INSCRIPTIONS", "FACTURATION", "PORTAIL_PARENTS"],
-    Complet: Object.keys(moduleLabels),
-  };
-  const base = row.plan ? included[row.plan] : undefined;
-  if (!base) {
-    return [];
-  }
-  return row.modules.filter((m) => !base.includes(m)).map((m) => moduleLabels[m] ?? m);
 }
 
 function ratio(used: number | null, limit: number | null): string {
@@ -431,10 +416,10 @@ export function slugify(name: string): string {
 
 /** Export du parc pour un tableur (séparateur « ; », UTF-8 avec BOM). */
 function exportCsv(rows: Row[]) {
-  const head = ["Crèche", "Identifiant", "Commune", "Santé", "Motifs", "Dernier contact", "Version", "Formule", "Modules", "Licence",
+  const head = ["Crèche", "Identifiant", "Commune", "Santé", "Motifs", "Dernier contact", "Version", "Formule", "Licence",
     "Échéance", "Places", "Enfants actifs", "PC", "PC permis", "Tablettes", "Tablettes permises", "Dernière sauvegarde", "Disque (%)", "Solde dû (F)", "Retard (j)", "Alertes"];
   const lines = rows.map((r) => [r.name, r.slug, r.city, r.health.level, r.health.reasons.join(" / "), r.lastContactAt, r.version, r.plan,
-    r.modules.join(" "), r.licenseState, formatDay(r.validUntil), r.places, r.activeChildren, r.desktops, r.desktopLimit, r.tablets,
+    r.licenseState, formatDay(r.validUntil), r.places, r.activeChildren, r.desktops, r.desktopLimit, r.tablets,
     r.tabletLimit, r.backupAt, r.diskUsedPercent, r.balanceDue, r.daysLate || null, r.alerts.map((a) => a.label).join(" / ")]);
   const csv = [head, ...lines]
     .map((line) => line.map((v) => (v == null ? "" : `"${String(v).replace(/"/g, '""')}"`)).join(";"))

@@ -3,6 +3,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/api";
@@ -91,7 +92,7 @@ export function StageDialog({ record, open, onClose, onDone, initial }: Props & 
           {dateLabel[stage] && (
             <div className="grid grid-cols-2 gap-4">
               <FormField label={dateLabel[stage]!} hint={stage === "VISITE_PREVUE" && record.visitAt ? "Laisser vide pour garder la visite prévue." : undefined}>
-                <Input placeholder="JJ/MM/AAAA" inputMode="numeric" value={date} onChange={(e) => setDate(e.target.value)} />
+                <DateInput placeholder="JJ/MM/AAAA" inputMode="numeric" value={date} onChange={(e) => setDate(e.target.value)} />
               </FormField>
               {stage === "VISITE_PREVUE" && (
                 <FormField label="Heure">
@@ -148,7 +149,7 @@ export function MoveVisitDialog({ record, open, onClose, onDone }: Props) {
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Nouvelle date">
-              <Input placeholder="JJ/MM/AAAA" inputMode="numeric" value={date} onChange={(e) => setDate(e.target.value)} />
+              <DateInput placeholder="JJ/MM/AAAA" inputMode="numeric" value={date} onChange={(e) => setDate(e.target.value)} />
             </FormField>
             <FormField label="Heure">
               <Input type="time" step={900} value={time} onChange={(e) => setTime(e.target.value)} />

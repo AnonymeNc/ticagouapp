@@ -6,6 +6,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { useCurrentUser } from "@/features/auth/AuthProvider";
 import { TonePill } from "@/features/enrollment/components";
@@ -108,7 +109,7 @@ export function AttendancePage() {
         <div className="flex items-end gap-2">
           <Button variant="outline" size="icon" aria-label="Jour précédent" onClick={() => goTo(addDays(day, -1))}><ChevronLeft aria-hidden /></Button>
           <FormField label="Date">
-            <Input
+            <DateInput
               className="w-36"
               value={dayField}
               placeholder="JJ/MM/AAAA"

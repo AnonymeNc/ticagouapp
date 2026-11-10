@@ -81,12 +81,10 @@ class HealthTest {
     }
 
     @Test
-    void formuleModulesEtDisque() throws Exception {
-        assertThat(ParcService.plan(node("{\"plan\":\"Gestion — jusqu’à 24 places\"}"), "ACTIVE")).isEqualTo("Gestion");
+    void formuleEtDisque() throws Exception {
+        assertThat(ParcService.plan(node("{\"plan\":\"Ti’Cagou — jusqu’à 24 places\"}"), "ACTIVE")).isEqualTo("Ti’Cagou");
         assertThat(ParcService.plan(null, "EVALUATION")).isEqualTo("Évaluation");
         assertThat(ParcService.plan(null, "ACTIVE")).isNull();
-        assertThat(ParcService.modules(node("{\"modules\":\"INSCRIPTIONS,FACTURATION,,\"}"))).containsExactly("INSCRIPTIONS", "FACTURATION");
-        assertThat(ParcService.modules(node("{\"modules\":[\"REPAS\"]}"))).containsExactly("REPAS");
         assertThat(ParcService.diskPercent(18L, 50L)).isEqualTo(64);
         assertThat(ParcService.diskPercent(18L, null)).isNull();
     }

@@ -22,6 +22,7 @@ const HELP: { prefix: string; title: string; tips: string[] }[] = [
     "Chaque consultation d’une fiche est inscrite au journal, comme l’exige la protection des données de santé." ] },
   { prefix: "/inscriptions", title: "Inscriptions", tips: [
     "Les demandes sont classées par étape ; les critères de priorité donnent un score.",
+    "Le contrat d’accueil se calcule d’après le barème des tarifs : saisissez-le d’abord (Paramètres › Barème et facturation).",
     "Les demandes « En ligne » viennent du formulaire public (Paramètres › Pré-inscription en ligne)." ] },
   { prefix: "/facturation", title: "Facturation", tips: [
     "Préparez le mois, vérifiez les anomalies, puis validez : une facture validée ne se modifie plus, elle se corrige par avoir.",

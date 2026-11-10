@@ -16,7 +16,7 @@ module.
 - Ouvrir Ti'Cagou (icône du Bureau), se connecter avec **son** identifiant et **son** mot de passe. Après plusieurs
   erreurs, le compte se bloque un moment : c'est voulu.
 - Le menu de gauche : Tableau de bord, Présences, Enfants, Inscriptions, Facturation, Statistiques, Repas,
-  Personnel, Messages (si portail), Paramètres. Un menu absent = module non compris dans l'abonnement.
+  Personnel, Messages, Paramètres. Tout est compris dans l’abonnement ; un menu absent relève de votre rôle.
 - Le **tableau de bord** : enfants présents sur attendus, encadrement en direct, alertes (sauvegarde, diplômes qui
   expirent, absences signalées par les parents).
 - Se déconnecter en quittant le poste.

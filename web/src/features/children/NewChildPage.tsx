@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { useSections } from "@/features/structure/useSections";
 import { errorMessage } from "@/lib/api";
@@ -17,7 +18,7 @@ import {
   optionalEmail,
   optionalPhone,
   optionalText,
-  requiredDateFr,
+  requiredPastDateFr,
   requiredText,
   selectClass,
   textOrNull,
@@ -29,7 +30,7 @@ const schema = z
   .object({
     firstName: requiredText(80, "Indiquez le prénom."),
     lastName: requiredText(80, "Indiquez le nom."),
-    birthDate: requiredDateFr("Indiquez la date de naissance."),
+    birthDate: requiredPastDateFr("Indiquez la date de naissance."),
     sectionId: z.string(),
     entryDate: optionalDateFr,
     homeLanguages: optionalText(200),
@@ -150,7 +151,7 @@ export function NewChildPage() {
             <Input {...form.register("lastName")} />
           </FormField>
           <FormField label="Date de naissance" hint="JJ/MM/AAAA" error={errors.birthDate?.message}>
-            <Input inputMode="numeric" placeholder="22/07/2024" {...form.register("birthDate")} />
+            <DateInput inputMode="numeric" placeholder="22/07/2024" {...form.register("birthDate")} />
           </FormField>
           <FormField label="Section" error={errors.sectionId?.message}>
             <select className={selectClass} {...form.register("sectionId")}>
@@ -161,7 +162,7 @@ export function NewChildPage() {
             </select>
           </FormField>
           <FormField label="Date d’entrée" hint="JJ/MM/AAAA" error={errors.entryDate?.message}>
-            <Input inputMode="numeric" {...form.register("entryDate")} />
+            <DateInput inputMode="numeric" {...form.register("entryDate")} />
           </FormField>
           <FormField label="Langues parlées à la maison" error={errors.homeLanguages?.message}>
             <Input placeholder="Français, drehu" {...form.register("homeLanguages")} />

@@ -1,5 +1,5 @@
-import { useModules } from "@/features/license/useModules";
 import { ReportedAbsencesCard } from "@/features/portal/ReportedAbsencesCard";
+import { useRubriques } from "@/features/structure/useRubriques";
 import { BookingRequestsCard } from "@/features/portal/BookingRequestsCard";
 import { GettingStartedCard } from "@/features/help/GettingStartedCard";
 import type { ReactNode } from "react";
@@ -40,7 +40,8 @@ export function DashboardPage() {
   const { snapshot } = useStaffingLive();
   const day = todayIso(now);
   const isDirection = user.role === "DIRECTION";
-  const modules = useModules();
+  // Rubriques masquées à la demande de la crèche (ADR 0022) : leurs cartes et alertes ne s'affichent pas.
+  const rubriques = useRubriques();
   const seesChildren = user.role === "DIRECTION" || user.role === "EDUCATRICE";
   const seesMoney = user.role === "DIRECTION" || user.role === "COMPTABILITE";
   const view = useQuery({ queryKey: attendanceKeys.day(day), queryFn: ({ signal }) => attendanceApi.day(day, signal) });
@@ -51,8 +52,8 @@ export function DashboardPage() {
   });
   const journal = useQuery({ queryKey: dashboardKeys.today(day), queryFn: ({ signal }) => dashboardApi.today(signal), enabled: seesChildren });
   const review = useQuery({ queryKey: attendanceKeys.review, queryFn: ({ signal }) => attendanceApi.review(signal), enabled: isDirection });
-  const staffAlerts = useQuery({ queryKey: staffKeys.alerts, queryFn: ({ signal }) => staffApi.alerts(signal), enabled: isDirection && modules.has("PERSONNEL") });
-  const collections = useQuery({ queryKey: billingKeys.collections, queryFn: ({ signal }) => billingApi.collections(signal), enabled: seesMoney && modules.has("FACTURATION") });
+  const staffAlerts = useQuery({ queryKey: staffKeys.alerts, queryFn: ({ signal }) => staffApi.alerts(signal), enabled: isDirection && rubriques.shown("PERSONNEL") });
+  const collections = useQuery({ queryKey: billingKeys.collections, queryFn: ({ signal }) => billingApi.collections(signal), enabled: seesMoney && rubriques.shown("FACTURATION") });
   const license = useQuery({ queryKey: systemKeys.license, queryFn: ({ signal }) => systemApi.license(signal), enabled: isDirection });
   const backups = useQuery({ queryKey: systemKeys.backups, queryFn: ({ signal }) => systemApi.backups(signal), enabled: isDirection });
 
@@ -74,7 +75,7 @@ export function DashboardPage() {
     ...(staleBackup ? [
       <AlertCard key="sauvegarde" tone="danger" icon={<HardDrive aria-hidden className="size-5 text-danger-700" />}
         title={staleBackup.lastSuccess ? `Aucune sauvegarde réussie depuis le ${formatDate(new Date(staleBackup.lastSuccess.startedAt))}` : "Aucune sauvegarde réussie"}
-        action={{ to: "/parametres", label: "Voir les sauvegardes" }}>
+        action={{ to: "/parametres?onglet=sauvegardes", label: "Voir les sauvegardes" }}>
         Les données de la crèche ne sont plus protégées : vérifiez le disque de copie, puis lancez une sauvegarde.
       </AlertCard>,
     ] : []),
@@ -82,7 +83,7 @@ export function DashboardPage() {
       const next = nextStaff(s.sectionId);
       return (
         <AlertCard key={`ratio-${s.sectionId}`} tone="danger" icon={<TriangleAlert aria-hidden className="size-5 text-danger-700" />}
-          title={`Encadrement insuffisant chez les ${s.name}.`} action={isDirection && modules.has("PERSONNEL") ? { to: "/personnel/planning", label: "Trouver un renfort" } : undefined}>
+          title={`Encadrement insuffisant chez les ${s.name}.`} action={isDirection && rubriques.shown("PERSONNEL") ? { to: "/personnel/planning", label: "Trouver un renfort" } : undefined}>
           {s.load.children} enfant{s.load.children > 1 ? "s" : ""} pour {s.load.adults} adulte{s.load.adults > 1 ? "s" : ""} présent{s.load.adults > 1 ? "s" : ""}, {s.load.required} requis.
           {next && <> {next.name} est attendue à {hhmm(next.startsAt)}.</>}
         </AlertCard>
@@ -96,14 +97,14 @@ export function DashboardPage() {
         {c.health.pai && <> PAI{c.health.paiKitLocation ? `, trousse d’urgence : ${c.health.paiKitLocation}` : ""}.</>}
       </AlertCard>
     )),
-    ...(modules.has("PERSONNEL") ? staffAlerts.data ?? [] : []).slice(0, 3).map((a, i) => (
+    ...(rubriques.shown("PERSONNEL") ? staffAlerts.data ?? [] : []).slice(0, 3).map((a, i) => (
       <AlertCard key={`perso-${i}`} tone={a.state === "EXPIREE" ? "danger" : "warning"} icon={<BadgeCheck aria-hidden className="size-5 text-warning-700" />}
         title={a.kind === "CONTRAT" ? "Contrat qui se termine" : a.state === "EXPIREE" ? "Qualification expirée" : "Qualification à renouveler"}
         action={{ to: `/personnel/${a.userId}`, label: "Ouvrir son dossier" }}>
         {a.name} : {alertText(a)}{a.state === "A_RENOUVELER" && `, dans ${daysBetween(day, a.date)} jours`}.
       </AlertCard>
     )),
-    ...(modules.has("FACTURATION") && unpaid && unpaidCount > 0 ? [
+    ...(rubriques.shown("FACTURATION") && unpaid && unpaidCount > 0 ? [
       <AlertCard key="impayes" tone="warning" icon={<Receipt aria-hidden className="size-5 text-warning-700" />}
         title={`${unpaidCount} facture${unpaidCount > 1 ? "s" : ""} impayée${unpaidCount > 1 ? "s" : ""}`}
         action={{ to: "/facturation/encaissements", label: "Relancer les familles" }}>
@@ -136,8 +137,8 @@ export function DashboardPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {user.role !== "COMPTABILITE" && <Link to="/presences" className={buttonVariants()}><ClipboardCheck aria-hidden />Pointer</Link>}
-          {isDirection && modules.has("INSCRIPTIONS") && <Link to="/inscriptions/nouvelle" className={buttonVariants({ variant: "outline" })}><ClipboardList aria-hidden />Nouvelle inscription</Link>}
-          {seesMoney && modules.has("FACTURATION") && <Link to="/facturation" className={buttonVariants({ variant: "outline" })}><FileStack aria-hidden />Facturer le mois</Link>}
+          {isDirection && rubriques.shown("INSCRIPTIONS") && <Link to="/inscriptions/nouvelle" className={buttonVariants({ variant: "outline" })}><ClipboardList aria-hidden />Nouvelle inscription</Link>}
+          {seesMoney && rubriques.shown("FACTURATION") && <Link to="/facturation" className={buttonVariants({ variant: "outline" })}><FileStack aria-hidden />Facturer le mois</Link>}
           {seesChildren && <Link to="/presences" className={buttonVariants({ variant: "outline" })}><CalendarX aria-hidden />Signaler une absence</Link>}
         </div>
       </div>
@@ -150,12 +151,12 @@ export function DashboardPage() {
       )}
 
       {isDirection && <GettingStartedCard />}
-      {modules.has("PORTAIL_PARENTS") && (isDirection || user.role === "EDUCATRICE") && <ReportedAbsencesCard canConfirm={isDirection} />}
-      {modules.has("PORTAIL_PARENTS") && (isDirection || user.role === "EDUCATRICE") && <BookingRequestsCard canAnswer={isDirection} />}
+      {rubriques.shown("PORTAIL_PARENTS") && (isDirection || user.role === "EDUCATRICE") && <ReportedAbsencesCard canConfirm={isDirection} />}
+      {rubriques.shown("PORTAIL_PARENTS") && (isDirection || user.role === "EDUCATRICE") && <BookingRequestsCard canAnswer={isDirection} />}
       {user.role !== "COMPTABILITE" && <Staffing snapshot={snapshot} journal={journal.data} expected={data?.notArrived ?? []} />}
       {seesChildren && data && <Presences view={data} journal={journal.data} sectionName={sectionName} />}
-      {user.role !== "COMPTABILITE" && modules.has("REPAS") && <MealsToday day={day} />}
-      {seesMoney && modules.has("FACTURATION") && <Kpis />}
+      {user.role !== "COMPTABILITE" && rubriques.shown("REPAS") && <MealsToday day={day} />}
+      {seesMoney && rubriques.shown("FACTURATION") && <Kpis />}
     </>
   );
 }

@@ -4,6 +4,7 @@ import { CalendarDays, Copy, NotebookPen, Send } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TonePill, type Tone } from "@/features/enrollment/components";
@@ -124,12 +125,12 @@ export function MySpacePage() {
           </FormField>
           <div className="grid grid-cols-2 gap-3">
             <FormField label={form.kind === "HEURES_SUP" ? "Jour" : "Du"} hint="JJ/MM/AAAA">
-              <Input value={form.from} inputMode="numeric" onChange={(e) => setForm({ ...form, from: e.target.value })} />
+              <DateInput value={form.from} inputMode="numeric" onChange={(e) => setForm({ ...form, from: e.target.value })} />
             </FormField>
             {form.kind === "HEURES_SUP" ? (
               <FormField label="Durée" hint="HH:MM"><Input type="time" value={form.minutes} onChange={(e) => setForm({ ...form, minutes: e.target.value })} /></FormField>
             ) : (
-              <FormField label="Au" hint="Vide : un seul jour"><Input value={form.to} inputMode="numeric" onChange={(e) => setForm({ ...form, to: e.target.value })} /></FormField>
+              <FormField label="Au" hint="Vide : un seul jour"><DateInput value={form.to} inputMode="numeric" onChange={(e) => setForm({ ...form, to: e.target.value })} /></FormField>
             )}
           </div>
           <FormField label="Précision (facultatif)"><Input value={form.note} maxLength={300} onChange={(e) => setForm({ ...form, note: e.target.value })} /></FormField>

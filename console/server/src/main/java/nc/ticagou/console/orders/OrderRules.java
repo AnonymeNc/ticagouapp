@@ -19,7 +19,12 @@ public final class OrderRules {
     }
 
     public static final List<String> TYPES = List.of("CREER", "DEMO", "SUPPRIMER_DEMO", "ABONNEMENT", "SUSPENDRE", "REPRENDRE", "METTRE_A_JOUR",
-            "EXPORTER", "SUPPRIMER");
+            "EXPORTER", "SUPPRIMER", "RUBRIQUES", "TELEPHONE_PERDU", "MOT_DE_PASSE", "CODE_PORTAIL");
+
+    /** Rubriques que la crèche peut demander à ne pas afficher (ADR 0022) ; même liste que {@code creche.sh rubriques}. */
+    public static final List<String> RUBRIQUES = List.of("INSCRIPTIONS", "FACTURATION", "COMPTABILITE", "PERSONNEL", "REPAS", "PORTAIL_PARENTS");
+    /** Identifiant d'un compte de la crèche (même règle que le serveur de la crèche). */
+    private static final Pattern LOGIN = Pattern.compile("^[A-Za-z0-9._-]{3,60}$");
 
     public static final Pattern SLUG = Pattern.compile("^[a-z0-9][a-z0-9-]{1,40}$");
     private static final Pattern DOMAIN = Pattern.compile("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$");
@@ -27,9 +32,6 @@ public final class OrderRules {
     private static final Pattern VERSION = Pattern.compile("^[0-9A-Za-z][0-9A-Za-z._-]{0,29}$");
     /** Export d'une crèche écrit par {@code creche.sh exporter} : {@code <slug>-AAAAMMJJ-HHMM.tar.gz.enc}. */
     public static final Pattern EXPORT_FILE = Pattern.compile("^([a-z0-9][a-z0-9-]{1,40})-\\d{8}-\\d{4}\\.tar\\.gz\\.enc$");
-    private static final Set<String> OFFERS = Set.of("essentiel", "gestion", "complet");
-    private static final Set<String> FORMULAS = Set.of("Essentiel", "Gestion", "Complet");
-    private static final Set<String> MODULES = Set.of("INSCRIPTIONS", "FACTURATION", "COMPTABILITE", "PERSONNEL", "REPAS", "PORTAIL_PARENTS");
 
     /** Paramètre refusé : le message dit lequel et pourquoi. */
     public static final class Invalid extends IllegalArgumentException {
@@ -50,21 +52,10 @@ public final class OrderRules {
         var out = new LinkedHashMap<String, String>();
         switch (type) {
             case "CREER" -> optional(out, p, "domaine", DOMAIN, "Domaine invalide.");
-            case "DEMO" -> {
-                var formule = p.getOrDefault("formule", "Complet");
-                if (!FORMULAS.contains(formule)) {
-                    throw new Invalid("Formule de démonstration : Essentiel, Gestion ou Complet.");
-                }
-                out.put("formule", formule);
-                optional(out, p, "domaine", DOMAIN, "Domaine invalide.");
-            }
+            // Une seule formule (ADR 0021) : ni formule de démonstration, ni offre ni modules dans un abonnement.
+            case "DEMO" -> optional(out, p, "domaine", DOMAIN, "Domaine invalide.");
             case "ABONNEMENT" -> {
                 out.put("numero", required(p, "numero", NUMBER, "Numéro d’abonnement invalide."));
-                var offre = p.get("offre");
-                if (!OFFERS.contains(offre)) {
-                    throw new Invalid("Offre : essentiel, gestion ou complet.");
-                }
-                out.put("offre", offre);
                 for (var key : List.of("places", "pc", "tablettes")) {
                     out.put(key, Integer.toString(positive(p, key)));
                 }
@@ -74,15 +65,6 @@ public final class OrderRules {
                 } catch (DateTimeParseException e) {
                     throw new Invalid("Échéance invalide (AAAA-MM-JJ).");
                 }
-                var modules = p.getOrDefault("modules", "");
-                if (!modules.isEmpty()) {
-                    for (var m : modules.split(",")) {
-                        if (!MODULES.contains(m)) {
-                            throw new Invalid("Module inconnu : " + m);
-                        }
-                    }
-                }
-                out.put("modules", modules);
             }
             case "METTRE_A_JOUR" -> out.put("version", required(p, "version", VERSION, "Version invalide."));
             case "EXPORTER" -> {
@@ -103,8 +85,24 @@ public final class OrderRules {
                 }
                 out.put("export", export);
             }
+            case "RUBRIQUES" -> {
+                // Vide : tout réafficher. Sinon des noms connus, sans doublon, dans l'ordre de la liste.
+                var asked = java.util.Arrays.stream(p.getOrDefault("masquer", "").split(",")).map(String::strip).filter(s -> !s.isEmpty())
+                        .distinct().toList();
+                for (var name : asked) {
+                    if (!RUBRIQUES.contains(name)) {
+                        throw new Invalid("Rubrique inconnue : " + name + ".");
+                    }
+                }
+                var hidden = RUBRIQUES.stream().filter(asked::contains).toList();
+                if (!hidden.isEmpty()) {
+                    out.put("masquer", String.join(",", hidden));
+                }
+            }
+            case "TELEPHONE_PERDU", "MOT_DE_PASSE" -> out.put("identifiant", required(p, "identifiant", LOGIN,
+                    "Identifiant du compte invalide : 3 à 60 lettres sans accent, chiffres, point, tiret."));
             default -> {
-                // SUSPENDRE, REPRENDRE, SUPPRIMER_DEMO : pas de paramètre.
+                // SUSPENDRE, REPRENDRE, SUPPRIMER_DEMO, CODE_PORTAIL : pas de paramètre.
             }
         }
         return out;

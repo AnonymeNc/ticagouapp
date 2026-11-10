@@ -13,18 +13,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import nc.ticagou.common.ApiException;
 
 /**
- * Licence appliquée aux modifications (la lecture reste toujours permise : factures et feuilles d'heures déjà
- * produites restent consultables).
- * <ul>
- *   <li>évaluation terminée ou licence expirée depuis la fin de la grâce : toute modification est refusée (403
- *       {@code license_read_only}), sauf connexion, activation d'une clé, sauvegardes et export des données d'une
- *       famille (ADR 0011) ;</li>
- *   <li>sur un contrôleur {@link RequiresModule}, une modification est refusée (403 {@code module_absent}) si la
- *       licence ne comprend pas le module.</li>
- * </ul>
+ * Licence appliquée aux modifications ; la lecture reste toujours permise (factures et feuilles d'heures déjà produites
+ * restent consultables). Évaluation terminée ou licence expirée depuis la fin de la grâce : toute modification est
+ * refusée (403 {@code license_read_only}), sauf connexion, activation d'une clé, sauvegardes et export des données
+ * d'une famille (ADR 0011). Une seule formule, tout compris : aucune fonction n'est réservée (ADR 0021).
  */
 @Component
-public class ModuleGuard implements HandlerInterceptor {
+public class LicenseGuard implements HandlerInterceptor {
 
     /** Modifications encore permises en lecture seule. */
     static final List<Pattern> READ_ONLY_ALLOWED = List.of(
@@ -35,13 +30,13 @@ public class ModuleGuard implements HandlerInterceptor {
 
     private final LicenseService licenses;
 
-    public ModuleGuard(LicenseService licenses) {
+    public LicenseGuard(LicenseService licenses) {
         this.licenses = licenses;
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        if (!(handler instanceof HandlerMethod method) || isRead(request.getMethod())) {
+        if (!(handler instanceof HandlerMethod) || isRead(request.getMethod())) {
             return true;
         }
         var path = request.getRequestURI().substring(request.getContextPath().length());
@@ -50,11 +45,6 @@ public class ModuleGuard implements HandlerInterceptor {
             if (status.state().readOnly()) {
                 throw ApiException.forbidden("license_read_only", status.message());
             }
-        }
-        var required = method.getBeanType().getAnnotation(RequiresModule.class);
-        if (required != null && !licenses.allows(required.value())) {
-            throw ApiException.forbidden("module_absent", "Le module %s n’est pas compris dans votre abonnement."
-                    .formatted(required.value().label()));
         }
         return true;
     }

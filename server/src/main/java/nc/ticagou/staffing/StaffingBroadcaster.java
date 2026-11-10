@@ -4,8 +4,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +25,12 @@ import nc.ticagou.staffing.StaffingDtos.StaffingDto;
 /**
  * Diffusion en temps réel (SSE) vers le tableau de bord et les tablettes d'une structure. Recalcule après
  * chaque modification validée, et chaque minute (anniversaires, changement de règle, nouvelle journée).
+ * <p>
+ * Le recalcul après une modification se fait sur un fil à part, pas sur celui de la requête : à la fin d'une
+ * transaction, la requête tient encore sa connexion, et le recalcul en demande une autre (nouvelle transaction). Dix
+ * pointages simultanés (une tablette qui vide sa file hors connexion) prenaient ainsi les dix connexions et
+ * attendaient chacun une onzième : tout restait bloqué 30 secondes. Les changements d'une même structure arrivés
+ * pendant l'attente donnent un seul recalcul.
  */
 @Component
 public class StaffingBroadcaster {
@@ -33,6 +43,14 @@ public class StaffingBroadcaster {
 
     /** Désactivé dans les tests d'intégration : le recalcul périodique concurrencerait la remise à zéro de la base. */
     private final boolean scheduled;
+
+    /** Un seul fil de diffusion : au plus une connexion prise en plus de celles des requêtes. */
+    private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
+        var thread = new Thread(r, "diffusion-encadrement");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final Set<UUID> pending = ConcurrentHashMap.newKeySet();
 
     public StaffingBroadcaster(StaffingService staffing,
                                @Value("${ticagou.scheduling.enabled:true}") boolean scheduled) {
@@ -55,12 +73,34 @@ public class StaffingBroadcaster {
 
     @TransactionalEventListener(fallbackExecution = true)
     public void onChange(StaffingChanged event) {
-        try {
-            refresh(event.structureId(), true);
-        } catch (RuntimeException e) {
-            // La modification est validée : un échec de diffusion ne doit pas la faire paraître refusée.
-            log.warn("Diffusion de l'encadrement impossible pour {}", event.structureId(), e);
+        var structureId = event.structureId();
+        if (!pending.add(structureId)) {
+            return;
         }
+        worker.execute(() -> {
+            // Retiré avant le calcul : un changement arrivé pendant le calcul en demande un nouveau.
+            pending.remove(structureId);
+            try {
+                refresh(structureId, true);
+            } catch (RuntimeException e) {
+                // La modification est validée : un échec de diffusion ne doit pas la faire paraître refusée.
+                log.warn("Diffusion de l'encadrement impossible pour {}", structureId, e);
+            }
+        });
+    }
+
+    /** Attend la fin des diffusions en attente (tests, arrêt du service). */
+    public void awaitPending() {
+        try {
+            worker.submit(() -> { }).get(30, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new IllegalStateException("Diffusion de l'encadrement en retard", e);
+        }
+    }
+
+    @jakarta.annotation.PreDestroy
+    void stop() {
+        worker.shutdown();
     }
 
     @Scheduled(fixedDelay = 60_000, initialDelay = 60_000)

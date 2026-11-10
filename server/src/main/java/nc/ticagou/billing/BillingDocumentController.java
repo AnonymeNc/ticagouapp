@@ -18,12 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import nc.ticagou.billing.BillingDocuments.Document;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** PDF A4 des pièces de facturation et export Excel des demandes aux financeurs. */
 @RestController
-@RequiresModule(LicenseModule.FACTURATION)
 @RequestMapping("/api/v1/billing")
 @Tag(name = "Pièces de facturation", description = "Factures, avoirs, demandes, relances, reçus, attestations")
 @PreAuthorize(BillingSettingsController.MANAGERS)

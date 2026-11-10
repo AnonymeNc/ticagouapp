@@ -131,7 +131,7 @@ describe("tableau de bord de la direction", () => {
 
     const card = (await screen.findByText("Aucune sauvegarde réussie depuis le 30/10/2026")).closest("article")!;
     expect(card).toHaveAttribute("role", "alert");
-    expect(within(card).getByRole("link", { name: "Voir les sauvegardes" })).toHaveAttribute("href", "/parametres");
+    expect(within(card).getByRole("link", { name: "Voir les sauvegardes" })).toHaveAttribute("href", "/parametres?onglet=sauvegardes");
     await screen.findByText("Encadrement insuffisant chez les Moyens.");
     expect(screen.getByRole("region", { name: "Alertes" }).querySelector("article strong")).toHaveTextContent("Aucune sauvegarde réussie");
   });
@@ -167,15 +167,6 @@ describe("tableau de bord de la direction", () => {
     expect(kpi("Liste d’attente")).toHaveTextContent("5 demandes");
     expect(kpi("Liste d’attente")).toHaveTextContent("Bébés · 3 · Moyens · 2");
     expect(kpi("Liste d’attente")).toHaveTextContent("2 nouvelles demandes ce mois-ci");
-  });
-
-  it("ne parle pas des impayés sans le module de facturation", async () => {
-    server(director, { "GET /system/modules": { body: { modules: [] } } });
-    renderAt("/");
-
-    await screen.findByText("Encadrement insuffisant chez les Moyens.");
-    await waitFor(() => expect(screen.queryByRole("link", { name: "Facturer le mois" })).not.toBeInTheDocument());
-    expect(screen.queryByText("3 factures impayées")).not.toBeInTheDocument();
   });
 
   it("ne montre à la comptabilité que les indicateurs et les impayés", async () => {

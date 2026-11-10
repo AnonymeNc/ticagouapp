@@ -29,14 +29,11 @@ import nc.ticagou.accounting.AccountingExporter.Format;
 import nc.ticagou.accounting.AccountingSettingsService.AccountDto;
 import nc.ticagou.accounting.AccountingSettingsService.AccountRequest;
 import nc.ticagou.accounting.AccountingSettingsService.SettingsDto;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** Export comptable (Facturation › Export comptable) et ses paramètres : direction et comptabilité. */
 @RestController
 @RequestMapping("/api/v1/accounting")
 @Tag(name = "Comptabilité", description = "Écritures exportées vers le logiciel du cabinet comptable (CSV, FEC)")
-@RequiresModule(LicenseModule.COMPTABILITE)
 @PreAuthorize("hasAnyRole('DIRECTION', 'COMPTABILITE')")
 public class AccountingController {
 

@@ -13,13 +13,16 @@
 
 .PARAMETER Demo
   Démonstration : une base à part (« ticagou_demo », documents dans server\data-demo) remplie automatiquement par
-  scripts\demo\donnees-demo.mjs (crèche, 24 enfants, équipe, 3 mois de présences, factures...). Les fois suivantes,
-  seuls les pointages et transmissions du jour sont rejoués. La base de développement n'est pas touchée. Le portail parents
-  démarre aussi : cinq familles y ont accès (connexion par e-mail, lien dans Mailpit).
+  scripts\demo\donnees-demo.mjs : 18 mois d'historique (présences, factures, paiements), équipe, repas, inscriptions,
+  album de photos et vidéos, actualités, messages, demandes des parents (5 à 10 minutes la première fois). Les fois
+  suivantes, seuls les pointages et transmissions du jour sont rejoués. La base de développement n'est pas touchée. Le
+  portail parents démarre aussi : toutes les familles y ont accès (connexion par e-mail, code dans Mailpit).
+  Parcours de démonstration : docs/commercial/demonstrations.md.
 
-.PARAMETER Formule
-  Avec -Demo : formule montrée, Essentiel, Gestion ou Complet (Complet par défaut). Les données restent les mêmes : seuls
-  les menus et les paramètres changent. Voir docs/commercial/demonstrations.md.
+.PARAMETER Console
+  Démarre aussi la console de l'éditeur (interface d'administration de Ti'Cagou : parc des crèches, abonnements,
+  facturation, ordres) : base sur 5436, service sur 8095, interface sur http://localhost:1421. Premier compte :
+  http://localhost:1421/premier-compte?jeton=dev, puis connexion avec une application d'authentification.
 
 .PARAMETER RemiseAZero
   Efface la base de développement et les documents chiffrés pour rejouer l'installation (assistant /setup).
@@ -36,9 +39,9 @@
   powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Demo
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Demo -Formule Essentiel
+  powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Demo -Console
 #>
-param([switch]$Portail, [switch]$Demo, [ValidateSet('Essentiel', 'Gestion', 'Complet')][string]$Formule = 'Complet', [switch]$RemiseAZero, [switch]$Arreter)
+param([switch]$Portail, [switch]$Demo, [switch]$Console, [switch]$RemiseAZero, [switch]$Arreter)
 
 # La démonstration montre les familles sur le portail.
 if ($Demo) { $Portail = $true }
@@ -54,7 +57,10 @@ function Test-Port([int]$port) {
     try { $client.Connect('127.0.0.1', $port); return $true } catch { return $false } finally { $client.Close() }
 }
 
-function Wait-Url([string]$url, [int]$seconds, [string]$name) {
+# Journal de chaque fenêtre, relu quand un programme ne répond pas.
+function Get-WindowLog([string]$title) { Join-Path $env:TEMP ('ticagou-' + ($title -replace '[^A-Za-z]', '') + '.log') }
+
+function Wait-Url([string]$url, [int]$seconds, [string]$name, [string]$window) {
     $deadline = (Get-Date).AddSeconds($seconds)
     while ((Get-Date) -lt $deadline) {
         try {
@@ -63,16 +69,40 @@ function Wait-Url([string]$url, [int]$seconds, [string]$name) {
             return $true
         } catch { Start-Sleep -Seconds 3 }
     }
-    Write-Host "  $name ne répond pas encore ($url) : regardez sa fenêtre." -ForegroundColor Yellow
+    Write-Host "  $name ne répond pas encore ($url)." -ForegroundColor Yellow
+    if ($window) {
+        $log = Get-WindowLog $window
+        if (Test-Path $log) {
+            Write-Host "  Dernières lignes de sa fenêtre « Ti'Cagou - $window » ($log) :" -ForegroundColor Yellow
+            Get-Content $log -Tail 15 | ForEach-Object { Write-Host "    $_" }
+        } else {
+            Write-Host "  Sa fenêtre « Ti'Cagou - $window » n'a rien écrit : si son titre commence par « Sélectionner »," -ForegroundColor Yellow
+            Write-Host '  un clic l''a mise en pause : cliquez dedans puis appuyez sur Échap.' -ForegroundColor Yellow
+        }
+    }
     return $false
 }
+
+# Dans chaque fenêtre : le mode « édition rapide » de Windows est coupé (un clic dans la fenêtre mettait le programme en
+# pause jusqu'à Échap), et la sortie est aussi écrite dans un journal (Get-WindowLog).
+$windowPreamble = @'
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+try {
+    Add-Type -Namespace TiCagou -Name Console -MemberDefinition '[DllImport("kernel32.dll")] public static extern System.IntPtr GetStdHandle(int h); [DllImport("kernel32.dll")] public static extern bool GetConsoleMode(System.IntPtr h, out uint m); [DllImport("kernel32.dll")] public static extern bool SetConsoleMode(System.IntPtr h, uint m);'
+    $in = [TiCagou.Console]::GetStdHandle(-10); $mode = 0
+    if ([TiCagou.Console]::GetConsoleMode($in, [ref]$mode)) { $null = [TiCagou.Console]::SetConsoleMode($in, ($mode -band -bnot 0x40) -bor 0x80) }
+} catch { }
+'@
 
 function Start-Window([string]$title, [string]$folder, [string]$command, [int]$port) {
     if (Test-Port $port) {
         Write-Host "  $title : port $port déjà utilisé, je garde celui qui tourne (redémarrez-le pour charger la dernière version du code)." -ForegroundColor Yellow
         return $null
     }
-    $script = "`$Host.UI.RawUI.WindowTitle = 'Ti''Cagou - $title'; Set-Location -LiteralPath '$folder'; $command"
+    $log = Get-WindowLog $title
+    Remove-Item $log -ErrorAction SilentlyContinue
+    # La dernière instruction de la commande est le programme : sa sortie passe aussi dans le journal.
+    $script = "$windowPreamble`n`$Host.UI.RawUI.WindowTitle = 'Ti''Cagou - $title'; Set-Location -LiteralPath '$folder'; $command | Tee-Object -FilePath '$log'"
     # Commande encodée : guillemets et espaces des arguments (chemins, options Maven) arrivent intacts.
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
     $process = Start-Process powershell -ArgumentList '-NoExit', '-NoProfile', '-EncodedCommand', $encoded -PassThru
@@ -158,11 +188,29 @@ function Clear-Port([int]$port) {
     throw "Le port $port est toujours occupé : regardez qui le tient avec netstat -ano | findstr :$port"
 }
 
-# Formule de la base de démonstration : l'abonnement est une ligne, comme avec deploy/creche.sh.
-function Set-DemoFormule([string]$name) {
-    $modules = @{ Essentiel = ''; Gestion = 'INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS'; Complet = 'INSCRIPTIONS,FACTURATION,COMPTABILITE,PERSONNEL,REPAS,PORTAIL_PARENTS' }[$name]
-    $sql = "INSERT INTO subscription (id, number, holder, plan, places, desktops, tablets, valid_until, modules) SELECT 1, 'DEMO', name, '$name (demonstration)', 60, 5, 5, CURRENT_DATE + 365, '$modules' FROM structure LIMIT 1 ON CONFLICT (id) DO UPDATE SET plan = excluded.plan, modules = excluded.modules, valid_until = excluded.valid_until"
-    if (-not (Invoke-Quiet "docker exec ticagou-web-postgres psql -U ticagou -d ticagou_demo -c `"$sql`"")) { throw 'Formule impossible à appliquer.' }
+# Abonnement de la base de démonstration : une ligne, comme avec deploy/creche.sh. Une seule formule (ADR 0021).
+function Set-DemoAbonnement {
+    $sql = "INSERT INTO subscription (id, number, holder, plan, places, desktops, tablets, valid_until) SELECT 1, 'DEMO', name, 'Ti''Cagou (demonstration)', 60, 5, 5, CURRENT_DATE + 365 FROM structure LIMIT 1 ON CONFLICT (id) DO UPDATE SET plan = excluded.plan, valid_until = excluded.valid_until"
+    if (-not (Invoke-Quiet "docker exec ticagou-web-postgres psql -U ticagou -d ticagou_demo -c `"$sql`"")) { throw 'Abonnement de démonstration impossible à écrire.' }
+}
+
+# Base de développement installée : un abonnement d'un an, pour qu'elle ne passe pas en lecture seule au bout des 30
+# jours d'évaluation. Une base qui a déjà un abonnement le garde (pour essayer la fin d'un abonnement, docs § 7).
+function Set-DevAbonnement {
+    $sql = "INSERT INTO subscription (id, number, holder, plan, places, desktops, tablets, valid_until) SELECT 1, 'DEV', name, 'Ti''Cagou (developpement)', 60, 5, 5, CURRENT_DATE + 365 FROM structure LIMIT 1 ON CONFLICT (id) DO NOTHING"
+    $null = Invoke-Quiet "docker exec ticagou-web-postgres psql -U ticagou -d ticagou -c `"$sql`""
+}
+
+# Clé de la console en développement : gardée d'un lancement à l'autre (elle chiffre les secrets TOTP en base).
+function Get-ConsoleKey {
+    $file = Join-Path $env:APPDATA 'ticagou\console-cle-dev.txt'
+    if (-not (Test-Path $file)) {
+        $null = New-Item -ItemType Directory -Force (Split-Path $file)
+        $bytes = New-Object byte[] 32
+        [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+        Set-Content -Path $file -Value ([Convert]::ToBase64String($bytes)) -Encoding ascii
+    }
+    return (Get-Content $file -Raw).Trim()
 }
 
 function Install-Packages([string]$folder) {
@@ -185,6 +233,7 @@ if ($Arreter) {
     Write-Step 'Arrêt des conteneurs'
     $null = Invoke-Quiet "docker compose -f `"$root\docker-compose.yml`" stop"
     $null = Invoke-Quiet "docker compose -f `"$root\parents-portal\docker-compose.yml`" stop"
+    $null = Invoke-Quiet "docker compose -f `"$root\console\docker-compose.yml`" stop"
     Write-Host 'Terminé.' -ForegroundColor Green
     return
 }
@@ -222,9 +271,9 @@ $pids = @()
 Write-Step 'Base de données (Docker, port 5435)'
 Start-Containers $root 'postgres' 'La base de données'
 
-# Évaluation allongée : la base de développement a été installée il y a longtemps et passerait en lecture seule.
-# Pour essayer la fin de l'évaluation, lancez le serveur avec TICAGOU_EVALUATION_DAYS=30 (docs/TESTER-EN-LOCAL.md).
-$serverEnv = "`$env:TICAGOU_EVALUATION_DAYS = '3650'; "
+# Évaluation de 30 jours, comme en production (ADR 0011). Une base installée depuis plus longtemps reçoit un abonnement
+# de développement (Set-DevAbonnement) plutôt qu'une évaluation allongée.
+$serverEnv = ''
 if ($Demo) {
     Write-Step 'Base de démonstration « ticagou_demo »'
     $exists = cmd /c 'docker exec ticagou-web-postgres psql -U ticagou -d ticagou -tAc "SELECT 1 FROM pg_database WHERE datname = ''ticagou_demo''" 2>nul'
@@ -250,15 +299,28 @@ if ($Portail) {
     $pids += Start-Window 'Application parents' $root 'pnpm --dir parents-portal\web dev' 5180
 }
 
+if ($Console) {
+    Write-Step 'Console de l''éditeur : base (5436), service (8095), interface (1421)'
+    # Mailpit sert aussi aux envois de la console (relances, factures) : il vient avec le portail.
+    if (-not $Portail) { Start-Containers (Join-Path $root 'parents-portal') 'mailpit' 'Mailpit' }
+    Start-Containers (Join-Path $root 'console') '' 'La base de la console'
+    Install-Packages (Join-Path $root 'console\web')
+    $consoleEnv = "`$env:CONSOLE_SECRET_KEY = '$(Get-ConsoleKey)'; `$env:CONSOLE_SETUP_TOKEN = 'dev'; `$env:CONSOLE_SECURE_COOKIE = 'false'; " +
+        "`$env:CONSOLE_PORTAL_URL = 'http://localhost:8090'; `$env:CONSOLE_PORTAL_ADMIN_TOKEN = 'dev'; `$env:CONSOLE_HOST_TOKEN = 'dev'; " +
+        "`$env:CONSOLE_MAIL_FROM = 'Ti''''Cagou <facturation@ticagou.nc>'; "
+    $pids += Start-Window 'Console' (Join-Path $root 'console\server') "$consoleEnv.\mvnw.cmd spring-boot:run" 8095
+    $pids += Start-Window 'Interface console' $root 'pnpm --dir console\web dev' 1421
+}
+
 $pids | Where-Object { $_ } | ConvertTo-Json | Set-Content $state
 
 Write-Step 'Attente des serveurs (le premier démarrage compile : quelques minutes)'
-$serverUp = Wait-Url 'http://localhost:8080/api/v1/health' 300 'Serveur'
-$null = Wait-Url 'http://localhost:1420' 120 'Application du bureau'
+$serverUp = Wait-Url 'http://localhost:8080/api/v1/health' 300 'Serveur' 'Serveur'
+$null = Wait-Url 'http://localhost:1420' 120 'Application du bureau' 'Bureau'
 $code = $null
 if ($Portail) {
-    if (Wait-Url 'http://localhost:8090/actuator/health' 300 'Portail parents') {
-        $null = Wait-Url 'http://localhost:5180' 120 'Application des parents'
+    if (Wait-Url 'http://localhost:8090/actuator/health' 300 'Portail parents' 'Portail') {
+        $null = Wait-Url 'http://localhost:5180' 120 'Application des parents' 'Application parents'
         try {
             $code = (Invoke-RestMethod -Method Post -Uri 'http://localhost:8090/admin/v1/activation-codes' `
                 -Headers @{ Authorization = 'Bearer dev' } -ContentType 'application/json' -Body '{"label":"Test local"}').activationCode
@@ -268,17 +330,15 @@ if ($Portail) {
 if ($Demo -and $serverUp) {
     $initialized = (Invoke-RestMethod -Uri 'http://localhost:8080/api/v1/setup/status').initialized
     Write-Step $(if ($initialized) { 'Démonstration : pointages et transmissions du jour' } else { 'Démonstration : chargement des données (1 à 3 minutes)' })
-    # Une relance passe d'abord en Complet : le portail se réactive et se recharge, même après une formule sans portail.
-    if ($initialized) { Set-DemoFormule 'Complet' }
     $demoArgs = @((Join-Path $root 'scripts\demo\donnees-demo.mjs'), '--url', 'http://localhost:8080')
     if ($initialized) { $demoArgs += '--aujourdhui' }
-    if ($code) { $demoArgs += '--portail', 'http://localhost:8090', '--code', $code }
+    if ($code) { $demoArgs += '--portail', 'http://localhost:8090', '--code', $code, '--mailpit', 'http://localhost:8025' }
     & node @demoArgs
     if ($LASTEXITCODE -ne 0) { Write-Host '  Le chargement de la démonstration a échoué (message ci-dessus).' -ForegroundColor Yellow }
-
-    Write-Step "Démonstration : formule $Formule"
-    Set-DemoFormule $Formule
+    Set-DemoAbonnement
 }
+if (-not $Demo -and $serverUp) { Set-DevAbonnement }
+if ($Console) { $null = Wait-Url 'http://localhost:8095/actuator/health' 300 'Console de l''éditeur' 'Console' }
 
 # --- Résumé -------------------------------------------------------------------------------------
 
@@ -288,11 +348,9 @@ Write-Host 'Tablette (équipe, code PIN)        : http://localhost:1420/kiosk'
 if ($Portail) {
     Write-Host 'Application des parents            : http://localhost:5180'
     Write-Host 'E-mails de connexion (Mailpit)     : http://localhost:8025'
-    if ($Demo -and $Formule -ne 'Complet') {
-        Write-Host "Parents de démonstration           : aucun, la formule $Formule ne comprend pas le portail"
-    } elseif ($Demo) {
-        Write-Host 'Parents de démonstration           : sarah.waho@exemple.nc, kevin.gope@exemple.nc, anne.podi@exemple.nc,'
-        Write-Host '                                     claire.martin@exemple.nc, rmi.boearua@exemple.nc (lien dans Mailpit)'
+    if ($Demo) {
+        Write-Host 'Parents de démonstration           : sarah.waheo@exemple.nc, kevin.gope@exemple.nc, anne.poedi@exemple.nc…'
+        Write-Host '                                     (toutes les familles ; code de connexion dans Mailpit)'
     } elseif ($code) {
         Write-Host ''
         Write-Host 'Portail à activer dans Paramètres › Portail parents :' -ForegroundColor Cyan
@@ -300,7 +358,11 @@ if ($Portail) {
         Write-Host "  Code d'activation  : $code"
     }
 }
+if ($Console) {
+    Write-Host 'Console de l''éditeur (admin)       : http://localhost:1421'
+    Write-Host '  Premier compte                   : http://localhost:1421/premier-compte?jeton=dev'
+}
 Write-Host ''
-Write-Host 'Comptes et parcours : docs/TESTER-EN-LOCAL.md'
+Write-Host 'Comptes et parcours : docs/TESTER-EN-LOCAL.md ; démonstration : docs/commercial/demonstrations.md'
 Write-Host 'Tout arrêter        : powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Arreter'
-if (-not $serverUp) { Write-Host 'Le serveur n''a pas répondu à temps : regardez sa fenêtre.' -ForegroundColor Yellow }
+if (-not $serverUp) { Write-Host 'Le serveur n''a pas répondu à temps : voir ses dernières lignes plus haut.' -ForegroundColor Yellow }

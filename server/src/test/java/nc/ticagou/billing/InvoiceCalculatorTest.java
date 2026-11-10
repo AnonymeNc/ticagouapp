@@ -125,6 +125,22 @@ class InvoiceCalculatorTest {
     }
 
     @Test
+    void formuleDeFacturationFactureSonMontantEtLeNomme() {
+        // « Matins seulement » à 60 000 F : le montant de la formule chaque mois, même si le contrat était au réel.
+        var matins = new VersionPeriod("5 matins par semaine", d(1), d(31), true, 60_000, 510, days(1, 2, 3, 4, 5), 0,
+                BillingMode.REEL, "Matins seulement");
+        var line = of(compute(child(contract(matins), List.of(), List.of(), List.of())), Kind.FORFAIT).getFirst();
+        assertThat(line.amount()).isEqualTo(60_000);
+        assertThat(line.label()).isEqualTo("Accueil d’octobre (forfait mensuel)");
+        assertThat(line.detail()).isEqualTo("5 matins par semaine · formule « Matins seulement »");
+
+        // Arrivée en cours de mois : la formule se proratise comme tout forfait mensuel (11 jours d'ouverture sur 22).
+        var fromSixteenth = new VersionPeriod("5 matins par semaine", d(16), d(31), true, 60_000, 510, days(1, 2, 3, 4, 5),
+                0, BillingMode.MENSUALISE, "Matins seulement");
+        assertThat(forfait(fromSixteenth)).isEqualTo(30_000);
+    }
+
+    @Test
     void auReelLesJoursDuPlanningDuMois() {
         // Octobre 2026 : 4 mardis (6, 13, 20, 27) et 5 jeudis.
         var line = of(compute(child(contract(oneDay(2, 1, BillingMode.REEL)), List.of(), List.of(), List.of())),

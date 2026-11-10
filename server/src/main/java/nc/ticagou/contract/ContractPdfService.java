@@ -158,14 +158,19 @@ public class ContractPdfService {
                         version.getPlanningNoticeDays() == null ? "au plus tôt" : version.getPlanningNoticeDays() + " jours"));
 
         var tariff = tariffs.findById(version.getTariffScheduleId()).orElseThrow();
-        vars.put("tariffLine", (fixed ? "Le forfait est mensualisé sur %d semaines d'accueil par an, ".formatted(version.getWeeksPerYear())
+        vars.put("tariffLine", (version.getFormulaLabel() != null
+                ? "Le forfait est celui de la formule « %s », le même chaque mois, ".formatted(version.getFormulaLabel())
+                : fixed ? "Le forfait est mensualisé sur %d semaines d'accueil par an, ".formatted(version.getWeeksPerYear())
                 : "Le forfait correspond aux heures réservées, ")
                 + "selon le barème « %s » de la structure, en vigueur au %s%s.".formatted(tariff.getLabel(),
                 Formats.date(tariff.getValidFrom()), version.getTariffCriterion() == TariffCriterion.QUOTIENT_FAMILIAL
                         && version.getFamilyQuotient() != null
                         ? ", pour un quotient familial de " + Formats.xpf(version.getFamilyQuotient()) : ""));
-        vars.put("feeLabel", "Forfait mensuel, %s à %s de l'heure".formatted(Formats.duration(version.getMonthlyMinutes()),
-                Formats.xpf(version.getHourlyRate())));
+        vars.put("feeLabel", version.getFormulaLabel() != null
+                ? "Forfait mensuel, formule « %s » (heures complémentaires à %s de l'heure)".formatted(version.getFormulaLabel(),
+                        Formats.xpf(version.getHourlyRate()))
+                : "Forfait mensuel, %s à %s de l'heure".formatted(Formats.duration(version.getMonthlyMinutes()),
+                        Formats.xpf(version.getHourlyRate())));
         vars.put("monthlyFee", Formats.xpf(version.getMonthlyFee()));
         vars.put("registrationFee", version.getRegistrationFee() > 0 ? Formats.xpf(version.getRegistrationFee()) : null);
         boolean adaptationBilled = !amendment && !sessions.isEmpty() && contract.getAdaptationBilling() != AdaptationBilling.OFFERTE;

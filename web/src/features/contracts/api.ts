@@ -32,6 +32,8 @@ export type PlanningInput = {
   familyQuotient: number | null;
   /** Mensualisé (même montant chaque mois) ou au réel (jours du planning du mois) ; nul = défaut des Paramètres. */
   billingMode: BillingMode | null;
+  /** Formule de facturation du barème (libellé) à la place du calcul à l’heure ; nulle = calcul à l’heure. */
+  formula?: string | null;
 };
 export type ContractDraft = {
   startDate: string;
@@ -59,6 +61,12 @@ export type Quote = {
   adaptationCost: number;
   /** Mode retenu : celui choisi, sinon le défaut des Paramètres. */
   billingMode: BillingMode;
+  /** Formule retenue, nulle pour le calcul à l’heure. */
+  formula: string | null;
+  /** Forfait calculé à l’heure, pour le comparer aux formules. */
+  hourlyFee: number;
+  /** Formules proposées par le barème applicable. */
+  formulas: { label: string; monthlyFee: number }[];
   problems: string[];
 };
 
@@ -84,6 +92,7 @@ export type ContractVersion = {
   monthlyMinutes: number;
   monthlyFee: number;
   registrationFee: number;
+  formula: string | null;
   inForce: boolean;
   replaced: boolean;
 };

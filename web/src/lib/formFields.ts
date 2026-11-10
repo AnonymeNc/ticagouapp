@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { todayIso } from "./age";
 import { isoToDateFr, parseDateFr } from "./datetime";
 
 /** Champs de formulaire saisis en texte puis convertis pour l'API. */
@@ -12,6 +13,15 @@ export const optionalDateFr = z
 
 export const requiredDateFr = (message: string) =>
   z.string().trim().min(1, message).refine((v) => parseDateFr(v) !== null, "Date attendue au format JJ/MM/AAAA.");
+
+/** Date passée ou du jour (naissance, vaccin, signature) : le serveur refuse une date future. */
+const notFuture = (v: string) => {
+  const iso = parseDateFr(v);
+  return iso === null || iso <= todayIso();
+};
+export const optionalPastDateFr = optionalDateFr.refine((v) => v === "" || notFuture(v), "La date ne peut pas être dans le futur.");
+export const requiredPastDateFr = (message: string) =>
+  requiredDateFr(message).refine(notFuture, "La date ne peut pas être dans le futur.");
 
 export const optionalPhone = z
   .string()

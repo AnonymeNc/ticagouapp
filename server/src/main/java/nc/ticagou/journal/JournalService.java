@@ -36,8 +36,6 @@ import nc.ticagou.journal.JournalDtos.EntryDto;
 import nc.ticagou.journal.JournalDtos.EntryInput;
 import nc.ticagou.journal.JournalDtos.KioskJournal;
 import nc.ticagou.journal.JournalDtos.ReportedAbsenceRef;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.LicenseService;
 import nc.ticagou.portal.PortalChange;
 import nc.ticagou.portal.PortalItemType;
 import nc.ticagou.portal.ReportedAbsenceRepository;
@@ -48,8 +46,6 @@ import nc.ticagou.portal.ReportedAbsenceRepository;
  */
 @Service
 public class JournalService {
-
-    private final LicenseService licenses;
 
     private static final ZoneId NOUMEA = ZoneId.of("Pacific/Noumea");
 
@@ -68,10 +64,8 @@ public class JournalService {
     public JournalService(DailyEntryRepository entries, ChildRepository children, EncryptedFileStore fileStore,
                           StoredFileRepository files, AuditService audit, ChildAccessLogger accessLogger,
                           ApplicationEventPublisher events, ConsentRepository consents,
-                          ReportedAbsenceRepository reportedAbsences, Clock clock, LicenseService licenses,
-                          nc.ticagou.portal.BookingRequestRepository bookings) {
+                          ReportedAbsenceRepository reportedAbsences, Clock clock, nc.ticagou.portal.BookingRequestRepository bookings) {
         this.bookings = bookings;
-        this.licenses = licenses;
         this.entries = entries;
         this.children = children;
         this.fileStore = fileStore;
@@ -90,9 +84,6 @@ public class JournalService {
      */
     @Transactional
     public DailyEntry record(UUID structureId, UUID id, EntryInput input, Instant at, byte[] photo, Author author) {
-        if (!licenses.allows(LicenseModule.PORTAIL_PARENTS)) {
-            throw ApiException.forbidden("module_absent", "Les transmissions font partie du module Portail parents.");
-        }
         var day = at.atZone(NOUMEA).toLocalDate();
         JournalRules.checkChildren(input.kind(), input.childIds().size());
         var occurred = JournalRules.occurredAt(input.time(), at, NOUMEA);

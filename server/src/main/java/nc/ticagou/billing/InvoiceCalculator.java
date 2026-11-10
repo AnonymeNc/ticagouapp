@@ -65,10 +65,16 @@ public final class InvoiceCalculator {
     /**
      * Version de contrat signée, ramenée aux jours qu'elle couvre dans le mois. {@code billingMode} : forfait mensualisé
      * (même montant chaque mois) ou facturation au réel des jours du planning du mois (planning fixe seulement).
+     * {@code formula} : formule de facturation du barème choisie au contrat (forfait mensuel nommé), nulle sinon.
      */
     public record VersionPeriod(String label, LocalDate from, LocalDate to, boolean fixed, long monthlyFee,
                                 long hourlyRate, List<DayPlan> days, int monthlyReservedMinutes,
-                                BillingMode billingMode) {
+                                BillingMode billingMode, String formula) {
+
+        public VersionPeriod(String label, LocalDate from, LocalDate to, boolean fixed, long monthlyFee,
+                             long hourlyRate, List<DayPlan> days, int monthlyReservedMinutes, BillingMode billingMode) {
+            this(label, from, to, fixed, monthlyFee, hourlyRate, days, monthlyReservedMinutes, billingMode, null);
+        }
 
         public VersionPeriod(String label, LocalDate from, LocalDate to, boolean fixed, long monthlyFee,
                              long hourlyRate, List<DayPlan> days, int monthlyReservedMinutes) {
@@ -76,7 +82,7 @@ public final class InvoiceCalculator {
         }
 
         boolean actual() {
-            return fixed && billingMode == BillingMode.REEL;
+            return fixed && billingMode == BillingMode.REEL && formula == null;
         }
 
         boolean covers(LocalDate day) {
@@ -214,7 +220,8 @@ public final class InvoiceCalculator {
             boolean full = covered >= openDaysInMonth;
             var label = full ? "Accueil %s (forfait mensuel)".formatted(ofMonth(month))
                     : "Accueil du %s au %s (forfait au prorata)".formatted(DAY.format(version.from()), DAY.format(version.to()));
-            var smoothing = version.fixed() && version.hourlyRate() > 0 && version.monthlyReservedMinutes() > 0
+            var smoothing = version.formula() != null ? " · formule « %s »".formatted(version.formula())
+                    : version.fixed() && version.hourlyRate() > 0 && version.monthlyReservedMinutes() > 0
                     ? " · mensualisé : %s par mois à %s de l’heure, le même chaque mois".formatted(
                             hours(version.monthlyReservedMinutes()), xpf(version.hourlyRate()))
                     : "";

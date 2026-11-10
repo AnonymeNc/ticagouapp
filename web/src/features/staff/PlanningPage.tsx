@@ -5,6 +5,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { useCurrentUser } from "@/features/auth/AuthProvider";
 import { useSections } from "@/features/structure/useSections";
@@ -259,7 +260,7 @@ function ShiftDialog({ row, shift, onClose, onSaved }: { row: PlanningRow; shift
                 {KINDS.map((k) => <option key={k} value={k}>{absenceLabels[k]}</option>)}
               </select>
             </FormField>
-            <FormField label="Jusqu’au"><Input value={to} disabled={half} onChange={(e) => setTo(e.target.value)} /></FormField>
+            <FormField label="Jusqu’au"><DateInput value={to} disabled={half} onChange={(e) => setTo(e.target.value)} /></FormField>
             <label className="col-span-2 flex items-center gap-2"><input type="checkbox" checked={half} onChange={(e) => setHalf(e.target.checked)} />Demi-journée</label>
           </div>
         )}

@@ -30,12 +30,9 @@ import nc.ticagou.billing.BillingDtos.InvoiceSummary;
 import nc.ticagou.billing.BillingDtos.MarkRequestSentRequest;
 import nc.ticagou.billing.BillingDtos.MarkSentRequest;
 import nc.ticagou.billing.BillingDtos.MonthPreview;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** Facturation : direction et comptabilité (maquette « Facturation et paiements »). */
 @RestController
-@RequiresModule(LicenseModule.FACTURATION)
 @RequestMapping("/api/v1/billing")
 @Tag(name = "Facturation", description = "Facturer le mois, factures, avoirs, demandes aux financeurs")
 @PreAuthorize(BillingSettingsController.MANAGERS)

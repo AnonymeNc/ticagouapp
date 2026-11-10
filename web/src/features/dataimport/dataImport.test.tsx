@@ -34,7 +34,6 @@ function server(extra: Record<string, Parameters<typeof mockApi>[0][string]>, us
     "POST /auth/refresh": { body: session(user) },
     "GET /structure": { body: structure },
     "GET /sections": { body: [] },
-    "GET /system/modules": { body: { modules: [] } },
     ...extra,
   });
 }

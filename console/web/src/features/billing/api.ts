@@ -133,7 +133,7 @@ export type ContractView = {
   priceListLabel: string | null;
   monthly: Quote | null;
   period: Quote | null;
-  expected: { plan: string; modules: string[]; places: number; desktops: number; tablets: number; validUntil: string | null; differences: string[] } | null;
+  expected: { plan: string; places: number; desktops: number; tablets: number; validUntil: string | null; differences: string[] } | null;
   next: { from: string; to: string; preparedFrom: string; due: boolean } | null;
 };
 

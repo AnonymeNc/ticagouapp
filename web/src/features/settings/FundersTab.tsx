@@ -5,6 +5,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { TonePill } from "@/features/enrollment/components";
 import {
@@ -209,8 +210,8 @@ function FunderDialog({ funder, onClose, onSaved }: { funder: Funder | null; onC
             </>
           )}
           {!aid && <FormField label="Montant (F, facultatif)"><Input value={form.amount} inputMode="numeric" onChange={(e) => set({ amount: e.target.value })} /></FormField>}
-          <FormField label="Valide du"><Input value={form.validFrom} onChange={(e) => set({ validFrom: e.target.value })} /></FormField>
-          <FormField label="Jusqu’au (facultatif)"><Input value={form.validTo} onChange={(e) => set({ validTo: e.target.value })} /></FormField>
+          <FormField label="Valide du"><DateInput value={form.validFrom} onChange={(e) => set({ validFrom: e.target.value })} /></FormField>
+          <FormField label="Jusqu’au (facultatif)"><DateInput value={form.validTo} onChange={(e) => set({ validTo: e.target.value })} /></FormField>
           <FormField label="N° de convention"><Input value={form.conventionRef} maxLength={80} onChange={(e) => set({ conventionRef: e.target.value })} /></FormField>
           <FormField label="Contact"><Input value={form.contact} maxLength={200} onChange={(e) => set({ contact: e.target.value })} /></FormField>
         </div>

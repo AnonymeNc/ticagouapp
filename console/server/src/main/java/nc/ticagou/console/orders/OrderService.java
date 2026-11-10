@@ -38,6 +38,10 @@ public class OrderService {
     /** Ordre en cours depuis plus longtemps : l'hôte s'est sans doute arrêté pendant l'exécution. */
     static final Duration STALE = Duration.ofMinutes(30);
     private static final Pattern SETUP_LINK = Pattern.compile("https?://\\S+/setup\\?jeton=[A-Za-z0-9]+");
+    /** Lien de réinitialisation du mot de passe (ordre MOT_DE_PASSE), à transmettre à la personne. */
+    private static final Pattern RESET_LINK = Pattern.compile("https?://\\S+/reinitialiser\\?jeton=[0-9a-f]+");
+    /** Code d'activation du portail parents (ordre CODE_PORTAIL). */
+    private static final Pattern PORTAL_CODE = Pattern.compile("Code d'activation du portail parents : ([A-Za-z0-9-]+)");
     private static final Pattern DEMO_URL = Pattern.compile("Démonstration prête : (https?://\\S+)");
     private static final Pattern EXPORT_READY = Pattern.compile("Export prêt : (\\S+\\.tar\\.gz\\.enc) \\((\\d+) octets\\)");
     private static final DateTimeFormatter DEMO_SLUG = DateTimeFormatter.ofPattern("'demo-'yyyyMMdd-HHmm");
@@ -193,12 +197,10 @@ public class OrderService {
         var c = view.current();
         var params = new LinkedHashMap<String, String>();
         params.put("numero", "C-" + c.id().toString().substring(0, 8).toUpperCase());
-        params.put("offre", c.plan().toLowerCase());
         params.put("places", Integer.toString(c.places()));
         params.put("pc", Integer.toString(view.expected().desktops()));
         params.put("tablettes", Integer.toString(view.expected().tablets()));
         params.put("jusqu_au", view.expected().validUntil().toString());
-        params.put("modules", String.join(",", c.modules()));
         return params;
     }
 
@@ -318,6 +320,16 @@ public class OrderService {
             if (result == null && ok) {
                 ok = false;
                 text = text + "\nExport introuvable dans le compte rendu.";
+            }
+        } else if ("MOT_DE_PASSE".equals(order.type())) {
+            var link = RESET_LINK.matcher(text);
+            if (link.find()) {
+                result = json.createObjectNode().put("resetLink", link.group());
+            }
+        } else if ("CODE_PORTAIL".equals(order.type())) {
+            var code = PORTAL_CODE.matcher(text);
+            if (code.find()) {
+                result = json.createObjectNode().put("portalCode", code.group(1));
             }
         } else {
             var link = SETUP_LINK.matcher(text);

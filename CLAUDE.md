@@ -16,10 +16,10 @@ sauvegardes. V2 : portail parents en ligne optionnel.
 - `docs/design/` : maquettes / handoff Claude Design (référence visuelle à respecter).
 - `docs/adr/` : décisions d'architecture.
 
-## Formules
-Base : enfants, présences enfants et personnel, encadrement, sauvegardes. Modules : `INSCRIPTIONS`, `FACTURATION`,
-`COMPTABILITE`, `PERSONNEL`, `REPAS`, `PORTAIL_PARENTS` (ADR 0015). Toute fonction nouvelle dit de quel module elle relève :
-`@RequiresModule` côté serveur, `useModules` pour les menus, les paramètres et les cartes.
+## Formule
+Une seule formule, tout compris (ADR 0021) : aucune fonction n'est réservée à un abonnement. L'abonnement limite seulement
+les places, les PC, les tablettes et l'échéance. « Module Repas », « module Personnel »… désignent des domaines fonctionnels.
+À la demande d'une crèche, l'éditeur peut masquer des rubriques (ADR 0022) : simple affichage, rien n'est refusé ni effacé.
 
 ## Règles métier non négociables
 - Montants XPF en `long`/`BIGINT`, aucune décimale ; jamais de `double` pour de l'argent.

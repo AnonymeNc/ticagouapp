@@ -33,6 +33,7 @@ import nc.ticagou.contract.ContractDtos.ContractDraft;
 import nc.ticagou.contract.ContractDtos.ContractDto;
 import nc.ticagou.contract.ContractDtos.CreateContractRequest;
 import nc.ticagou.contract.ContractDtos.DayDto;
+import nc.ticagou.contract.ContractDtos.FormulaDto;
 import nc.ticagou.contract.ContractDtos.PlanningInput;
 import nc.ticagou.contract.ContractDtos.QuoteDto;
 import nc.ticagou.contract.ContractDtos.QuoteRequest;
@@ -97,6 +98,11 @@ public class ContractService {
         var tariff = tariffs.requireApplicable(request.effectiveFrom());
         var problems = ForfaitCalculator.checkSlots(slots(request.planning()), openingWindows());
         var pricing = pricing(tariff, request.planning());
+        // Forfait calculé à l'heure, pour le comparer aux formules du barème.
+        var asked = request.planning();
+        long hourlyFee = asked.formulaLabel() == null ? pricing.monthlyFee()
+                : pricing(tariff, new PlanningInput(asked.mode(), asked.days(), asked.monthlyReservedMinutes(), asked.planningNoticeDays(),
+                        asked.familyQuotient(), asked.billingMode(), null)).monthlyFee();
         var sessions = request.adaptation() == null ? List.<AdaptationSession>of()
                 : request.adaptation().stream().map(SessionInput::toSession).toList();
         var billing = request.adaptationBilling() == null ? AdaptationBilling.AU_TEMPS : request.adaptationBilling();
@@ -112,11 +118,16 @@ public class ContractService {
                 pricing.bandLowerBound(), pricing.hourlyRate(), pricing.weeklyMinutes(), pricing.monthlyMinutes(),
                 pricing.monthlyFee(), pricing.registrationFee(), ForfaitCalculator.adaptationMinutes(adaptation), rate,
                 ForfaitCalculator.adaptationCost(adaptation, billing, rate),
-                billingMode(request.planning(), request.effectiveFrom()), allProblems);
+                billingMode(request.planning(), request.effectiveFrom()), pricing.formulaLabel(), hourlyFee,
+                tariff.getFormulas().stream().map(f -> new FormulaDto(f.label(), f.monthlyFee())).toList(), allProblems);
     }
 
     /** Mode choisi pour le contrat, sinon celui des règles de facturation en vigueur à la date d'effet. */
     private BillingMode billingMode(PlanningInput planning, LocalDate day) {
+        if (planning.formulaLabel() != null) {
+            // Une formule est un forfait mensuel : le même montant chaque mois.
+            return BillingMode.MENSUALISE;
+        }
         if (planning.billingMode() != null) {
             return planning.billingMode();
         }
@@ -133,9 +144,18 @@ public class ContractService {
         var quote = planning.mode() == PlanningMode.FIXE
                 ? ForfaitCalculator.fixed(slots(planning), tariff.tariff(), planning.familyQuotient())
                 : ForfaitCalculator.variable(planning.monthlyReservedMinutes(), tariff.tariff(), planning.familyQuotient());
+        // Formule choisie : son montant remplace le forfait calculé ; la tranche garde le tarif horaire des heures
+        // complémentaires et de l'adaptation.
+        var formulaLabel = planning.formulaLabel();
+        long monthlyFee = quote.monthlyFee();
+        if (formulaLabel != null) {
+            monthlyFee = tariff.formula(formulaLabel).orElseThrow(() -> ApiException.rule("formula_unknown",
+                    "Le barème « %s » ne propose pas la formule « %s ».".formatted(tariff.getLabel(), formulaLabel)))
+                    .monthlyFee();
+        }
         return new ContractVersion.Pricing(tariff.getId(), tariff.getCriterion(), quote.bandLowerBound(),
                 quote.hourlyRate(), tariff.getWeeksPerYear(), quote.weeklyMinutes(), quote.monthlyMinutes(),
-                quote.monthlyFee(), tariff.getRegistrationFee());
+                monthlyFee, tariff.getRegistrationFee(), formulaLabel);
     }
 
     private static List<ForfaitCalculator.Slot> slots(PlanningInput planning) {
@@ -301,7 +321,7 @@ public class ContractService {
         requireValidPlanning(planning);
         var quotient = planning.familyQuotient() != null ? planning.familyQuotient() : last.getFamilyQuotient();
         var withQuotient = new PlanningInput(planning.mode(), planning.days(), planning.monthlyReservedMinutes(),
-                planning.planningNoticeDays(), quotient, planning.billingMode());
+                planning.planningNoticeDays(), quotient, planning.billingMode(), planning.formula());
         var pricing = pricing(tariffs.requireApplicable(request.effectiveFrom()), withQuotient);
         version.update(new ContractVersion.Planning(request.effectiveFrom(), request.reason().trim(), planning.mode(),
                 billingMode(planning, request.effectiveFrom()),
@@ -309,7 +329,7 @@ public class ContractService {
                 // Les frais d'inscription ne concernent que le contrat initial.
                 new ContractVersion.Pricing(pricing.tariffScheduleId(), pricing.criterion(), pricing.bandLowerBound(),
                         pricing.hourlyRate(), pricing.weeksPerYear(), pricing.weeklyMinutes(), pricing.monthlyMinutes(),
-                        pricing.monthlyFee(), 0));
+                        pricing.monthlyFee(), 0, pricing.formulaLabel()));
         versions.saveAndFlush(version);
     }
 
@@ -399,7 +419,7 @@ public class ContractService {
                 v.getPlanningNoticeDays(), v.getFamilyQuotient(), v.getStatus(), v.getSignedOn(), v.getSignedDocumentId(),
                 v.getTariffScheduleId(), v.getTariffCriterion(), v.getBandLowerBound(), v.getHourlyRate(),
                 v.getWeeksPerYear(), v.getWeeklyMinutes(), v.getMonthlyMinutes(), v.getMonthlyFee(),
-                v.getRegistrationFee(), v == inForce,
+                v.getRegistrationFee(), v.getFormulaLabel(), v == inForce,
                 v.isSigned() && inForce != null && v.getEffectiveFrom().isBefore(inForce.getEffectiveFrom()))).toList();
         return new ContractDto(contract.getId(), contract.getNumber(), child.getId(), child.getFirstName(),
                 child.getLastName(), child.getBirthDate(), child.getSectionId(), contract.getRequestId(),

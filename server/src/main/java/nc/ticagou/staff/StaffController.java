@@ -50,15 +50,12 @@ import nc.ticagou.staff.StaffDtos.TeamOverview;
 import nc.ticagou.staff.StaffDtos.TrainingDto;
 import nc.ticagou.staff.StaffDtos.TrainingRequest;
 import nc.ticagou.staff.StaffDtos.WeekPlanning;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /**
  * Personnel (maquette « Droits par rôle », ligne « Personnel et plannings ») : la direction modifie, la comptabilité
  * consulte et exporte les heures, les éducatrices et la cuisine voient leur planning et leurs heures.
  */
 @RestController
-@RequiresModule(LicenseModule.PERSONNEL)
 @RequestMapping("/api/v1/staff")
 @Tag(name = "Personnel", description = "Équipe, fiches, qualifications, planning, feuilles d'heures")
 public class StaffController {

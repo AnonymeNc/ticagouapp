@@ -1,6 +1,5 @@
 package nc.ticagou.license;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,9 +23,6 @@ import nc.ticagou.license.LicenseService.LicenseDto;
 @PreAuthorize("hasRole('DIRECTION')")
 public class LicenseController {
 
-    public record Modules(List<LicenseModule> modules) {
-    }
-
     private final LicenseService licenses;
     private final DesktopClientService desktops;
 
@@ -46,13 +42,6 @@ public class LicenseController {
     @Operation(summary = "État de la licence (bandeau d'échéance, lecture seule), pour tous les postes et tablettes")
     public LicenseTerms.Status status() {
         return licenses.status();
-    }
-
-    @GetMapping("/modules")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Modules compris dans la licence (menus affichés)")
-    public Modules modules() {
-        return new Modules(Arrays.stream(LicenseModule.values()).filter(licenses::allows).toList());
     }
 
     @GetMapping("/desktops")

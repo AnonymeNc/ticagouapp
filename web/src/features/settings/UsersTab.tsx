@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { roleLabels, type Role } from "@/features/auth/types";
 import { TonePill } from "@/features/enrollment/components";
-import { useModules } from "@/features/license/useModules";
 import { useSections } from "@/features/structure/useSections";
 import { errorMessage } from "@/lib/api";
 import { selectClass, textOrNull } from "@/lib/formFields";
@@ -100,9 +99,7 @@ export function UsersTab() {
 
 function UserDialog({ user, onClose, onDone }: { user: UserRow | null; onClose: () => void; onDone: () => Promise<unknown> }) {
   const sections = useSections();
-  const modules = useModules();
-  // Pas de rôle Cuisine sans le module Repas, ni Comptabilité sans la facturation ; un compte existant garde le sien.
-  const roles = ROLES.filter((r) => r === user?.role || (r !== "CUISINE" || modules.has("REPAS")) && (r !== "COMPTABILITE" || modules.has("FACTURATION")));
+  const roles = ROLES;
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [lastName, setLastName] = useState(user?.lastName ?? "");
   const [role, setRole] = useState<Role>(user?.role ?? "EDUCATRICE");

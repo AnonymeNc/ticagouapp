@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.persistence.CollectionTable;
@@ -19,13 +20,17 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import nc.ticagou.contract.ForfaitCalculator;
 
-/** Barème tarifaire daté : tarif horaire par tranche, semaines d'accueil par an, frais d'inscription. */
+/**
+ * Barème tarifaire daté : tarif horaire par tranche, semaines d'accueil par an, frais d'inscription et formules de
+ * facturation (forfaits mensuels nommés).
+ */
 @Entity
 @Table(name = "tariff_schedule")
 public class TariffSchedule {
@@ -61,6 +66,11 @@ public class TariffSchedule {
     @OrderBy("lowerBound")
     private List<TariffBand> bands = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "tariff_formula", joinColumns = @JoinColumn(name = "schedule_id"))
+    @OrderColumn(name = "position")
+    private List<TariffFormula> formulas = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -89,7 +99,8 @@ public class TariffSchedule {
     }
 
     public void update(String label, TariffCriterion criterion, int weeksPerYear, long registrationFee,
-                       LocalDate validFrom, LocalDate validTo, Collection<TariffBand> bands) {
+                       LocalDate validFrom, LocalDate validTo, Collection<TariffBand> bands,
+                       Collection<TariffFormula> formulas) {
         this.label = label;
         this.criterion = criterion;
         this.weeksPerYear = weeksPerYear;
@@ -98,6 +109,8 @@ public class TariffSchedule {
         this.validTo = validTo;
         this.bands.clear();
         this.bands.addAll(bands.stream().sorted(Comparator.comparingLong(TariffBand::lowerBound)).toList());
+        this.formulas.clear();
+        this.formulas.addAll(formulas);
     }
 
     public boolean isValidOn(LocalDate day) {
@@ -147,6 +160,14 @@ public class TariffSchedule {
 
     public List<TariffBand> getBands() {
         return List.copyOf(bands);
+    }
+
+    public List<TariffFormula> getFormulas() {
+        return List.copyOf(formulas);
+    }
+
+    public Optional<TariffFormula> formula(String label) {
+        return formulas.stream().filter(f -> f.label().equals(label)).findFirst();
     }
 
     public long getVersion() {

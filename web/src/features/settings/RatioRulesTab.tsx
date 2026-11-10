@@ -5,6 +5,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { TonePill, type Tone } from "@/features/enrollment/components";
 import { todayIso } from "@/lib/age";
@@ -190,10 +191,10 @@ function RuleDialog({ rule, onClose, onDone }: { rule: RatioRule | null; onClose
             <Input type="number" min={1} max={30} value={ratio} onChange={(e) => setRatio(e.target.value)} />
           </FormField>
           <FormField label="Valide à partir du">
-            <Input placeholder="JJ/MM/AAAA" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <DateInput placeholder="JJ/MM/AAAA" value={from} onChange={(e) => setFrom(e.target.value)} />
           </FormField>
           <FormField label="Jusqu’au (facultatif)">
-            <Input placeholder="JJ/MM/AAAA" value={to} onChange={(e) => setTo(e.target.value)} />
+            <DateInput placeholder="JJ/MM/AAAA" value={to} onChange={(e) => setTo(e.target.value)} />
           </FormField>
         </div>
         {error && <Alert>{error}</Alert>}

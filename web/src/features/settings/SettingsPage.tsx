@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRubriques, type Rubrique } from "@/features/structure/useRubriques";
 import { useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
@@ -6,9 +7,9 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { useCurrentUser } from "@/features/auth/AuthProvider";
-import { useModules, type LicenseModule } from "@/features/license/useModules";
 import { useStructure } from "@/features/structure/useStructure";
 import { bandLabel, type TariffCriterion } from "@/features/contracts/api";
 import { enrollmentApi, enrollmentKeys, type Criterion } from "@/features/enrollment/api";
@@ -19,7 +20,7 @@ import { isoToDateFr, parseDateFr } from "@/lib/datetime";
 import { formatXpf } from "@/lib/format";
 import { isoToField, selectClass } from "@/lib/formFields";
 import { cn } from "@/lib/utils";
-import { criterionLabels, settingsApi, type Band, type TariffSchedule } from "./api";
+import { criterionLabels, settingsApi, type Band, type Formula, type TariffSchedule } from "./api";
 import { BackupsTab } from "./BackupsTab";
 import { BillingRulesTab } from "./BillingRulesTab";
 import { DevicesTab } from "./DevicesTab";
@@ -45,27 +46,27 @@ type Tab = "structure" | "sections" | "encadrement" | "criteres" | "preinscripti
  * Rubriques de la maquette, par groupe ; la comptabilité ne voit que « Barème et financeurs ». Une rubrique d'un module
  * que la formule ne comprend pas n'apparaît pas (ADR 0015).
  */
-const GROUPS: { label: string; items: { key: Tab; label: string; meta: string; accounting?: boolean; module?: LicenseModule }[] }[] = [
+const GROUPS: { label: string; items: { key: Tab; label: string; meta: string; accounting?: boolean; rubrique?: Rubrique }[] }[] = [
   { label: "Établissement", items: [
     { key: "structure", label: "Structure", meta: "Identité, agrément, banque" },
     { key: "sections", label: "Sections et tranches d’âge", meta: "Places, passages" },
     { key: "encadrement", label: "Règles d’encadrement", meta: "Ratios de l’agrément" },
-    { key: "criteres", label: "Critères d’inscription", meta: "Priorité des demandes", module: "INSCRIPTIONS" },
-    { key: "preinscription", label: "Pré-inscription en ligne", meta: "Formulaire public, questions", module: "INSCRIPTIONS" },
-    { key: "repas", label: "Repas et régimes", meta: "Heures, régimes", module: "REPAS" },
+    { key: "criteres", label: "Critères d’inscription", meta: "Priorité des demandes", rubrique: "INSCRIPTIONS" },
+    { key: "preinscription", label: "Pré-inscription en ligne", meta: "Formulaire public, questions", rubrique: "INSCRIPTIONS" },
+    { key: "repas", label: "Repas et régimes", meta: "Heures, régimes", rubrique: "REPAS" },
     { key: "modeles", label: "Modèles de documents", meta: "Attestations, certificats" },
   ] },
   { label: "Facturation", items: [
-    { key: "bareme", label: "Barème et facturation", meta: "Tarifs, règles, TGC", accounting: true, module: "INSCRIPTIONS" },
-    { key: "financeurs", label: "Financeurs et aides", meta: "Aides, subventions", accounting: true, module: "FACTURATION" },
-    { key: "comptabilite", label: "Comptabilité", meta: "Comptes, export CSV et FEC", accounting: true, module: "COMPTABILITE" },
+    { key: "bareme", label: "Barème et facturation", meta: "Tarifs, règles, TGC", accounting: true, rubrique: "INSCRIPTIONS" },
+    { key: "financeurs", label: "Financeurs et aides", meta: "Aides, subventions", accounting: true, rubrique: "FACTURATION" },
+    { key: "comptabilite", label: "Comptabilité", meta: "Comptes, export CSV et FEC", accounting: true, rubrique: "COMPTABILITE" },
   ] },
   { label: "Accès", items: [{ key: "utilisateurs", label: "Utilisateurs et rôles", meta: "Comptes, droits, personnel" }] },
   { label: "Système", items: [
     { key: "sauvegardes", label: "Sauvegardes", meta: "Chiffrées, chaque nuit" },
     { key: "reprise", label: "Reprise des données", meta: "Depuis Excel, enfants et familles" },
     { key: "appareils", label: "Tablettes et abonnement", meta: "Appairage, abonnement" },
-    { key: "portail", label: "Portail parents", meta: "Partage avec les familles", module: "PORTAIL_PARENTS" },
+    { key: "portail", label: "Portail parents", meta: "Partage avec les familles", rubrique: "PORTAIL_PARENTS" },
   ] },
 ];
 
@@ -76,13 +77,19 @@ const GROUPS: { label: string; items: { key: Tab; label: string; meta: string; a
 export function SettingsPage() {
   const user = useCurrentUser();
   const isDirection = user.role === "DIRECTION";
-  const modules = useModules();
-  const groups = GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => (isDirection || i.accounting) && (!i.module || modules.has(i.module))) }))
+  // Rubriques masquées à la demande de la crèche (ADR 0022).
+  const rubriques = useRubriques();
+  const groups = GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => (isDirection || i.accounting) && rubriques.shown(i.rubrique)) }))
     .filter((g) => g.items.length > 0);
-  // « ?onglet=appareils » : lien du bandeau d'abonnement.
-  const [params] = useSearchParams();
-  const requested = groups.flatMap((g) => g.items).find((i) => i.key === params.get("onglet"))?.key;
-  const [chosen, setTab] = useState<Tab>(requested ?? (isDirection ? "structure" : "bareme"));
+  // La rubrique vit dans l'URL (« ?onglet=appareils ») : les liens des Premiers pas, du bandeau d'abonnement ou du
+  // tableau de bord ouvrent la bonne rubrique, même quand la page est déjà affichée.
+  const [params, setParams] = useSearchParams();
+  const chosen = (params.get("onglet") as Tab | null) ?? (isDirection ? "structure" : "bareme");
+  const setTab = (key: Tab) => setParams((p) => {
+    const next = new URLSearchParams(p);
+    next.set("onglet", key);
+    return next;
+  }, { replace: true });
   // Rubrique d'un module absent (lien ancien, modules reçus après coup) : on revient à la première disponible.
   const available = groups.flatMap((g) => g.items);
   const tab = available.some((i) => i.key === chosen) ? chosen : available[0]?.key;
@@ -114,14 +121,14 @@ export function SettingsPage() {
           {tab === "structure" && <StructureTab />}
           {tab === "sections" && <SectionsTab />}
           {tab === "encadrement" && <RatioRulesTab />}
-          {tab === "bareme" && <><Tariffs />{modules.has("FACTURATION") && <BillingRulesTab />}</>}
+          {tab === "bareme" && <><Tariffs />{rubriques.shown("FACTURATION") && <BillingRulesTab />}</>}
           {tab === "financeurs" && <FundersTab />}
           {tab === "comptabilite" && <AccountingSettingsTab />}
           {tab === "repas" && <MealsTab />}
           {tab === "criteres" && <Criteria />}
           {tab === "preinscription" && <OnlineEnrollmentSettings />}
           {tab === "modeles" && <DocumentTemplatesTab />}
-          {tab === "utilisateurs" && <><UsersTab /><RightsMatrix />{modules.has("PERSONNEL") && <StaffSettingsSection />}</>}
+          {tab === "utilisateurs" && <><UsersTab /><RightsMatrix />{rubriques.shown("PERSONNEL") && <StaffSettingsSection />}</>}
           {tab === "sauvegardes" && <BackupsTab />}
           {tab === "reprise" && <DataImportTab />}
           {tab === "appareils" && <><DevicesTab /><LicenseSection /></>}
@@ -218,6 +225,25 @@ function Tariffs() {
                 ))}
               </tbody>
             </table>
+            {s.formulas.length > 0 && (
+              <table className="w-full border-collapse text-left">
+                <caption className="mb-1 text-left text-label">Formules de facturation</caption>
+                <thead>
+                  <tr className="border-b border-border-subtle text-label text-muted-foreground">
+                    <th scope="col" className="py-2">Formule</th>
+                    <th scope="col" className="py-2 text-right">Forfait mensuel</th>
+                  </tr>
+                </thead>
+                <tbody className="tabular-nums">
+                  {s.formulas.map((f) => (
+                    <tr key={f.label} className="border-b border-border-subtle last:border-0">
+                      <td className="py-2">{f.label}</td>
+                      <td className="py-2 text-right">{formatXpf(f.monthlyFee)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </section>
         );
       })}
@@ -228,6 +254,7 @@ function Tariffs() {
 }
 
 type BandRow = { lowerBound: string; hourlyRate: string };
+type FormulaRow = { label: string; monthlyFee: string };
 
 /** Borne saisie : heures par semaine (« 35,25 » = 35 h 15) ou francs de quotient familial. */
 const boundToField = (criterion: TariffCriterion, v: number) =>
@@ -248,6 +275,7 @@ function TariffDialog({ tariff, onClose, onDone }: { tariff: TariffSchedule | nu
     tariff ? tariff.bands.map((b) => ({ lowerBound: boundToField(tariff.criterion, b.lowerBound), hourlyRate: String(b.hourlyRate) }))
       : [{ lowerBound: "0", hourlyRate: "" }],
   );
+  const [formulas, setFormulas] = useState<FormulaRow[]>(tariff?.formulas.map((f) => ({ label: f.label, monthlyFee: String(f.monthlyFee) })) ?? []);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
@@ -257,8 +285,15 @@ function TariffDialog({ tariff, onClose, onDone }: { tariff: TariffSchedule | nu
     if (!validFrom || (to.trim() && !validTo)) return setError("Dates attendues au format JJ/MM/AAAA.");
     const parsed: Band[] = bands.map((b) => ({ lowerBound: fieldToBound(criterion, b.lowerBound), hourlyRate: Number(b.hourlyRate) }));
     if (parsed.some((b) => !Number.isFinite(b.lowerBound) || !(b.hourlyRate > 0))) return setError("Chaque tranche a une borne et un tarif horaire positif.");
+    // Lignes de formule entièrement vides : ignorées.
+    const parsedFormulas: Formula[] = formulas.filter((f) => f.label.trim() || f.monthlyFee.trim())
+      .map((f) => ({ label: f.label.trim(), monthlyFee: Number(f.monthlyFee.replace(/\s/g, "")) }));
+    if (parsedFormulas.some((f) => !f.label || !Number.isInteger(f.monthlyFee) || f.monthlyFee <= 0)) {
+      return setError("Chaque formule a un libellé et un forfait mensuel en francs, sans décimale.");
+    }
+    if (new Set(parsedFormulas.map((f) => f.label)).size !== parsedFormulas.length) return setError("Deux formules ne peuvent pas porter le même libellé.");
     try {
-      const body = { label: label.trim(), criterion, weeksPerYear: Number(weeks), registrationFee: Number(fee) || 0, validFrom, validTo, bands: parsed };
+      const body = { label: label.trim(), criterion, weeksPerYear: Number(weeks), registrationFee: Number(fee) || 0, validFrom, validTo, bands: parsed, formulas: parsedFormulas };
       if (tariff) await settingsApi.updateTariff(tariff.id, body);
       else await settingsApi.createTariff(body);
       await onDone();
@@ -282,8 +317,8 @@ function TariffDialog({ tariff, onClose, onDone }: { tariff: TariffSchedule | nu
               {(Object.keys(criterionLabels) as TariffCriterion[]).map((c) => <option key={c} value={c}>{criterionLabels[c]}</option>)}
             </select>
           </FormField>
-          <FormField label="Valide à partir du"><Input placeholder="JJ/MM/AAAA" value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
-          <FormField label="Jusqu’au (facultatif)"><Input placeholder="JJ/MM/AAAA" value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
+          <FormField label="Valide à partir du"><DateInput placeholder="JJ/MM/AAAA" value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
+          <FormField label="Jusqu’au (facultatif)"><DateInput placeholder="JJ/MM/AAAA" value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
           <FormField label="Semaines d’accueil par an" hint="Sert à mensualiser le forfait : heures par semaine × semaines ÷ 12.">
             <Input inputMode="numeric" value={weeks} onChange={(e) => setWeeks(e.target.value)} />
           </FormField>
@@ -325,6 +360,47 @@ function TariffDialog({ tariff, onClose, onDone }: { tariff: TariffSchedule | nu
           Ajouter une tranche
         </Button>
         {criterion === "HEURES_SEMAINE" && <p className="m-0 text-small text-muted-foreground">Exemple : « 35,25 » pour une tranche qui commence à 35 h 15.</p>}
+        <table className="w-full border-collapse text-left">
+          <caption className="mb-1 text-left">
+            <span className="block text-label">Formules de facturation (facultatif)</span>
+            <span className="block text-small text-muted-foreground">
+              Forfaits mensuels au choix du contrat, à la place du calcul à l’heure : « Temps plein », « Matins seulement »,
+              « 3 jours par semaine »… Le tarif horaire de la tranche reste celui des heures complémentaires.
+            </span>
+          </caption>
+          {formulas.length > 0 && (
+            <thead>
+              <tr className="text-label text-muted-foreground">
+                <th scope="col" className="py-1">Libellé</th>
+                <th scope="col" className="py-1">Forfait mensuel (F)</th>
+                <th scope="col"><span className="sr-only">Retirer</span></th>
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {formulas.map((f, i) => (
+              <tr key={i}>
+                <td className="py-1 pr-2">
+                  <Input aria-label={`Libellé de la formule ${i + 1}`} maxLength={80} value={f.label} placeholder="Temps plein"
+                    onChange={(e) => setFormulas(formulas.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
+                </td>
+                <td className="py-1 pr-2">
+                  <Input aria-label={`Forfait mensuel de la formule ${i + 1}`} inputMode="numeric" value={f.monthlyFee} placeholder="98500"
+                    onChange={(e) => setFormulas(formulas.map((x, j) => (j === i ? { ...x, monthlyFee: e.target.value } : x)))} />
+                </td>
+                <td className="py-1 text-right">
+                  <Button variant="ghost" size="sm" aria-label={`Retirer la formule ${i + 1}`} onClick={() => setFormulas(formulas.filter((_, j) => j !== i))}>
+                    <Trash2 aria-hidden />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <Button variant="outline" size="sm" className="self-start" onClick={() => setFormulas([...formulas, { label: "", monthlyFee: "" }])}>
+          <Plus aria-hidden />
+          Ajouter une formule
+        </Button>
         {error && <Alert>{error}</Alert>}
         <div className="flex gap-3">
           <Button onClick={() => void submit()}>Enregistrer</Button>
@@ -360,7 +436,7 @@ function DuplicateDialog({ tariff, onClose, onDone }: { tariff: TariffSchedule; 
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <FormField label="Libellé"><Input value={label} onChange={(e) => setLabel(e.target.value)} /></FormField>
-          <FormField label="Valide à partir du"><Input placeholder="JJ/MM/AAAA" value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
+          <FormField label="Valide à partir du"><DateInput placeholder="JJ/MM/AAAA" value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
           {error && <Alert>{error}</Alert>}
           <div className="flex gap-3">
             <Button onClick={() => void submit()}>Dupliquer</Button>
@@ -475,8 +551,8 @@ function CriterionDialog({ criterion, nextOrder, onClose, onDone }: {
           <FormField label="Libellé" className="sm:col-span-2"><Input value={label} maxLength={120} onChange={(e) => setLabel(e.target.value)} /></FormField>
           <FormField label="Points"><Input type="number" min={0} max={20} value={points} onChange={(e) => setPoints(e.target.value)} /></FormField>
           <span />
-          <FormField label="Valide à partir du"><Input placeholder="JJ/MM/AAAA" value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
-          <FormField label="Jusqu’au (facultatif)"><Input placeholder="JJ/MM/AAAA" value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
+          <FormField label="Valide à partir du"><DateInput placeholder="JJ/MM/AAAA" value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
+          <FormField label="Jusqu’au (facultatif)"><DateInput placeholder="JJ/MM/AAAA" value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
         </div>
         {error && <Alert>{error}</Alert>}
         <div className="flex gap-3">

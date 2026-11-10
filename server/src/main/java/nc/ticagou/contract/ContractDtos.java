@@ -55,7 +55,9 @@ public final class ContractDtos {
             @Positive @Max(60) Integer planningNoticeDays,
             @PositiveOrZero Long familyQuotient,
             /** Mensualisé ou au réel (planning fixe) ; nul = mode par défaut des règles de facturation. */
-            BillingMode billingMode) {
+            BillingMode billingMode,
+            /** Formule de facturation du barème (libellé) à la place du calcul à l'heure ; planning fixe seulement. */
+            @Size(max = 80) String formula) {
 
         @AssertTrue(message = "Indiquez au moins un jour d’accueil")
         @JsonIgnore
@@ -69,6 +71,12 @@ public final class ContractDtos {
             return mode != PlanningMode.VARIABLE || monthlyReservedMinutes != null;
         }
 
+        @AssertTrue(message = "Une formule de facturation s’applique à un planning fixe")
+        @JsonIgnore
+        public boolean isFormulaWithFixedPlanning() {
+            return formula == null || formula.isBlank() || mode != PlanningMode.VARIABLE;
+        }
+
         @AssertTrue(message = "Un jour ne peut figurer qu’une fois dans le planning")
         @JsonIgnore
         public boolean isDaysDistinct() {
@@ -77,6 +85,11 @@ public final class ContractDtos {
 
         List<ScheduleDay> scheduleDays() {
             return mode == PlanningMode.FIXE ? days.stream().map(DayInput::toDay).toList() : List.of();
+        }
+
+        /** Libellé de la formule choisie, nul pour le calcul à l'heure. */
+        String formulaLabel() {
+            return formula == null || formula.isBlank() ? null : formula.strip();
         }
     }
 
@@ -144,11 +157,19 @@ public final class ContractDtos {
     public record BandDto(long lowerBound, long hourlyRate) {
     }
 
-    /** {@code problems} : incohérences du planning (jour fermé, départ avant l'arrivée…), à corriger avant d'enregistrer. */
+    /** Formule proposée par le barème applicable. */
+    public record FormulaDto(String label, long monthlyFee) {
+    }
+
+    /** {@code problems} : incohérences du planning (jour fermé, départ avant l'arrivée…), à corriger avant d'enregistrer. 
+     * {@code formula} : formule retenue (nulle : calcul à l'heure) ; {@code hourlyFee} : forfait calculé à l'heure, pour le
+     * comparer aux {@code formulas} du barème.
+     */
     public record QuoteDto(UUID tariffScheduleId, String tariffLabel, TariffCriterion criterion, int weeksPerYear,
                            List<BandDto> bands, long bandLowerBound, long hourlyRate, int weeklyMinutes,
                            int monthlyMinutes, long monthlyFee, long registrationFee, int adaptationMinutes,
-                           long adaptationRate, long adaptationCost, BillingMode billingMode, List<String> problems) {
+                           long adaptationRate, long adaptationCost, BillingMode billingMode, String formula, long hourlyFee,
+                           List<FormulaDto> formulas, List<String> problems) {
     }
 
     public record DayDto(int dayOfWeek, LocalTime arrivesAt, LocalTime leavesAt) {
@@ -175,7 +196,7 @@ public final class ContractDtos {
                              Long familyQuotient, Status status, LocalDate signedOn, UUID signedDocumentId,
                              UUID tariffScheduleId, TariffCriterion criterion, long bandLowerBound, long hourlyRate,
                              int weeksPerYear, int weeklyMinutes, int monthlyMinutes, long monthlyFee,
-                             long registrationFee, boolean inForce, boolean replaced) {
+                             long registrationFee, String formula, boolean inForce, boolean replaced) {
     }
 
     public enum State { BROUILLON, A_VENIR, EN_COURS, TERMINE }

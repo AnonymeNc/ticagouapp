@@ -134,7 +134,8 @@ cmd_construire() {
 }
 
 # creer <crèche> [--domaine <nom>] [--essai] : crèche = identifiant court, minuscules, chiffres et tirets.
-#   --essai : essai gratuit de 15 jours (évaluation) ; « abonnement » en fait ensuite une vraie crèche, sans perte.
+#   Toute crèche créée est en évaluation 30 jours ; « abonnement » en fait une vraie crèche, sans perte. --essai : accepté,
+#   sans effet (l'essai durait 15 jours).
 cmd_creer() {
     slug=${1:?Usage : creer <crèche> [--domaine <nom>] [--essai]}; shift
     echo "$slug" | grep -Eq '^[a-z0-9][a-z0-9-]{1,40}$' || { echo "Identifiant invalide : minuscules, chiffres, tirets." >&2; exit 1; }
@@ -174,7 +175,6 @@ TICAGOU_BACKUP_RECOVERYKEY=$(cle_de_secours)
 TICAGOU_BACKUP_DAILYTIME=$heure
 TICAGOU_SETUP_TOKEN=$jeton
 FIN
-        if [ -n "$essai" ]; then echo "TICAGOU_EVALUATION_DAYS=15" >>"$dossier/creche.env"; fi
         # Coordonnées du support, affichées dans l'aide de l'application (socle.env).
         for variable in TICAGOU_SUPPORT_PHONE TICAGOU_SUPPORT_WHATSAPP TICAGOU_SUPPORT_EMAIL TICAGOU_SUPPORT_HOURS TICAGOU_SUPPORT_DELAY; do
             valeur=$(printenv "$variable" || true)
@@ -195,47 +195,40 @@ FIN
     attendre "$slug"
     ecrire_site "$slug" "$domaine"
     echo
-    if [ -n "$essai" ]; then echo "Essai gratuit de 15 jours : « abonnement $slug … » le transforme en abonnement, sans perte de données."; fi
+    echo "Évaluation de 30 jours : « abonnement $slug … » la transforme en abonnement, sans perte de données."
     echo "Crèche créée. Lien de démarrage à remettre à la directrice (une seule utilisation) :"
     echo "  https://$domaine/setup?jeton=$jeton"
     echo
     echo "À copier dans votre coffre : $dossier/creche.env (clés de cette crèche)."
 }
 
-# abonnement <crèche> --numero N --offre essentiel|gestion|complet --places N --pc N --tablettes N --jusqu-au AAAA-MM-JJ
-#   [--modules A,B : modules ajoutés à l'offre] [--formule "libellé"]. Offres : ADR 0015, docs/commercial/bareme-tarifaire.md
+# abonnement <crèche> --numero N --places N --pc N --tablettes N --jusqu-au AAAA-MM-JJ [--formule "libellé"]
+#   Une seule formule, tout compris (ADR 0021) : --offre et --modules, encore envoyés par d'anciens ordres, sont acceptés
+#   sans effet. Prix : docs/commercial/bareme-tarifaire.md
 cmd_abonnement() {
     slug=${1:?Usage : abonnement <crèche> --numero ... --jusqu-au AAAA-MM-JJ}; shift
     existe "$slug"
-    numero="" formule="" places="" pc=2 tablettes=2 fin="" offre="" ajouts=""
+    numero="" formule="" places="" pc=2 tablettes=2 fin=""
     while [ $# -gt 0 ]; do
         case $1 in
             --numero) numero=$2 ;;
-            --offre) offre=$2 ;;
+            --offre|--modules) ;;
             --formule) formule=$2 ;;
             --places) places=$2 ;;
             --pc) pc=$2 ;;
             --tablettes) tablettes=$2 ;;
             --jusqu-au) fin=$2 ;;
-            --modules) ajouts=$2 ;;
             *) echo "Option inconnue : $1" >&2; exit 1 ;;
         esac
         shift 2
     done
-    [ -n "$numero" ] && [ -n "$offre" ] && [ -n "$places" ] && [ -n "$fin" ] || { echo "--numero, --offre, --places et --jusqu-au sont obligatoires." >&2; exit 1; }
-    case $offre in
-        essentiel) libelle=Essentiel liste="" ;;
-        gestion) libelle=Gestion liste=INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS ;;
-        complet) libelle=Complet liste=INSCRIPTIONS,FACTURATION,COMPTABILITE,PERSONNEL,REPAS,PORTAIL_PARENTS ;;
-        *) echo "--offre : essentiel, gestion ou complet." >&2; exit 1 ;;
-    esac
-    modules="'$(echappe "$liste,$ajouts")'"
+    [ -n "$numero" ] && [ -n "$places" ] && [ -n "$fin" ] || { echo "--numero, --places et --jusqu-au sont obligatoires." >&2; exit 1; }
     echo "$places$pc$tablettes" | grep -Eq '^[0-9]+$' || { echo "--places, --pc et --tablettes sont des nombres." >&2; exit 1; }
     echo "$fin" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' || { echo "--jusqu-au : AAAA-MM-JJ." >&2; exit 1; }
-    [ -n "$formule" ] || formule="$libelle — jusqu’à $places places"
+    [ -n "$formule" ] || formule="Ti’Cagou — jusqu’à $places places"
     titulaire=$(sql_creche "$slug" "SELECT coalesce((SELECT name FROM structure LIMIT 1), '$slug')")
     sql_creche "$slug" "INSERT INTO subscription (id, number, holder, plan, places, desktops, tablets, valid_until, modules)
-        VALUES (1, '$(echappe "$numero")', '$(echappe "$titulaire")', '$(echappe "$formule")', $places, $pc, $tablettes, '$fin', $modules)
+        VALUES (1, '$(echappe "$numero")', '$(echappe "$titulaire")', '$(echappe "$formule")', $places, $pc, $tablettes, '$fin', NULL)
         ON CONFLICT (id) DO UPDATE SET number = excluded.number, holder = excluded.holder, plan = excluded.plan,
             places = excluded.places, desktops = excluded.desktops, tablets = excluded.tablets,
             valid_until = excluded.valid_until, modules = excluded.modules, updated_at = now()"
@@ -282,11 +275,13 @@ cmd_etat_json() {
             'places', places, 'desktops', desktops, 'tablets', tablets, 'validUntil', valid_until, 'modules', modules)
             FROM subscription WHERE id = 1)::text, 'null')" 2>/dev/null || echo null)
         [ -n "$abonnement" ] || abonnement=null
+        # Rubriques masquées à la demande de la crèche (ADR 0022).
+        masquees=$(sql_creche "$slug" "SELECT coalesce(hidden_sections, '') FROM structure LIMIT 1" 2>/dev/null || true)
         [ $premier = 1 ] || printf ','
         premier=0
-        printf '{"slug":%s,"container":%s,"image":%s,"domain":%s,"subscription":%s}' "$(json_texte "$slug")" \
+        printf '{"slug":%s,"container":%s,"image":%s,"domain":%s,"hiddenSections":%s,"subscription":%s}' "$(json_texte "$slug")" \
             "$(json_texte "$(etat_conteneur "$slug")")" "$(json_texte "$(valeur "$slug" IMAGE | cut -d: -f2)")" \
-            "$(json_texte "$(valeur "$slug" DOMAINE)")" "$abonnement"
+            "$(json_texte "$(valeur "$slug" DOMAINE)")" "$(json_texte "$masquees")" "$abonnement"
     done
     printf ']}\n'
 }
@@ -337,8 +332,52 @@ cmd_restaurer() {
 cmd_telephone_perdu() {
     slug=${1:?Usage : telephone-perdu <crèche> <identifiant>}
     existe "$slug"
-    sql_creche "$slug" "UPDATE app_user SET totp_secret = NULL, totp_enabled_at = NULL, totp_last_step = NULL WHERE lower(login) = lower('$(echappe "$2")')"
-    echo "Double authentification réinitialisée : à refaire à la prochaine connexion."
+    login=${2:?Usage : telephone-perdu <crèche> <identifiant>}
+    compte=$(sql_creche "$slug" "UPDATE app_user SET totp_secret = NULL, totp_enabled_at = NULL, totp_last_step = NULL WHERE lower(login) = lower('$(echappe "$login")') RETURNING login")
+    [ -n "$compte" ] || { echo "Aucun compte « $login » dans $slug." >&2; return 1; }
+    echo "Double authentification réinitialisée pour $compte : à refaire à la prochaine connexion."
+}
+
+# mot-de-passe <crèche> <identifiant> : mot de passe oublié (la direction surtout). Lien à usage unique, 24 heures, à
+#   transmettre à la personne après avoir vérifié son identité ; elle choisit elle-même le nouveau mot de passe.
+#   Seule l'empreinte du jeton est gardée en base.
+cmd_mot_de_passe() {
+    slug=${1:?Usage : mot-de-passe <crèche> <identifiant>}
+    login=${2:?Usage : mot-de-passe <crèche> <identifiant>}
+    existe "$slug"
+    jeton=$(openssl rand -hex 24)
+    compte=$(sql_creche "$slug" "INSERT INTO password_reset (token_hash, structure_id, user_id, expires_at)
+        SELECT encode(sha256(convert_to('$jeton', 'UTF8')), 'hex'), structure_id, id, now() + interval '24 hours'
+        FROM app_user WHERE lower(login) = lower('$(echappe "$login")') AND active RETURNING (SELECT login FROM app_user u WHERE u.id = user_id)")
+    [ -n "$compte" ] || { echo "Aucun compte actif « $login » dans $slug." >&2; return 1; }
+    echo "Lien de réinitialisation du mot de passe de $compte (usage unique, valable 24 heures) :"
+    echo "  https://$(valeur "$slug" DOMAINE)/reinitialiser?jeton=$jeton"
+}
+
+# rubriques <crèche> [--masquer A,B] : rubriques à ne pas afficher, à la demande de la crèche (ADR 0022). Sans
+#   --masquer, tout est réaffiché. Simple affichage : rien n'est effacé ni refusé.
+RUBRIQUES="INSCRIPTIONS FACTURATION COMPTABILITE PERSONNEL REPAS PORTAIL_PARENTS"
+cmd_rubriques() {
+    slug=${1:?Usage : rubriques <crèche> [--masquer A,B]}; shift
+    existe "$slug"
+    masquer=""
+    while [ $# -gt 0 ]; do
+        case $1 in
+            --masquer) masquer=${2:-} ;;
+            *) echo "Option inconnue : $1" >&2; exit 1 ;;
+        esac
+        shift 2
+    done
+    for r in $(printf '%s' "$masquer" | tr ',' ' '); do
+        case " $RUBRIQUES " in *" $r "*) ;; *) echo "Rubrique inconnue : $r (connues : $RUBRIQUES)." >&2; return 1 ;; esac
+    done
+    if [ -n "$masquer" ]; then
+        sql_creche "$slug" "UPDATE structure SET hidden_sections = '$masquer'"
+        echo "Rubriques masquées pour $slug : $masquer (prises en compte à la prochaine ouverture des écrans)."
+    else
+        sql_creche "$slug" "UPDATE structure SET hidden_sections = NULL"
+        echo "Toutes les rubriques sont affichées pour $slug."
+    fi
 }
 
 # sauvegarder-console : base de la console (factures de l'éditeur), chiffrée avec CONSOLE_SECRET_KEY, 30 jours gardés.
@@ -370,7 +409,13 @@ portail_admin() {
         --header "Content-Type: application/json" --post-data "$2" "http://localhost:8090/admin/v1/$1"
 }
 
-cmd_code_portail() { portail_admin activation-codes "{\"label\":\"${1:?Usage : code-portail <libellé>}\"}"; echo; }
+cmd_code_portail() {
+    reponse=$(portail_admin activation-codes "{\"label\":\"${1:?Usage : code-portail <libellé>}\"}")
+    code=$(printf '%s' "$reponse" | sed -n 's/.*"activationCode":"\([^"]*\)".*/\1/p')
+    [ -n "$code" ] || { echo "Code non créé : $reponse" >&2; return 1; }
+    echo "Code d'activation du portail parents : $code"
+    echo "À saisir par la direction dans Paramètres › Portail parents, avec l'adresse https://${PORTAL_DOMAIN:-<domaine du portail>}."
+}
 
 cmd_code_supervision() {
     portail_admin supervision-codes "{\"label\":\"$1\"}" | sed -n 's/.*"activationCode":"\([^"]*\)".*/\1/p'
@@ -476,29 +521,20 @@ cmd_reimporter() {
     echo "$slug recréée depuis $(basename "$archive") : https://$(valeur "$slug" DOMAINE)"
 }
 
-# Modules de chaque formule de démonstration (comme scripts/tester-en-local.ps1).
-modules_demo() {
-    case $1 in
-        Essentiel) echo "" ;;
-        Gestion) echo "INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS" ;;
-        *) echo "INSCRIPTIONS,FACTURATION,COMPTABILITE,PERSONNEL,REPAS,PORTAIL_PARENTS" ;;
-    esac
-}
-
-# demo <identifiant> [--formule Essentiel|Gestion|Complet] [--domaine <nom>] : une instance de démonstration remplie par
+# demo <identifiant> [--domaine <nom>] : une instance de démonstration remplie par
 # scripts/demo/donnees-demo.mjs (crèche, enfants, équipe, présences, factures), lancé dans un conteneur Node.
 cmd_demo() {
-    slug=${1:?Usage : demo <identifiant> [--formule Complet] [--domaine <nom>]}; shift
-    formule=Complet domaine=""
+    slug=${1:?Usage : demo <identifiant> [--domaine <nom>]}; shift
+    domaine=""
     while [ $# -gt 0 ]; do
         case $1 in
-            --formule) formule=$2 ;;
+            # Une seule formule (ADR 0021) : --formule, d’anciens ordres de la console, est sans effet.
+            --formule) ;;
             --domaine) domaine=$2 ;;
             *) echo "Option inconnue : $1" >&2; exit 1 ;;
         esac
         shift 2
     done
-    case $formule in Essentiel|Gestion|Complet) ;; *) echo "--formule : Essentiel, Gestion ou Complet." >&2; exit 1 ;; esac
     if [ -n "$domaine" ]; then cmd_creer "$slug" --domaine "$domaine"; else cmd_creer "$slug"; fi
     echo "DEMO=1" >>"$(dossier_de "$slug")/creche.env"
     jeton=$(valeur "$slug" TICAGOU_SETUP_TOKEN)
@@ -510,8 +546,8 @@ cmd_demo() {
     echo "Chargement des données de démonstration (1 à 3 minutes)…"
     docker run --rm --network ticagou -v "$DEPLOY/../scripts/demo:/demo:ro" node:24-alpine node /demo/donnees-demo.mjs "$@"
     sql_creche "$slug" "INSERT INTO subscription (id, number, holder, plan, places, desktops, tablets, valid_until, modules)
-        SELECT 1, 'DEMO', name, '$formule (démonstration)', 60, 5, 5, CURRENT_DATE + 365, '$(modules_demo "$formule")' FROM structure LIMIT 1
-        ON CONFLICT (id) DO UPDATE SET plan = excluded.plan, modules = excluded.modules, valid_until = excluded.valid_until, updated_at = now()"
+        SELECT 1, 'DEMO', name, 'Ti’Cagou (démonstration)', 60, 5, 5, CURRENT_DATE + 365, NULL FROM structure LIMIT 1
+        ON CONFLICT (id) DO UPDATE SET plan = excluded.plan, modules = NULL, valid_until = excluded.valid_until, updated_at = now()"
     echo "Démonstration prête : https://$(valeur "$slug" DOMAINE)"
     echo "Direction : nathalie.kaloi / Niaouli-2026! (comptes : docs/commercial/demonstrations.md)"
 }
@@ -534,7 +570,7 @@ param() { printf '%s' "$2" | tr ';' '\n' | sed -n "s/^$1=//p"; }
 # Contrôle d'un ordre : identifiants, type de la liste blanche, valeurs dans un alphabet sûr.
 ordre_valide() {
     echo "$1" | grep -Eq '^[0-9a-f-]{36}$' || return 1
-    case $2 in CREER|DEMO|SUPPRIMER_DEMO|ABONNEMENT|SUSPENDRE|REPRENDRE|METTRE_A_JOUR|EXPORTER|SUPPRIMER) ;; *) return 1 ;; esac
+    case $2 in CREER|DEMO|SUPPRIMER_DEMO|ABONNEMENT|SUSPENDRE|REPRENDRE|METTRE_A_JOUR|EXPORTER|SUPPRIMER|RUBRIQUES|TELEPHONE_PERDU|MOT_DE_PASSE|CODE_PORTAIL) ;; *) return 1 ;; esac
     echo "$3" | grep -Eq '^[a-z0-9][a-z0-9-]{1,40}$' || return 1
     if [ -n "$4" ] && printf '%s\n' "$4" | tr ';' '\n' | grep -Evq '^[a-z_]+=[A-Za-z0-9.,_-]*$'; then
         return 1
@@ -550,20 +586,23 @@ executer_ordre() {
             if [ -n "$domaine" ]; then cmd_creer "$slug" --domaine "$domaine"; else cmd_creer "$slug"; fi ;;
         DEMO)
             domaine=$(param domaine "$params")
-            if [ -n "$domaine" ]; then cmd_demo "$slug" --formule "$(param formule "$params")" --domaine "$domaine"
-            else cmd_demo "$slug" --formule "$(param formule "$params")"; fi ;;
+            if [ -n "$domaine" ]; then cmd_demo "$slug" --domaine "$domaine"; else cmd_demo "$slug"; fi ;;
         SUPPRIMER_DEMO) cmd_supprimer_demo "$slug" ;;
         ABONNEMENT)
-            modules=$(param modules "$params")
-            set -- --numero "$(param numero "$params")" --offre "$(param offre "$params")" --places "$(param places "$params")" \
-                --pc "$(param pc "$params")" --tablettes "$(param tablettes "$params")" --jusqu-au "$(param jusqu_au "$params")"
-            [ -n "$modules" ] && set -- "$@" --modules "$modules"
-            cmd_abonnement "$slug" "$@" ;;
+            # Une seule formule (ADR 0021) : l'offre et les modules d'anciens ordres ne sont plus transmis.
+            cmd_abonnement "$slug" --numero "$(param numero "$params")" --places "$(param places "$params")" \
+                --pc "$(param pc "$params")" --tablettes "$(param tablettes "$params")" --jusqu-au "$(param jusqu_au "$params")" ;;
         SUSPENDRE) cmd_suspendre "$slug" ;;
         REPRENDRE) cmd_reprendre "$slug" ;;
         METTRE_A_JOUR) cmd_mettre_a_jour "$(param version "$params")" "$slug" ;;
         EXPORTER) cmd_exporter "$slug" ;;
         SUPPRIMER) supprimer_apres_export "$slug" "$(param export "$params")" ;;
+        RUBRIQUES)
+            masquer=$(param masquer "$params")
+            if [ -n "$masquer" ]; then cmd_rubriques "$slug" --masquer "$masquer"; else cmd_rubriques "$slug"; fi ;;
+        TELEPHONE_PERDU) cmd_telephone_perdu "$slug" "$(param identifiant "$params")" ;;
+        MOT_DE_PASSE) cmd_mot_de_passe "$slug" "$(param identifiant "$params")" ;;
+        CODE_PORTAIL) existe "$slug"; cmd_code_portail "$slug" ;;
         *) echo "Ordre hors liste blanche : $type" >&2; return 1 ;;
     esac
 }
@@ -603,14 +642,17 @@ aide() {
     cat <<FIN
 socle [--portail] [--console]  démarre PostgreSQL, Caddy et, en option, le portail et la console
 construire [version]           construit l'image de l'application
-creer <crèche> [--domaine n] [--essai]  crée une instance (--essai : 15 jours) et donne le lien de démarrage
-abonnement <crèche> ...        --numero --offre --places --jusqu-au [--pc --tablettes --modules A,B]
+creer <crèche> [--domaine n]   crée une instance (évaluation de 30 jours) et donne le lien de démarrage
+abonnement <crèche> ...        --numero --places --jusqu-au [--pc --tablettes --formule "libellé"]
 etat [--json]                  liste les crèches, leur version, leur abonnement (--json : pour la console)
 mettre-a-jour <version> <crèche>|--toutes
 suspendre <crèche>             arrête l'instance (impayé, fin de contrat)
 reprendre <crèche>
 restaurer <crèche> <archive>   remplace les données par une sauvegarde
-telephone-perdu <crèche> <identifiant>
+telephone-perdu <crèche> <identifiant>   double authentification à refaire (direction, comptabilité)
+mot-de-passe <crèche> <identifiant>   lien de réinitialisation du mot de passe (24 h, usage unique)
+rubriques <crèche> [--masquer A,B]   rubriques à ne pas afficher ; sans --masquer : tout réafficher
+                               (INSCRIPTIONS, FACTURATION, COMPTABILITE, PERSONNEL, REPAS, PORTAIL_PARENTS)
 code-portail <libellé>         code d'activation du portail parents
 sauvegarder-console            sauvegarde chiffrée de la base de la console (cron, chaque nuit)
 rapport-console                envoie l'état des crèches à la console (cron, toutes les 5 min)
@@ -637,6 +679,8 @@ case $commande in
     reprendre) cmd_reprendre "${1:?crèche manquante}" ;;
     restaurer) cmd_restaurer "$@" ;;
     telephone-perdu) cmd_telephone_perdu "$@" ;;
+    mot-de-passe) cmd_mot_de_passe "$@" ;;
+    rubriques) cmd_rubriques "$@" ;;
     code-portail) cmd_code_portail "$@" ;;
     sauvegarder-console) cmd_sauvegarder_console ;;
     rapport-console) cmd_rapport_console ;;

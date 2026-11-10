@@ -23,7 +23,7 @@ public final class PortalDtos {
                         @Pattern(regexp = "([01][0-9]|2[0-3]):[0-5][0-9]", message = "Heure invalide (HH:MM)") String mealAbsenceCutoff) {
     }
 
-    public record PortalStatus(boolean moduleIncluded, PortalSettings.State state, String portalUrl,
+    public record PortalStatus(PortalSettings.State state, String portalUrl,
                                Instant activatedAt, Shares shares, Instant lastSuccessAt, Instant lastAttemptAt,
                                String lastError, long pending, int invitedGuardians) {
     }

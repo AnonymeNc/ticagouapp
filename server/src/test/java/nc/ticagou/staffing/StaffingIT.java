@@ -57,7 +57,9 @@ class StaffingIT extends IntegrationTest {
         assertThat(status(result)).as(result.getResponse().getContentAsString()).isEqualTo(200);
     }
 
+    /** Les dépassements sont tenus par la diffusion, sur son propre fil : on attend qu'elle ait fini. */
     private long openBreaches() {
+        staffingBroadcaster.awaitPending();
         return jdbc.queryForObject("SELECT count(*) FROM ratio_breach WHERE ended_at IS NULL", Long.class);
     }
 
@@ -124,6 +126,7 @@ class StaffingIT extends IntegrationTest {
         assertThat(after.at("/load/status").asText()).isEqualTo("CONFORME");
         assertThat(after.at("/load/coveredPlaces").asInt()).isEqualTo(10);
         assertThat(openBreaches()).isZero();
+        staffingBroadcaster.awaitPending();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM ratio_breach WHERE ended_at IS NOT NULL", Long.class))
                 .isEqualTo(2);
     }
@@ -136,11 +139,37 @@ class StaffingIT extends IntegrationTest {
         assertThat(stream.getResponse().getContentAsString(StandardCharsets.UTF_8)).contains("event:ratio");
 
         babiesArrive(1);
+        staffingBroadcaster.awaitPending();
 
         var content = stream.getResponse().getContentAsString(StandardCharsets.UTF_8);
         assertThat(content).contains("event:attendance");
         assertThat(content).contains("event:alert");
         assertThat(content).contains("\"status\":\"INSUFFISANT\"");
+    }
+
+    @Test
+    void pointagesSimultanesSansBlocage() throws Exception {
+        // Quinze arrivées à la fois (une tablette qui vide sa file hors connexion) : plus que de connexions à la base.
+        // Avant la diffusion sur son propre fil, chacune attendait une deuxième connexion et tout restait bloqué 30 s.
+        var birth = LocalDate.now().minusMonths(9);
+        var ids = new java.util.ArrayList<String>();
+        for (int i = 0; i < 15; i++) {
+            ids.add(createChild(director, "Bébé" + i, "Famille" + i, birth.toString(), bebes, birth.plusMonths(3).toString()));
+        }
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(ids.size());
+        try {
+            var started = System.nanoTime();
+            var calls = ids.stream().map(id -> pool.submit(() ->
+                    status(perform(post("/api/v1/attendance/children/" + id + "/arrival"), director, Map.of())))).toList();
+            for (var call : calls) {
+                assertThat(call.get(20, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(201);
+            }
+            assertThat(java.time.Duration.ofNanos(System.nanoTime() - started)).isLessThan(java.time.Duration.ofSeconds(15));
+        } finally {
+            pool.shutdownNow();
+        }
+        staffingBroadcaster.awaitPending();
+        assertThat(body(getAs(director, "/api/v1/staffing")).get("sections").get(0).at("/load/children").asInt()).isEqualTo(15);
     }
 
     @Test

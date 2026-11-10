@@ -144,41 +144,17 @@ class SystemIT extends IntegrationTest {
     }
 
     @Test
-    void formuleEssentielleLimiteeALaBase() throws Exception {
-        TestLicenses.apply(jdbc, 60, java.util.Set.of(), 2, TODAY.plusYears(1));
+    void uneSeuleFormuleToutCompris() throws Exception {
+        TestLicenses.apply(jdbc, 50, 2, TODAY.plusYears(1));
 
-        assertThat(body(getAs(director, "/api/v1/system/modules")).get("modules")).isEmpty();
-        var contract = perform(post("/api/v1/contracts"), director, Map.of());
-        assertThat(status(contract)).isEqualTo(403);
-        assertThat(body(contract).get("code").asText()).isEqualTo("module_absent");
-        assertThat(status(perform(post("/api/v1/enrollment-requests"), director, Map.of()))).isEqualTo(403);
-        assertThat(status(perform(post("/api/v1/children"), director, Map.of()))).as("la base reste ouverte (400 = validation)").isEqualTo(400);
-    }
-
-    @Test
-    void uneFormuleEntraineLesModulesDontElleABesoin() throws Exception {
-        TestLicenses.apply(jdbc, 60, java.util.EnumSet.of(nc.ticagou.license.LicenseModule.COMPTABILITE), 2, TODAY.plusYears(1));
-
-        assertThat(body(getAs(director, "/api/v1/system/modules")).get("modules")).extracting(JsonNode::asText)
-                .containsExactly("INSCRIPTIONS", "FACTURATION", "COMPTABILITE");
-    }
-
-    @Test
-    void abonnementLieAuxPlacesEtAuxModules() throws Exception {
-        // Évaluation : tout est ouvert.
-        assertThat(status(perform(put("/api/v1/staff/settings"), director, Map.of("alertDays", 30, "defaultBreakMinutes", 60, "referenceWeeklyMinutes", 2340)))).isEqualTo(200);
-
-        TestLicenses.apply(jdbc, 50, java.util.EnumSet.of(nc.ticagou.license.LicenseModule.REPAS), 2, TODAY.plusYears(1));
-
-        var refused = perform(put("/api/v1/staff/settings"), director, Map.of("alertDays", 30, "defaultBreakMinutes", 60, "referenceWeeklyMinutes", 2340));
-        assertThat(status(refused)).isEqualTo(403);
-        assertThat(body(refused).get("code").asText()).isEqualTo("module_absent");
-        assertThat(body(refused).get("detail").asText()).contains("Personnel");
-        assertThat(status(getAs(director, "/api/v1/staff/alerts"))).as("lecture permise").isEqualTo(200);
-        assertThat(body(getAs(director, "/api/v1/system/modules")).get("modules")).extracting(JsonNode::asText)
-                .containsExactly("REPAS");
+        // Abonnement enregistré : toutes les fonctions restent ouvertes (400 = validation, pas 403).
+        assertThat(status(perform(post("/api/v1/contracts"), director, Map.of()))).isEqualTo(400);
+        assertThat(status(perform(post("/api/v1/enrollment-requests"), director, Map.of()))).isEqualTo(400);
+        assertThat(status(perform(put("/api/v1/staff/settings"), director,
+                Map.of("alertDays", 30, "defaultBreakMinutes", 60, "referenceWeeklyMinutes", 2340)))).isEqualTo(200);
         assertThat(status(getAs(director, "/api/v1/billing/collections"))).isEqualTo(200);
 
+        // Les places de l'abonnement plafonnent toujours la capacité agréée.
         var structure = structureUpdate(Map.of("printRib", false));
         @SuppressWarnings("unchecked")
         var identity = (Map<String, Object>) structure.get("identity");

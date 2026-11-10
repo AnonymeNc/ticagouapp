@@ -118,7 +118,9 @@ export function OrdersTable({ orders, compact = false }: { orders: Order[]; comp
                   <td className="px-3 py-2.5 text-small text-muted-foreground">
                     {describe(o)}
                     {o.reason && <div>{o.reason}</div>}
-                    {o.result?.setupLink && <SetupLink link={o.result.setupLink} />}
+                    {o.result?.setupLink && <CopyValue label="Lien de démarrage" value={o.result.setupLink} />}
+                    {o.result?.resetLink && <CopyValue label="Lien de réinitialisation (24 h, usage unique)" value={o.result.resetLink} />}
+                    {o.result?.portalCode && <CopyValue label="Code du portail parents" value={o.result.portalCode} />}
                     {o.result?.exportFile && (
                       <div>
                         Export : <span className="font-mono">{o.result.exportFile}</span>
@@ -178,17 +180,18 @@ function FragmentRow({ children }: { children: ReactNode }) {
 }
 
 /** Lien de démarrage d'une crèche créée : à remettre à la directrice (une seule utilisation). */
-function SetupLink({ link }: { link: string }) {
+/** Lien ou code produit par un ordre, à copier pour le transmettre. */
+function CopyValue({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2">
-      <span>Lien de démarrage :</span>
-      <code className="rounded bg-muted px-1.5 font-mono break-all text-foreground">{link}</code>
+      <span>{label} :</span>
+      <code className="rounded bg-muted px-1.5 font-mono break-all text-foreground">{value}</code>
       <Button
         size="sm"
         variant="ghost"
-        aria-label="Copier le lien de démarrage"
-        onClick={() => void navigator.clipboard?.writeText(link).then(() => setCopied(true))}
+        aria-label={`Copier : ${label.toLowerCase()}`}
+        onClick={() => void navigator.clipboard?.writeText(value).then(() => setCopied(true))}
       >
         <Copy aria-hidden />
         {copied ? "Copié" : "Copier"}
@@ -260,26 +263,18 @@ function CreateForm({ onDone }: { onDone: () => void }) {
 }
 
 function DemoForm({ onDone }: { onDone: () => void }) {
-  const [formule, setFormule] = useState("Complet");
-  const give = useOrderAction(() => ordersApi.give({ type: "DEMO", params: { formule } }));
+  // Une seule formule (ADR 0021) : la démonstration montre tout Ti'Cagou.
+  const give = useOrderAction(() => ordersApi.give({ type: "DEMO", params: {} }));
   return (
     <FormCard
       title="Démonstration"
-      intro="Une instance à part, remplie comme le PC de démonstration : « Les P’tits Niaoulis », 24 enfants, équipe, 3 mois de présences, factures. Comptez 2 à 4 minutes ; l’adresse s’affiche dans l’ordre. Elle ne compte ni comme cliente ni dans le revenu."
+      intro="Une instance à part, remplie comme le PC de démonstration : « Les P’tits Niaoulis », 27 enfants, équipe, 18 mois de présences et de factures, repas, inscriptions. Comptez quelques minutes ; l’adresse s’affiche dans l’ordre. Elle ne compte ni comme cliente ni dans le revenu."
       onSubmit={(e) => {
         e.preventDefault();
         give.mutate(undefined, { onSuccess: onDone });
       }}
     >
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="o-formule">Formule montrée</Label>
-          <select id="o-formule" className="h-9 rounded-md border border-input bg-card px-3" value={formule} onChange={(e) => setFormule(e.target.value)}>
-            <option>Essentiel</option>
-            <option>Gestion</option>
-            <option>Complet</option>
-          </select>
-        </div>
         <Button type="submit" disabled={give.isPending}>Lancer la démonstration</Button>
         <Button type="button" variant="ghost" onClick={onDone}>Annuler</Button>
       </div>

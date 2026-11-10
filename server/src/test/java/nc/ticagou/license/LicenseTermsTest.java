@@ -3,7 +3,6 @@ package nc.ticagou.license;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
-import java.util.EnumSet;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +14,7 @@ class LicenseTermsTest {
     static final LocalDate INSTALLED = LocalDate.of(2026, 11, 1);
 
     static License until(LocalDate validUntil) {
-        return new License("TC-1", "Crèche", "Structure", 60, EnumSet.allOf(LicenseModule.class), 2, 5, validUntil);
+        return new License("TC-1", "Crèche", "Structure", 60, 2, 5, validUntil);
     }
 
     @Test

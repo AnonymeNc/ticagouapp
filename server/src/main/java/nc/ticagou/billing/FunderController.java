@@ -22,12 +22,9 @@ import nc.ticagou.billing.FunderDtos.ChildFundingDto;
 import nc.ticagou.billing.FunderDtos.ChildFundingRequest;
 import nc.ticagou.billing.FunderDtos.FunderDto;
 import nc.ticagou.billing.FunderDtos.FunderRequest;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** Financeurs et aides accordées par enfant : direction et comptabilité. */
 @RestController
-@RequiresModule(LicenseModule.FACTURATION)
 @RequestMapping("/api/v1")
 @Tag(name = "Financeurs", description = "Aides provinciales, organismes, employeurs conventionnés")
 @PreAuthorize(BillingSettingsController.MANAGERS)

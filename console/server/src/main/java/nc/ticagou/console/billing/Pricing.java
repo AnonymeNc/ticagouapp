@@ -22,7 +22,14 @@ public final class Pricing {
     private Pricing() {
     }
 
+    /**
+     * La formule unique, tout compris (ADR 0021), sous son code historique : seule proposée aux nouveaux contrats et
+     * avenants, et seule exigée dans un barème.
+     */
+    public static final String OFFER = "COMPLET";
+    /** Formules connues, dont les anciennes : les contrats signés avant l'ADR 0021 se facturent jusqu'à leur avenant. */
     public static final List<String> PLANS = List.of("ESSENTIEL", "GESTION", "COMPLET");
+    /** Modules à la carte des anciens contrats : plus proposés, encore chiffrés tant que ces contrats courent. */
     public static final List<String> MODULES = List.of("INSCRIPTIONS", "FACTURATION", "COMPTABILITE", "PERSONNEL", "REPAS",
             "PORTAIL_PARENTS");
 

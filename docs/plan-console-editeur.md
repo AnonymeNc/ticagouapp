@@ -4,6 +4,10 @@
 - **Date** : 08/11/2026
 - **Pour** : l'éditeur et hébergeur de Ti'Cagou (pas les crèches)
 
+> **Depuis l'[ADR 0021](adr/0021-formule-unique.md)**, Ti'Cagou n'a plus qu'une formule, tout compris : ce plan parle
+> encore de formules (Essentiel, Gestion, Complet) et de modules à la carte, qui ne sont plus proposés. La console
+> chiffre encore les anciens contrats jusqu'à leur avenant ; les nouveaux prennent la formule unique.
+
 ## 0. But
 
 Un seul écran pour piloter le parc, sans passer par la ligne de commande ni lire les e-mails de supervision :

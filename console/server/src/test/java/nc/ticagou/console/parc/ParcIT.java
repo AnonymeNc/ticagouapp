@@ -196,9 +196,9 @@ class ParcIT {
     }
 
     static Map<String, Object> hostEntry(String slug, String container, String image) {
-        return Map.of("slug", slug, "container", container, "image", image, "domain", slug + ".ticagou.nc",
-                "subscription", Map.of("number", "A-12", "plan", "Gestion — jusqu’à 12 places", "places", 12, "desktops", 1,
-                        "tablets", 2, "validUntil", "2026-10-31", "modules", "INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS,REPAS"),
+        return Map.of("slug", slug, "container", container, "image", image, "domain", slug + ".ticagou.nc", "hiddenSections", "COMPTABILITE,REPAS",
+                "subscription", Map.of("number", "A-12", "plan", "Ti’Cagou — jusqu’à 12 places", "places", 12, "desktops", 1,
+                        "tablets", 2, "validUntil", "2026-10-31"),
                 "secret", "ne doit pas être gardé");
     }
 
@@ -227,8 +227,8 @@ class ParcIT {
         assertThat(lagon.get("name").asText()).as("nom repris de la supervision").isEqualTo("Micro-crèche Lagon Bleu");
         assertThat(lagon.at("/health/level").asText()).isEqualTo("BAD");
         assertThat(lagon.at("/health/reasons/0").asText()).isEqualTo("Sauvegarde");
-        assertThat(lagon.get("plan").asText()).isEqualTo("Gestion");
-        assertThat(lagon.get("modules").size()).isEqualTo(4);
+        assertThat(lagon.get("plan").asText()).isEqualTo("Ti’Cagou");
+        assertThat(lagon.has("modules")).isFalse();
         assertThat(lagon.get("licenseState").asText()).isEqualTo("EXPIREE_GRACE");
         assertThat(lagon.get("diskUsedPercent").asInt()).isEqualTo(64);
         assertThat(lagon.get("tabletLimit").asInt()).isEqualTo(2);
@@ -274,6 +274,7 @@ class ParcIT {
         assertThat(detail.at("/points/0/activeChildren").asInt()).isEqualTo(12);
         assertThat(detail.at("/status/usage/attendances7d").asInt()).isEqualTo(118);
         assertThat(detail.get("domain").asText()).isEqualTo("lagon-bleu.ticagou.nc");
+        assertThat(detail.get("hiddenSections").toString()).as("rubriques masquées (ADR 0022)").isEqualTo("[\"COMPTABILITE\",\"REPAS\"]");
         assertThat(call(get("/api/v1/parc/inconnue"), null).getResponse().getStatus()).isEqualTo(404);
     }
 

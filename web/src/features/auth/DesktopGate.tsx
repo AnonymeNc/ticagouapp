@@ -36,7 +36,7 @@ export function DesktopGate({ children }: { children: ReactNode }) {
   }
   if (!status.data.initialized) return <Navigate to="/setup" replace />;
   if (state.status === "loading") return <Splash />;
-  if (state.status === "anonymous") return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (state.status === "anonymous") return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   if (state.status === "authenticated" && state.user.mfaEnrollmentRequired) return <MfaEnrollPage />;
   return children;
 }

@@ -33,7 +33,13 @@ une facture soldée entre-temps retire la relance (`OutboxService`).
 le code, pris une seule fois par `creche.sh appliquer` sur `/interne/v1/ordres` (`OrderController`) ; créer une crèche,
 démonstrations (`creche.sh demo`), abonnement aligné sur le contrat (proposé après paiement), suspendre, reprendre,
 mettre à jour. Supprimer une crèche : ordre EXPORTER (archive chiffrée lue sur `CONSOLE_EXPORTS_DIR`, téléchargée par
-le navigateur), puis SUPPRIMER, créé seulement après ce téléchargement.
+le navigateur), puis SUPPRIMER, créé seulement après ce téléchargement. Fiche › Abonnement : rubriques affichées (ordre
+RUBRIQUES, [ADR 0022](../docs/adr/0022-rubriques-masquees.md), rapportées par `etat --json` en `hiddenSections`),
+mot de passe oublié (MOT_DE_PASSE : lien `/reinitialiser` à usage unique, 24 h, gardé dans le résultat de l'ordre),
+téléphone perdu (TELEPHONE_PERDU) et code du portail parents (CODE_PORTAIL). Guide d'utilisation : [docs/CONSOLE.md](../docs/CONSOLE.md).
+
+**Formule unique** ([ADR 0021](../docs/adr/0021-formule-unique.md)) : une seule formule, « Ti'Cagou » (code `COMPLET`),
+sans module à la carte ; les anciens contrats (Essentiel, Gestion, modules) gardent leur prix jusqu'à leur avenant.
 
 **Livré (phase 6)** : reporting (`reporting/`) — calculs purs dans `Reporting` (balance âgée, mois, coût du support,
 départs ; testés seuls), `ReportingService` (chiffre d'affaires, TGC par taux, encaissé, revenu mensuel par formule,

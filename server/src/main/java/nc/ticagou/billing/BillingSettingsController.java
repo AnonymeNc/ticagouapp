@@ -24,12 +24,9 @@ import nc.ticagou.billing.BillingSettingsDtos.BillingRuleDto;
 import nc.ticagou.billing.BillingSettingsDtos.BillingRuleRequest;
 import nc.ticagou.billing.BillingSettingsDtos.TgcRateDto;
 import nc.ticagou.billing.BillingSettingsDtos.TgcRateRequest;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** Paramètres › Barème et facturation : direction et comptabilité (motifs d'absence lisibles par les éducatrices). */
 @RestController
-@RequiresModule(LicenseModule.FACTURATION)
 @RequestMapping("/api/v1/billing")
 @Tag(name = "Paramètres de facturation", description = "Règles, motifs d'absence et TGC, datés")
 @PreAuthorize(BillingSettingsController.MANAGERS)

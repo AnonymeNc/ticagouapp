@@ -14,6 +14,7 @@ import { selectClass } from "@/lib/formFields";
 import { cn } from "@/lib/utils";
 import { STAGES, enrollmentApi, enrollmentKeys, isClosed, stageLabels, type BoardStats, type RequestCard } from "./api";
 import { DayChips, EnrollmentHeader, TonePill, ageLabel, capacityHint, cardFooter, footerColors, stageIcons } from "./components";
+import { NoTariffNotice } from "./NoTariffNotice";
 
 const normalized = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
@@ -63,6 +64,8 @@ export function EnrollmentBoardPage() {
           )
         }
       />
+
+      <NoTariffNotice />
 
       {board.data && <Stats stats={board.data.stats} requests={board.data.requests} />}
 

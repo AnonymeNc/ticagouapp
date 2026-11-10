@@ -7,6 +7,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { todayIso } from "@/lib/age";
 import { errorMessage } from "@/lib/api";
@@ -190,7 +191,7 @@ function UploadForm({ child, onDone }: { child: ChildTabProps["child"]; onDone: 
           </select>
         </FormField>
         <FormField label="Valable jusqu’au" hint="JJ/MM/AAAA, facultatif" error={errors.validUntil?.message}>
-          <Input inputMode="numeric" {...form.register("validUntil")} />
+          <DateInput inputMode="numeric" {...form.register("validUntil")} />
         </FormField>
       </div>
       {error && <Alert>{error}</Alert>}

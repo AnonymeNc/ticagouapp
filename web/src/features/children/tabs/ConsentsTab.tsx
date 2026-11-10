@@ -6,10 +6,11 @@ import { CircleCheck, CircleX } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/api";
 import { isoToDateFr } from "@/lib/datetime";
-import { dateToIso, isoToField, nullToEmpty, optionalDateFr, optionalText, textOrNull } from "@/lib/formFields";
+import { dateToIso, isoToField, nullToEmpty, optionalPastDateFr, optionalText, textOrNull } from "@/lib/formFields";
 import { childrenApi, consentLabels, type ConsentType } from "../api";
 import { useRefreshChild, type ChildTabProps } from "../ChildRecordPage";
 import { FormActions, Panel } from "./common";
@@ -72,7 +73,7 @@ const schema = z.object({
     type: z.enum(["PHOTOS", "SORTIES", "SOINS_URGENCE"]),
     granted: z.enum(["oui", "non"]),
     details: optionalText(500),
-    signedOn: optionalDateFr,
+    signedOn: optionalPastDateFr,
     signedBy: optionalText(170),
   })),
 });
@@ -135,7 +136,7 @@ function ConsentsForm({ child, onDone }: { child: ChildTabProps["child"]; onDone
               <Input placeholder={descriptions[type]} {...form.register(`consents.${i}.details`)} />
             </FormField>
             <FormField label="Signée le" hint="JJ/MM/AAAA" error={errors.consents?.[i]?.signedOn?.message}>
-              <Input inputMode="numeric" {...form.register(`consents.${i}.signedOn`)} />
+              <DateInput inputMode="numeric" {...form.register(`consents.${i}.signedOn`)} />
             </FormField>
             <FormField label="Par" error={errors.consents?.[i]?.signedBy?.message}>
               <Input {...form.register(`consents.${i}.signedBy`)} />

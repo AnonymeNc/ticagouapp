@@ -20,13 +20,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import nc.ticagou.enrollment.EnrollmentDtos.CriterionDto;
 import nc.ticagou.enrollment.EnrollmentDtos.CriterionRequest;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 @RestController
 @RequestMapping("/api/v1/enrollment-criteria")
 @Tag(name = "Critères d'inscription", description = "Critères de priorité et leurs points, datés")
-@RequiresModule(LicenseModule.INSCRIPTIONS)
 public class EnrollmentCriterionController {
 
     private final EnrollmentCriterionService criteria;
