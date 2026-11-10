@@ -216,14 +216,21 @@ function Remove-PortalOrphans {
     # Prudence : sans aucune crèche locale reliée (base illisible…), on ne retire rien.
     if ($live.Count -eq 0) { return }
     $list = ($live | ForEach-Object { "'$_'" }) -join ','
-    $removed = @(cmd /c "docker exec parents-portal-portail-db-1 psql -U portail -d portail -tAc `"DELETE FROM portal_structure WHERE id NOT IN ($list) RETURNING name`" 2>nul" |
-        Where-Object { "$_".Trim() })
+    $removed = @(cmd /c "docker exec parents-portal-portail-db-1 psql -q -U portail -d portail -tAc `"DELETE FROM portal_structure WHERE id NOT IN ($list) RETURNING name`" 2>nul" |
+        Where-Object { "$_".Trim() -and "$_" -notmatch '^DELETE \d+$' })
     if ($removed.Count -gt 0) { Write-Host "  Portail : $($removed.Count) ancienne(s) crèche(s) de test retirée(s) (rechargements précédents)." }
 }
 
 # Clé de la console en développement : gardée d'un lancement à l'autre (elle chiffre les secrets TOTP en base).
-function Get-ConsoleKey {
-    $file = Join-Path $env:APPDATA 'ticagou\console-cle-dev.txt'
+function Get-ConsoleKey { return (Get-DevKey 'console-cle-dev.txt') }
+
+# Clé des fichiers du portail (photos, vidéos, PDF chiffrés) : gardée d'un lancement à l'autre. Sans elle, le portail en
+# tirait une au hasard à chaque démarrage et tous les fichiers déjà reçus devenaient illisibles (erreur à l'ouverture).
+function Get-PortalFileKey { return (Get-DevKey 'portail-cle-fichiers-dev.txt') }
+
+# Clé aléatoire de 32 octets (Base64), créée une fois dans %APPDATA%\ticagou.
+function Get-DevKey([string]$name) {
+    $file = Join-Path $env:APPDATA "ticagou\$name"
     if (-not (Test-Path $file)) {
         $null = New-Item -ItemType Directory -Force (Split-Path $file)
         $bytes = New-Object byte[] 32
@@ -315,7 +322,8 @@ if ($Portail) {
     Start-Containers (Join-Path $root 'parents-portal') '' 'La base du portail'
     Install-Packages (Join-Path $root 'parents-portal\web')
     $portalArgs = '"-Dspring-boot.run.arguments=--portal.secure-cookie=false --portal.admin-token=dev --portal.public-url=http://localhost:5180"'
-    $pids += Start-Window 'Portail' (Join-Path $root 'parents-portal\server') ".\mvnw.cmd spring-boot:run $portalArgs" 8090
+    $portalEnv = "`$env:PORTAL_FILE_KEY = '$(Get-PortalFileKey)'; "
+    $pids += Start-Window 'Portail' (Join-Path $root 'parents-portal\server') "$portalEnv.\mvnw.cmd spring-boot:run $portalArgs" 8090
     $pids += Start-Window 'Application parents' $root 'pnpm --dir parents-portal\web dev' 5180
 }
 

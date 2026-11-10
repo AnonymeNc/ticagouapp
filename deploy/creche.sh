@@ -101,6 +101,9 @@ cmd_socle() {
             --portail)
                 : "${PORTAL_DOMAIN:?Renseignez PORTAL_DOMAIN dans socle.env}"
                 : "${PORTAL_DB_PASSWORD:?Renseignez PORTAL_DB_PASSWORD dans socle.env}"
+                # Sans elle, le portail tirerait une clé au hasard à chaque démarrage : photos, vidéos et PDF déjà
+                # reçus deviendraient illisibles au premier redémarrage.
+                : "${PORTAL_FILE_KEY:?Renseignez PORTAL_FILE_KEY dans socle.env (openssl rand -base64 32), et gardez-la dans votre coffre}"
                 profil="$profil --profile portail"
                 printf '%s {\n\timport securite\n\treverse_proxy portail:8090\n}\n' "$PORTAL_DOMAIN" >"$SITES/portail.caddy"
                 ;;
