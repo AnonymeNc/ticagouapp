@@ -7,7 +7,7 @@ APPEL=$(pwd)
 cd "$(dirname "$0")"
 DEPLOY=$(pwd)
 
-[ -f socle.env ] || { echo "socle.env manquant : copiez socle.env.example." >&2; exit 1; }
+[ -f socle.env ] || { echo "socle.env manquant : lancez ./secrets.sh (docs/EXPLOITATION.md § 2.6)." >&2; exit 1; }
 set -a
 # shellcheck disable=SC1091
 . ./socle.env

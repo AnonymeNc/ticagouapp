@@ -126,4 +126,4 @@ jobs:
       - uses: actions/checkout@v7
       - run: docker build -f deploy/Dockerfile -t ticagou-web:ci .
       - name: Scripts d'exploitation (syntaxe)
-        run: sh -n deploy/creche.sh && sh -n deploy/sauvegarde-hors-site.sh
+        run: sh -n deploy/creche.sh && sh -n deploy/sauvegarde-hors-site.sh && sh -n deploy/secrets.sh
