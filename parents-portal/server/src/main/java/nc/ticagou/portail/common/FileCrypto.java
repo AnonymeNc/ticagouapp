@@ -15,6 +15,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import nc.ticagou.portail.PortalProperties;
@@ -70,7 +71,11 @@ public class FileCrypto {
             int offset = MAGIC.length + IV_BYTES;
             return cipher.doFinal(stored, offset, stored.length - offset);
         } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("Fichier illisible ou altéré", e);
+            // Clé changée (PORTAL_FILE_KEY absente ou remplacée) ou fichier altéré : le parent reçoit un message clair, pas
+            // une erreur 500 ; l'exploitant voit la cause dans le journal.
+            log.error("Fichier illisible (structure {}, élément {}) : PORTAL_FILE_KEY a-t-elle changé ?", structureId, itemId);
+            throw new ApiException(HttpStatus.GONE, "fichier_illisible",
+                    "Ce fichier n'est plus disponible sur le portail : demandez à la crèche de vous le renvoyer.");
         }
     }
 
