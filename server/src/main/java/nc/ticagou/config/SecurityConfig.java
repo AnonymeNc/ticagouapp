@@ -51,7 +51,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/health", "/api/v1/setup/status").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/setup", "/api/v1/auth/login",
                                 "/api/v1/auth/refresh", "/api/v1/auth/logout",
-                                "/api/v1/devices/pair", "/api/v1/devices/session").permitAll()
+                                "/api/v1/devices/pair", "/api/v1/devices/session",
+                                "/api/v1/auth/password-reset", "/api/v1/auth/password-reset/check").permitAll()
                         // Pré-inscription en ligne (ADR 0020) : formulaire public, anti-abus côté service.
                         .requestMatchers("/api/v1/public/preinscription").permitAll()
                         // Agenda du personnel (lot 4) : lien privé à jeton, lu par les applications d'agenda.

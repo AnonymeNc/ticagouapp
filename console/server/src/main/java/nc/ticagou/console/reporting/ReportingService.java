@@ -94,7 +94,9 @@ public class ReportingService {
     public record Receipt(LocalDate receivedOn, String client, long amount, String method, String reference, String invoices) {
     }
 
-    private static final Map<String, String> PLAN_LABELS = Map.of("ESSENTIEL", "Essentiel", "GESTION", "Gestion", "COMPLET", "Complet");
+    /** Une seule formule (ADR 0021) ; les anciennes restent nommées pour les contrats signés avant. */
+    private static final Map<String, String> PLAN_LABELS = Map.of("ESSENTIEL", "Essentiel (ancienne formule)",
+            "GESTION", "Gestion (ancienne formule)", "COMPLET", "Ti’Cagou");
     private static final Set<String> PLANS = PLAN_LABELS.keySet();
 
     private final JdbcTemplate jdbc;
@@ -336,10 +338,13 @@ public class ReportingService {
         }
     }
 
-    /** Revenu mensuel récurrent ventilé : formule de base par formule, modules à la carte, options, remises. */
+    /**
+     * Revenu mensuel récurrent ventilé : la formule (les anciennes comprises, ADR 0021), les modules à la carte des anciens
+     * contrats, les options, les remises.
+     */
     List<PlanRow> mrrByPlan(LocalDate today, List<Scoped> scope) {
         var totals = new LinkedHashMap<String, Long>();
-        for (var key : List.of("COMPLET", "GESTION", "ESSENTIEL", "MODULES", "OPTIONS", "REMISES")) {
+        for (var key : List.of("FORMULE", "MODULES", "OPTIONS", "REMISES")) {
             totals.put(key, 0L);
         }
         for (var s : scope) {
@@ -355,7 +360,7 @@ public class ReportingService {
             for (var line : quote.lines()) {
                 String key;
                 if (PLANS.contains(line.code())) {
-                    key = line.code();
+                    key = "FORMULE";
                 } else if (line.code().startsWith("REMISE")) {
                     key = "REMISES";
                 } else if (Set.of("PC", "TABLETTE", "PREMIUM").contains(line.code())) {
@@ -366,7 +371,7 @@ public class ReportingService {
                 totals.merge(key, line.amount(), Long::sum);
             }
         }
-        var labels = Map.of("COMPLET", "Complet", "GESTION", "Gestion", "ESSENTIEL", "Essentiel", "MODULES", "Modules à la carte", "OPTIONS",
+        var labels = Map.of("FORMULE", "Formule Ti’Cagou", "MODULES", "Modules à la carte (anciens contrats)", "OPTIONS",
                 "PC, tablettes et support", "REMISES", "Remises");
         return totals.entrySet().stream().filter(e -> e.getValue() != 0).map(e -> new PlanRow(e.getKey(), labels.get(e.getKey()), e.getValue()))
                 .toList();

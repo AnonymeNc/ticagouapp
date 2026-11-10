@@ -36,8 +36,6 @@ import nc.ticagou.contract.ContractDtos.CreateContractRequest;
 import nc.ticagou.contract.ContractDtos.Created;
 import nc.ticagou.contract.ContractDtos.QuoteDto;
 import nc.ticagou.contract.ContractDtos.QuoteRequest;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /**
  * Contrats d'accueil et avenants. Droits (ligne « Inscriptions et contrats ») : la direction modifie,
@@ -46,7 +44,6 @@ import nc.ticagou.license.RequiresModule;
 @RestController
 @RequestMapping("/api/v1/contracts")
 @Tag(name = "Contrats", description = "Contrat d'accueil, forfait mensuel, avenants, PDF")
-@RequiresModule(LicenseModule.INSCRIPTIONS)
 public class ContractController {
 
     static final String READERS = "hasAnyRole('DIRECTION', 'COMPTABILITE')";

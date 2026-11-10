@@ -1,8 +1,8 @@
 import { TonePill, type Tone } from "@/features/enrollment/components";
-import { useModules, type LicenseModule } from "@/features/license/useModules";
+import { useRubriques, type Rubrique } from "@/features/structure/useRubriques";
 
-/** Droits appliqués par le serveur, par module et par rôle (maquette « Droits par rôle »). */
-const RIGHTS: [string, string, string, string, string, LicenseModule?][] = [
+/** Droits appliqués par le serveur, par domaine et par rôle (maquette « Droits par rôle »). */
+const RIGHTS: [string, string, string, string, string, Rubrique?][] = [
   ["Présences et pointage", "Modifier", "Modifier", "Consulter", "Consulter"],
   ["Enfants, santé et PAI", "Modifier", "Consulter", "Allergies et régimes", "Aucun accès"],
   ["Inscriptions et contrats", "Modifier", "Aucun accès", "Aucun accès", "Consulter", "INSCRIPTIONS"],
@@ -16,12 +16,12 @@ const RIGHTS: [string, string, string, string, string, LicenseModule?][] = [
 const tone = (right: string): Tone => (right === "Modifier" ? "success" : right === "Aucun accès" ? "neutral" : "info");
 
 export function RightsMatrix() {
-  const modules = useModules();
+  const rubriques = useRubriques();
   return (
     <section className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
       <div>
         <h2 className="m-0 text-title-3">Droits par rôle</h2>
-        <p className="m-0 text-muted-foreground">Ce que chaque rôle peut faire, module par module. Ces droits sont fixés ; leur personnalisation viendra plus tard.</p>
+        <p className="m-0 text-muted-foreground">Ce que chaque rôle peut faire, domaine par domaine. Ces droits sont fixés ; leur personnalisation viendra plus tard.</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
@@ -32,7 +32,7 @@ export function RightsMatrix() {
             </tr>
           </thead>
           <tbody>
-            {RIGHTS.filter(([, , , , , required]) => !required || modules.has(required)).map(([name, ...cells]) => (
+            {RIGHTS.filter((r) => rubriques.shown(r[5])).map(([name, ...cells]) => (
               <tr key={name} className="border-b border-border-subtle last:border-0">
                 <th scope="row" className="py-2 pr-3 text-left font-normal">{name}</th>
                 {cells.slice(0, 4).map((c, i) => <td key={i} className="py-2 pr-3"><TonePill tone={tone(c as string)}>{c}</TonePill></td>)}

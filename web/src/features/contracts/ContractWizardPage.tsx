@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, RotateCcw, Trash2 } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { childKeys, childrenApi } from "@/features/children/api";
 import { SectionBadge } from "@/features/children/components";
@@ -12,6 +13,7 @@ import { RelationshipOptions } from "@/features/children/NewChildPage";
 import { enrollmentApi, enrollmentKeys, type CapacityTest, type RequestRecord } from "@/features/enrollment/api";
 import { TonePill, capacityHint } from "@/features/enrollment/components";
 import { sectionForAge } from "@/features/enrollment/RequestForm";
+import { NoTariffNotice } from "@/features/enrollment/NoTariffNotice";
 import { useSections, type Section } from "@/features/structure/useSections";
 import { useStructure } from "@/features/structure/useStructure";
 import { ageInMonths, formatAge, todayIso } from "@/lib/age";
@@ -32,7 +34,7 @@ import {
   type PlanningMode,
   type SessionInput,
 } from "./api";
-import { BillingModeChoice, PlanningEditor, initialDays, toDayInputs, weeklyMinutes, type DaysState } from "./PlanningEditor";
+import { BillingModeChoice, FormulaChoice, PlanningEditor, initialDays, toDayInputs, weeklyMinutes, type DaysState } from "./PlanningEditor";
 
 type Source = { kind: "request"; requestId: string } | { kind: "child"; childId: string } | { kind: "edit"; contractId: string };
 
@@ -59,6 +61,8 @@ type State = {
   billing: AdaptationBilling;
   /** Nul : mode par défaut des Paramètres (Barème et facturation). */
   billingMode: BillingMode | null;
+  /** Formule de facturation du barème ; nulle : calcul à l'heure. */
+  formula: string | null;
   sessions: Session[];
 };
 
@@ -203,6 +207,7 @@ function emptyState(openDays: number[], startIso: string): State {
     adaptationWeeks: 2,
     billing: "AU_TEMPS",
     billingMode: null,
+    formula: null,
     sessions: adaptationSessions(startIso, 2, openDays, days),
   };
 }
@@ -250,6 +255,7 @@ function fromContract(c: Contract, openDays: number[]): State {
     adaptationWeeks: c.adaptation.length > 5 ? 2 : 1,
     billing: c.adaptationBilling,
     billingMode: v.billingMode,
+    formula: v.formula,
     sessions: c.adaptation.map((s) => ({ date: s.date, startsAt: hhmm(s.startsAt), endsAt: hhmm(s.endsAt), note: s.note ?? "" })),
   };
 }
@@ -293,7 +299,10 @@ function Wizard({ source, initial, title, request, contract, openDays }: {
     planningNoticeDays: state.mode === "VARIABLE" ? state.noticeDays : null,
     familyQuotient: quotient !== null && Number.isFinite(quotient) ? quotient : null,
     billingMode: state.mode === "FIXE" ? state.billingMode : null,
+    formula: state.mode === "FIXE" ? state.formula : null,
   };
+  // Formule retenue par le dernier calcul (nulle : calcul à l'heure).
+  const formula = state.mode === "FIXE" ? state.formula : null;
   const sessions: SessionInput[] = state.adaptation ? state.sessions.map((s) => ({ ...s, note: textOrNull(s.note) })) : [];
   const planningReady = state.mode === "FIXE"
     ? planning.days.length > 0 && planning.days.every((d) => span(d.arrivesAt, d.leavesAt) > 0)
@@ -433,6 +442,7 @@ function Wizard({ source, initial, title, request, contract, openDays }: {
       <nav aria-label="Fil d’Ariane" className="text-label text-muted-foreground">
         <Link to={back} className="text-lagon-700">{source.kind === "request" ? "Inscriptions" : "Enfants"}</Link> › {title.name} › {source.kind === "edit" ? `Contrat n° ${contract!.number}` : "Nouveau contrat d’accueil"}
       </nav>
+      <NoTariffNotice />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="m-0 font-display text-display">{source.kind === "edit" ? "Modifier le contrat d’accueil" : "Nouveau contrat d’accueil"}</h1>
@@ -528,6 +538,12 @@ function Wizard({ source, initial, title, request, contract, openDays }: {
             <Card title="Forfait mensuel" subtitle="Calculé d’après le planning et le barème de la structure en vigueur au début du contrat.">
               {quote.isPending && planningReady && <p className="m-0 text-muted-foreground">Calcul en cours…</p>}
               {quoteError && <Alert>{quoteError.message}</Alert>}
+              {quoteError?.code === "no_tariff" && (
+                <Button asChild variant="outline" className="self-start"><Link to="/parametres?onglet=bareme">Saisir le barème</Link></Button>
+              )}
+              {quoteError?.code === "formula_unknown" && (
+                <Button variant="outline" className="self-start" onClick={() => set({ formula: null })}>Revenir au calcul à l’heure</Button>
+              )}
               {quote.data?.criterion === "QUOTIENT_FAMILIAL" || quoteError?.code === "quotient_required" ? (
                 <FormField label="Quotient familial mensuel de la famille" hint="Le barème dépend du quotient familial, en francs CFP." className="max-w-80">
                   <Input inputMode="numeric" value={state.quotient} onChange={(e) => set({ quotient: e.target.value.replace(/[^\d]/g, "") })} />
@@ -539,15 +555,20 @@ function Wizard({ source, initial, title, request, contract, openDays }: {
                     <Fact label="Heures par semaine" value={formatMinutes(quote.data.weeklyMinutes)} />
                     <Fact label="Semaines d’accueil par an" value={String(quote.data.weeksPerYear)} />
                     <Fact label="Heures par mois" value={formatMinutes(quote.data.monthlyMinutes)} />
-                    <Fact label="Tarif horaire" value={formatXpf(quote.data.hourlyRate)} />
+                    <Fact label={formula ? "Tarif des heures complémentaires" : "Tarif horaire"} value={formatXpf(quote.data.hourlyRate)} />
                   </dl>
+                  {state.mode === "FIXE" && (
+                    <FormulaChoice value={formula} quote={quote.data} onChange={(f) => set({ formula: f })} />
+                  )}
                   <p className="m-0 rounded-md bg-muted px-4 py-3 tabular-nums">
-                    {state.mode === "FIXE"
+                    {formula
+                      ? `Formule « ${formula} », le même montant chaque mois`
+                      : state.mode === "FIXE"
                       ? `${formatMinutes(quote.data.weeklyMinutes)} × ${quote.data.weeksPerYear} semaines ÷ 12 mois × ${formatXpf(quote.data.hourlyRate)}, arrondi au franc`
                       : `${formatMinutes(quote.data.monthlyMinutes)} réservées × ${formatXpf(quote.data.hourlyRate)}`}
                     {" "}= <strong>{formatXpf(quote.data.monthlyFee)}</strong>
                   </p>
-                  {state.mode === "FIXE" && (
+                  {state.mode === "FIXE" && !formula && (
                     <BillingModeChoice value={state.billingMode ?? quote.data.billingMode} quote={quote.data}
                       onChange={(billingMode) => set({ billingMode })} />
                   )}
@@ -582,10 +603,10 @@ function Wizard({ source, initial, title, request, contract, openDays }: {
               <Card title="Dates du contrat" subtitle="Le forfait mensuel s’applique à partir de la date de début.">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <FormField label="Début du contrat">
-                    <Input placeholder="JJ/MM/AAAA" inputMode="numeric" value={state.start} onChange={(e) => set({ start: e.target.value })} />
+                    <DateInput placeholder="JJ/MM/AAAA" inputMode="numeric" value={state.start} onChange={(e) => set({ start: e.target.value })} />
                   </FormField>
                   <FormField label="Fin du contrat">
-                    <Input placeholder="JJ/MM/AAAA" inputMode="numeric" value={state.end} onChange={(e) => set({ end: e.target.value })} />
+                    <DateInput placeholder="JJ/MM/AAAA" inputMode="numeric" value={state.end} onChange={(e) => set({ end: e.target.value })} />
                   </FormField>
                   <FormField label="Préavis de rupture">
                     <select className={selectClass} value={state.noticeMonths} onChange={(e) => set({ noticeMonths: Number(e.target.value) })}>
@@ -635,7 +656,9 @@ function Wizard({ source, initial, title, request, contract, openDays }: {
                 <span className="block text-muted-foreground">Par semaine : {formatMinutes(quote.data.weeklyMinutes)}</span>
               </Recap>
               <Recap label="Tarification" onEdit={() => setStep(index(1))}>
-                Forfait ({formatMinutes(quote.data.monthlyMinutes)} × {formatXpf(quote.data.hourlyRate)}) : <strong>{formatXpf(quote.data.monthlyFee)}</strong> par mois
+                {formula
+                  ? <>Formule « {formula} » : <strong>{formatXpf(quote.data.monthlyFee)}</strong> par mois</>
+                  : <>Forfait ({formatMinutes(quote.data.monthlyMinutes)} × {formatXpf(quote.data.hourlyRate)}) : <strong>{formatXpf(quote.data.monthlyFee)}</strong> par mois</>}
                 {quote.data.registrationFee > 0 && <span className="block">Frais d’inscription : {formatXpf(quote.data.registrationFee)}</span>}
               </Recap>
               <Recap label="Adaptation et dates" onEdit={() => setStep(index(2))}>
@@ -678,6 +701,7 @@ function Wizard({ source, initial, title, request, contract, openDays }: {
             <Fact label="Structure" value={structure.data?.name ?? ""} />
             <Fact label="Planning" value={state.mode === "FIXE" ? `Fixe, ${dayCount} jour${dayCount > 1 ? "s" : ""}` : `Variable, ${state.monthlyHours || "—"} h par mois`} />
             <Fact label="Heures par semaine" value={quote.data ? formatMinutes(quote.data.weeklyMinutes) : state.mode === "FIXE" ? formatMinutes(weekly) : "—"} />
+            {formula && <Fact label="Formule" value={formula} />}
             {quote.data && <Fact label="Tranche du barème" value={`${bandLabel(quote.data.criterion, quote.data.bands, quote.data.bandLowerBound)} · ${formatXpf(quote.data.hourlyRate)}/h`} />}
             <Fact label="Forfait mensuel, avant aides" value={quote.data ? formatXpf(quote.data.monthlyFee) : "—"} strong />
             {quote.data && sessions.length > 0 && <Fact label="Adaptation" value={formatXpf(quote.data.adaptationCost)} />}
@@ -791,17 +815,20 @@ function ChildStep({ child, onChange, sections, startIso }: {
 }) {
   const birth = parseDateFr(child.birthDate);
   const suggested = birth && startIso ? sectionForAge(sections, ageInMonths(birth, startIso)) : undefined;
-  const field = (key: keyof ChildFields, label: string, props: Record<string, string> = {}, hint?: string) => (
-    <FormField label={label} hint={hint}>
-      <Input value={(child[key] as string) ?? ""} onChange={(e) => onChange({ [key]: e.target.value })} {...props} />
-    </FormField>
-  );
+  const field = (key: keyof ChildFields, label: string, props: Record<string, string> = {}, hint?: string, date = false) => {
+    const Control = date ? DateInput : Input;
+    return (
+      <FormField label={label} hint={hint}>
+        <Control value={(child[key] as string) ?? ""} onChange={(e) => onChange({ [key]: e.target.value })} {...props} />
+      </FormField>
+    );
+  };
   return (
     <Card title="Enfant et famille" subtitle="Les champs sont repris de la demande. Vérifiez-les : la fiche de l’enfant sera créée avec le contrat.">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {field("firstName", "Prénom de l’enfant")}
         {field("lastName", "Nom de l’enfant")}
-        {field("birthDate", "Date de naissance", { placeholder: "JJ/MM/AAAA", inputMode: "numeric" }, child.birthDate ? undefined : "À compléter : l’enfant doit être né.")}
+        {field("birthDate", "Date de naissance", {}, child.birthDate ? undefined : "À compléter : l’enfant doit être né.", true)}
         <FormField label="Section" hint={suggested ? `Selon l’âge au début du contrat : ${suggested.name}` : undefined}>
           <select className={selectClass} value={child.sectionId} onChange={(e) => onChange({ sectionId: e.target.value })}>
             <option value="">À déterminer</option>

@@ -34,8 +34,6 @@ import nc.ticagou.document.StoredFileRepository;
 import nc.ticagou.family.Family;
 import nc.ticagou.family.FamilyRepository;
 import nc.ticagou.family.GuardianRepository;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.LicenseService;
 import nc.ticagou.portal.PortalDtos.ActivateRequest;
 import nc.ticagou.portal.PortalDtos.FamilyAccess;
 import nc.ticagou.portal.PortalDtos.GuardianAccess;
@@ -84,7 +82,6 @@ public class PortalService {
     private final AbsenceService absences;
     private final EncryptedFileStore fileStore;
     private final StoredFileRepository files;
-    private final LicenseService licenses;
     private final AuditService audit;
     private final Clock clock;
 
@@ -96,8 +93,7 @@ public class PortalService {
                          FamilyRepository families, ChildRepository children, ConsentRepository consents,
                          InvoiceRepository invoices, StructureRepository structures, ContractService contracts,
                          ContractPdfService contractPdfs, ConsentPdf consentPdf, AbsenceService absences,
-                         EncryptedFileStore fileStore, StoredFileRepository files, LicenseService licenses,
-                         AuditService audit, Clock clock) {
+                         EncryptedFileStore fileStore, StoredFileRepository files, AuditService audit, Clock clock) {
         this.settingsRepository = settingsRepository;
         this.outbox = outbox;
         this.publisher = publisher;
@@ -121,7 +117,6 @@ public class PortalService {
         this.absences = absences;
         this.fileStore = fileStore;
         this.files = files;
-        this.licenses = licenses;
         this.audit = audit;
         this.clock = clock;
     }
@@ -136,7 +131,7 @@ public class PortalService {
     }
 
     PortalStatus status(PortalSettings s) {
-        return new PortalStatus(licenses.allows(LicenseModule.PORTAIL_PARENTS), s.getState(), s.getPortalUrl(),
+        return new PortalStatus(s.getState(), s.getPortalUrl(),
                 s.getActivatedAt(), new Shares(s.isShareEntries(), s.isSharePhotos(), s.isShareInvoices(),
                 s.isShareDocuments(), s.isShareMessages(), s.isAcceptAbsences(), s.getPaymentInfo(), s.getMealAbsenceCutoff()),
                 s.getLastSuccessAt(), s.getLastAttemptAt(), s.getLastError(),
@@ -151,9 +146,6 @@ public class PortalService {
     @Transactional
     public PortalStatus activate(ActivateRequest request) {
         var user = CurrentUser.get();
-        if (!licenses.allows(LicenseModule.PORTAIL_PARENTS)) {
-            throw ApiException.forbidden("module_absent", "Le module Portail parents n’est pas compris dans votre licence.");
-        }
         var url = request.portalUrl().strip();
         if (!url.startsWith("https://") && !isLocal(url)) {
             throw ApiException.rule("portal_https", "Le portail doit être joint en HTTPS.");

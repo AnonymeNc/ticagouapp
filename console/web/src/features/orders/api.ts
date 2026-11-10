@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useConfirmed } from "@/features/auth/Confirm";
 import { api, ApiError } from "@/lib/api";
 
-export type OrderType = "CREER" | "DEMO" | "SUPPRIMER_DEMO" | "ABONNEMENT" | "SUSPENDRE" | "REPRENDRE" | "METTRE_A_JOUR" | "EXPORTER" | "SUPPRIMER";
+export type OrderType = "CREER" | "DEMO" | "SUPPRIMER_DEMO" | "ABONNEMENT" | "SUSPENDRE" | "REPRENDRE" | "METTRE_A_JOUR" | "EXPORTER" | "SUPPRIMER"
+  | "RUBRIQUES" | "TELEPHONE_PERDU" | "MOT_DE_PASSE" | "CODE_PORTAIL";
 export type OrderStatus = "A_CONFIRMER" | "EN_ATTENTE" | "EN_COURS" | "FAIT" | "ECHEC" | "ANNULE";
 
 export type Order = {
@@ -27,6 +28,10 @@ export type Order = {
 /** Ce qu'un ordre a produit : lien de démarrage, adresse d'une démo, export (et sa suite). */
 export type OrderResult = {
   setupLink?: string;
+  /** Lien de réinitialisation du mot de passe (24 h, usage unique). */
+  resetLink?: string;
+  /** Code d’activation du portail parents. */
+  portalCode?: string;
   url?: string;
   exportFile?: string;
   size?: number;
@@ -140,6 +145,20 @@ export const typeLabels: Record<OrderType, string> = {
   METTRE_A_JOUR: "Mise à jour",
   EXPORTER: "Export des données",
   SUPPRIMER: "Supprimer la crèche",
+  RUBRIQUES: "Rubriques affichées",
+  TELEPHONE_PERDU: "Téléphone perdu",
+  MOT_DE_PASSE: "Mot de passe oublié",
+  CODE_PORTAIL: "Code du portail parents",
+};
+
+/** Rubriques que la crèche peut demander à ne pas afficher (ADR 0022), avec ce qu’elles couvrent. */
+export const rubriqueLabels: Record<string, string> = {
+  INSCRIPTIONS: "Inscriptions et contrats",
+  FACTURATION: "Facturation et aides",
+  COMPTABILITE: "Comptabilité (exports)",
+  PERSONNEL: "Personnel (planning, congés, heures)",
+  REPAS: "Repas",
+  PORTAIL_PARENTS: "Portail parents et messages",
 };
 
 export const statusPill: Record<OrderStatus, { tone: "info" | "lagon" | "ok" | "bad" | "neutral" | "warn"; label: string }> = {
@@ -151,24 +170,31 @@ export const statusPill: Record<OrderStatus, { tone: "info" | "lagon" | "ok" | "
   ANNULE: { tone: "neutral", label: "Annulé" },
 };
 
-/** « Gestion, 12 places, 1 PC, 3 tablettes, jusqu’au 31/10/2027, + Repas ». */
+/** « Ti’Cagou, 12 places, 1 PC, 3 tablettes, jusqu’au 31/10/2027 » (une seule formule, ADR 0021). */
 export function describe(order: Pick<Order, "type" | "params">): string {
   const p = order.params;
   const day = (d?: string) => (d ? d.split("-").reverse().join("/") : "?");
   switch (order.type) {
     case "ABONNEMENT":
-      return [`${(p.offre ?? "").charAt(0).toUpperCase()}${(p.offre ?? "").slice(1)}`, `${p.places} places`, `${p.pc} PC`, `${p.tablettes} tablettes`,
-        `jusqu’au ${day(p.jusqu_au)}`, p.modules ? `+ ${p.modules.split(",").join(", ").toLowerCase()}` : null].filter(Boolean).join(", ");
+      return ["Ti’Cagou", `${p.places} places`, `${p.pc} PC`, `${p.tablettes} tablettes`, `jusqu’au ${day(p.jusqu_au)}`].join(", ");
     case "METTRE_A_JOUR":
       return `Version ${p.version}`;
     case "DEMO":
-      return `Formule ${p.formule}${p.domaine ? `, ${p.domaine}` : ""}`;
+      return p.domaine ? `Domaine ${p.domaine}` : "Domaine par défaut";
     case "CREER":
       return p.domaine ? `Domaine ${p.domaine}` : "Domaine par défaut";
     case "EXPORTER":
       return p.suite === "supprimer" ? "Puis suppression, après téléchargement" : "Base, documents et clés";
     case "SUPPRIMER":
       return `Après export ${p.export ?? "?"}`;
+    case "RUBRIQUES":
+      return p.masquer ? `Masquer : ${p.masquer.split(",").map((r) => rubriqueLabels[r] ?? r).join(", ")}` : "Tout afficher";
+    case "TELEPHONE_PERDU":
+      return `Double authentification de ${p.identifiant}`;
+    case "MOT_DE_PASSE":
+      return `Lien de réinitialisation pour ${p.identifiant}`;
+    case "CODE_PORTAIL":
+      return "Code d’activation du portail parents";
     default:
       return "—";
   }

@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -110,7 +111,7 @@ export function AgrementStep({ defaultValues, onBack, onNext }: StepProps<Agreme
           <Input {...form.register("agrementNumber")} />
         </FormField>
         <FormField label="Date d’agrément" hint="JJ/MM/AAAA" error={errors.agrementDate?.message}>
-          <Input inputMode="numeric" placeholder="15/01/2024" {...form.register("agrementDate")} />
+          <DateInput inputMode="numeric" placeholder="15/01/2024" {...form.register("agrementDate")} />
         </FormField>
         <FormField label="RIDET" hint="Facultatif" error={errors.ridet?.message} className="sm:col-span-2">
           <Input placeholder="1234567.001" className="max-w-60" {...form.register("ridet")} />

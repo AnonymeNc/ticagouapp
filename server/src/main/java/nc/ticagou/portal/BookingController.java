@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 import nc.ticagou.portal.PortalDtos.AcceptBooking;
 import nc.ticagou.portal.PortalDtos.BookingDto;
 import nc.ticagou.portal.PortalDtos.BookingRules;
@@ -25,7 +23,6 @@ import nc.ticagou.portal.PortalDtos.RefuseBooking;
 /** Demandes des parents (lot 2) : accueils occasionnels à accepter ou refuser, retards annoncés, règles datées. */
 @RestController
 @RequestMapping("/api/v1")
-@RequiresModule(LicenseModule.PORTAIL_PARENTS)
 @Tag(name = "Portail parents", description = "Demandes d'accueil occasionnel et retards annoncés par les parents")
 public class BookingController {
 

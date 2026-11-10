@@ -33,29 +33,46 @@ Le script :
 Sans `-Portail`, seuls la base, le serveur et le bureau démarrent. Le premier lancement compile : comptez quelques
 minutes.
 
-**Démonstration toute prête** (rendez-vous commercial, formation), avec le portail et cinq familles connectées ; ajoutez
-`-Formule Essentiel` ou `-Formule Gestion` pour montrer une autre offre ([parcours](commercial/demonstrations.md)) :
+**Démonstration toute prête** (rendez-vous commercial, formation), avec le portail et toutes les familles connectées
+([parcours de A à Z](commercial/demonstrations.md)). Ti'Cagou n'a qu'une formule, tout compris
+([ADR 0021](adr/0021-formule-unique.md)) :
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Demo
 ```
 
 Le serveur démarre sur une base à part, `ticagou_demo`. Votre base de développement n'est pas touchée. La base est
-remplie par `scripts\demo\donnees-demo.mjs` :
-- « Les P'tits Niaoulis », 24 enfants et leurs familles ;
-- personnes autorisées, allergies, un PAI ;
-- l'équipe avec ses codes PIN ;
-- trois mois de présences ;
-- les factures des deux mois passés, en partie payées, avec un avoir ;
-- trois familles en anomalie, pour une absence maladie sans justificatif ;
-- les menus et des demandes d'inscription.
+remplie par `scripts\demo\donnees-demo.mjs` (5 à 10 minutes la première fois) :
+- « Les P'tits Niaoulis », 27 enfants accueillis et 2 partis à l'école, leurs familles ;
+- personnes autorisées, allergies, un PAI, régimes ;
+- l'équipe avec ses codes PIN, plannings, diplômes, pointages, demandes de congé, cahier d'équipe ;
+- **18 mois** de présences et d'absences (deux années dans les statistiques) ;
+- les factures de ces 18 mois, envoyées et payées, des impayés récents, un avoir, les demandes aux financeurs ;
+- un barème avec ses formules (temps plein, matins, après-midi, 3 jours) ;
+- menus, trimestres de repas clos, relevés de températures ;
+- demandes d'inscription à toutes les étapes, dont trois pré-inscriptions en ligne ;
+- sur le portail : deux semaines de journées détaillées, un **album de photos et de vidéos** sur 8 semaines,
+  actualités avec affiche, messages à toutes les familles et à certaines ;
+- côté parents (lus dans Mailpit) : réponses, une absence signalée, une demande d'accueil, un retard, une autorisation
+  signée, à traiter pendant la démonstration.
+
+Les photos et vidéos sont des illustrations originales (`scripts\demo\medias`), aucune photo d'enfant réel.
 
 Les fois suivantes, seuls les pointages et transmissions du jour sont rejoués. `-Demo -RemiseAZero` efface la base de
 démonstration et la recharge. Les comptes sont ceux du § 8.
 
-Le serveur de développement est lancé avec une **évaluation de 10 ans** (`TICAGOU_EVALUATION_DAYS=3650`) : la base
-de développement, installée il y a longtemps, passerait sinon en lecture seule (ADR 0011). Pour essayer la fin de
-l'évaluation ou un abonnement échu, voir le § 7, ligne « Abonnement ».
+**Console de l'éditeur** (votre interface d'administration : parc des crèches, abonnements, facturation, ordres) :
+ajoutez `-Console`, par exemple `-Demo -Console`. Elle s'ouvre sur http://localhost:1421. La première fois, créez votre
+compte sur http://localhost:1421/premier-compte?jeton=dev, avec une application d'authentification (Google
+Authenticator, Microsoft Authenticator…) ; ensuite, connexion par identifiant, mot de passe et code à 6 chiffres. La clé
+qui protège ces codes est gardée dans `%APPDATA%\ticagou\console-cle-dev.txt` : si vous aviez lancé la console à la main
+avec une autre clé, votre ancien compte ne s'ouvrira plus ; repartez d'une base vide avec
+`docker compose -f console\docker-compose.yml down -v`. Où cliquer pour chaque besoin : [CONSOLE.md](CONSOLE.md).
+
+L'**évaluation dure 30 jours**, comme en production (ADR 0011). Pour qu'une base de développement ou de démonstration
+installée depuis plus longtemps ne passe pas en lecture seule, le script lui donne un abonnement d'un an (« Ti'Cagou
+(developpement) » ou « (demonstration) »). Pour essayer la fin de l'évaluation ou un abonnement échu, voir le § 7, ligne
+« Abonnement ».
 
 Pour tout arrêter :
 
@@ -220,7 +237,7 @@ Pour voir l'application comme sur un téléphone : outils de développement du n
 | Statistiques | `/statistiques` | Occupation, heures réalisées et contractualisées, aides ; bilan PDF et Excel |
 | Export comptable | `/facturation/comptabilite`, Paramètres › Comptabilité | Contrôle d'équilibre, CSV, FEC ; compte changé à une date |
 | Supervision | Paramètres › Supervision (avec `-Portail`) | Code créé par `POST http://localhost:8090/admin/v1/supervision-codes` (jeton `dev`) ; alertes dans Mailpit |
-| Abonnement | Paramètres › Tablettes et abonnement | PC comptés et retirés. Lecture seule : arrêtez le serveur, relancez-le avec `$env:TICAGOU_EVALUATION_DAYS='0'` sur une base sans clé |
+| Abonnement | Paramètres › Tablettes et abonnement | PC comptés et retirés. Lecture seule : supprimez l'abonnement de développement (`docker exec ticagou-web-postgres psql -U ticagou -d ticagou -c "DELETE FROM subscription"`), puis relancez le serveur avec `$env:TICAGOU_EVALUATION_DAYS='0'` |
 
 Astuce : deux fenêtres côte à côte, le bureau sur `:1420` et la tablette sur `:1420/kiosk`, pour voir le temps réel.
 La session de la tablette n'est jamais conservée : un rechargement redemande le PIN.
@@ -238,7 +255,12 @@ Les mêmes comptes valent pour deux bases :
 | Maëva Tiaou | Éducatrice | — | `2468` |
 | Léa Kaouma | Éducatrice | — | `1357` |
 | Mereana Tehei | Éducatrice | — | `3691` |
+| Noëlla Kasarhérou | Éducatrice (Bébés) | — | `5824` |
+| Tiare Hmae | Éducatrice (Grands) | — | `9173` |
 | Paulo Taufana | Cuisine | — | `7419` |
+
+Parents (base de démonstration, avec le portail) : toutes les familles, par exemple `sarah.waheo@exemple.nc`,
+`kevin.gope@exemple.nc`, `anne.poedi@exemple.nc` ; code de connexion dans Mailpit (http://localhost:8025).
 
 ## 9. Tests automatisés
 
@@ -308,6 +330,8 @@ Git Bash), ou DBeaver sur `localhost:5435`.
 - *Le QR code ne s'ouvre pas sur le téléphone* : en PowerShell administrateur,
   `Get-NetFirewallRule -DisplayName "Ti'Cagou" | Set-NetFirewallRule -Profile Any -RemoteAddress LocalSubnet`
   (installation réelle) ; en développement, autorisez Java sur le réseau privé quand Windows le demande.
-- *Le parent ne reçoit rien* : regardez Mailpit (http://localhost:8025) ; l'adresse doit être celle d'un responsable
-  invité, et le portail activé.
+- *Le parent ne reçoit rien* : en local, **aucun e-mail ne part vers une vraie boîte** : le portail les dépose dans
+  Mailpit (http://localhost:8025), qui doit tourner (lancé avec `-Portail` ou `-Demo`). L'adresse saisie doit être celle
+  d'un responsable **invité** (fiche enfant › Journée et portail › Inviter), sur une crèche dont le portail est activé et
+  synchronisé ; sinon le portail ne dit rien, volontairement (il ne révèle pas quelles adresses il connaît).
 - *« Synchronisation : portail injoignable »* : le portail (fenêtre « Portail ») est-il lancé sur 8090 ?

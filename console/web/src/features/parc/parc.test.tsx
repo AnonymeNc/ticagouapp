@@ -19,8 +19,7 @@ function row(overrides: Partial<Row>): Row {
     health: { level: "OK", reasons: [] },
     lastContactAt: new Date().toISOString(),
     version: "1.5.0",
-    plan: "Gestion",
-    modules: ["INSCRIPTIONS", "FACTURATION", "PORTAIL_PARENTS"],
+    plan: "Ti’Cagou",
     places: 20,
     activeChildren: 18,
     licenseState: "ACTIVE",
@@ -47,8 +46,7 @@ const lagon = row({
   name: "Lagon Bleu",
   city: "Mont-Dore",
   health: { level: "BAD", reasons: ["Sauvegarde"] },
-  plan: "Gestion",
-  modules: ["INSCRIPTIONS", "FACTURATION", "PORTAIL_PARENTS", "REPAS"],
+  plan: "Ti’Cagou",
   licenseState: "EXPIREE_GRACE",
   validUntil: day(-9),
   deadline: day(21),
@@ -76,11 +74,12 @@ function detail(overrides: Partial<Detail> = {}): Detail {
     hostSeenAt: new Date().toISOString(),
     client: { id: "c1", name: "lagon-bleu", kind: "PRIVE", ridet: null, address: null, directorName: null, directorEmail: null, directorPhone: null, billingEmail: null, reminderEmail: null, paymentDays: 30 },
     status: { version: "1.5.0", database: "UP", usage: { activeChildren: 12, places: 12, attendances7d: 118, activeUsers30d: 5, lastDirectionLoginOn: "2026-11-08", familyInvoicesLastMonth: 12 } },
-    subscription: { number: "A-12", plan: "Gestion — jusqu’à 12 places", places: 12, desktops: 1, tablets: 2, validUntil: lagon.validUntil!, modules: "INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS,REPAS" },
+    subscription: { number: "A-12", plan: "Ti’Cagou — jusqu’à 12 places", places: 12, desktops: 1, tablets: 2, validUntil: lagon.validUntil!, modules: "INSCRIPTIONS,FACTURATION,PORTAIL_PARENTS,REPAS" },
     history: lagon.alerts,
     points: [],
     notes: [],
     journal: [],
+    hiddenSections: ["COMPTABILITE"],
     ...overrides,
   };
 }
@@ -98,7 +97,8 @@ describe("parc des crèches", () => {
     const table = await screen.findByRole("table");
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows.map((r) => within(r).getByRole("link").textContent)).toEqual(["Lagon Bleu", "Crèche municipale de Païta", "Crèche Tiare", "Kids Club Bourail"]);
-    expect(rows[0]).toHaveTextContent("Gestion+ Repas");
+    expect(rows[0]).toHaveTextContent("Ti’Cagou");
+    expect(rows[0]).not.toHaveTextContent("+ Repas");
     expect(rows[0]).toHaveTextContent("Grâce");
     expect(rows[0]).toHaveTextContent("Retard 52 h");
     expect(within(rows[0]).getByRole("img", { name: "En alerte" })).toBeInTheDocument();
@@ -157,7 +157,8 @@ describe("parc des crèches", () => {
     expect(screen.getByRole("button", { name: "Suspendre…" })).toBeEnabled();
 
     await user.click(screen.getByRole("tab", { name: "Abonnement" }));
-    expect(screen.getByText("Inscriptions, Facturation, Portail parents, Repas")).toBeInTheDocument();
+    expect(screen.getAllByText("Ti’Cagou — jusqu’à 12 places").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Modules")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Contacts et notes" }));
     await user.clear(screen.getByLabelText("Raison sociale"));

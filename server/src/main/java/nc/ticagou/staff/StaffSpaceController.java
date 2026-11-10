@@ -25,8 +25,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 import nc.ticagou.staff.StaffSpaceService.Answer;
 import nc.ticagou.staff.StaffSpaceService.Counters;
 import nc.ticagou.staff.StaffSpaceService.RequestKind;
@@ -36,7 +34,6 @@ import nc.ticagou.staff.StaffSpaceService.TeamNote;
 /** Espace pro (lot 4) : demandes du personnel, compteurs, cahier d'équipe, agenda partagé. */
 @RestController
 @RequestMapping("/api/v1")
-@RequiresModule(LicenseModule.PERSONNEL)
 @Tag(name = "Espace pro", description = "Demandes de congé et d'heures, compteurs, cahier d'équipe, agenda")
 public class StaffSpaceController {
 

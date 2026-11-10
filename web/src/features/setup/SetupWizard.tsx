@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { CircleCheck, ShieldCheck, Tablet } from "lucide-react";
+import { CircleCheck, Receipt, ShieldCheck, Tablet } from "lucide-react";
 import { Alert, FocusLayout } from "@/components/FocusLayout";
 import { Button } from "@/components/ui/button";
 import { api, ApiError, errorMessage } from "@/lib/api";
@@ -161,9 +161,16 @@ export function SetupWizard() {
         <>
           <CircleCheck aria-hidden className="mb-2 size-10 text-success-600" />
           <StepTitle title="Votre structure est prête">
-            {data.identity.name} est en ligne. Deux choses à savoir pour la suite :
+            {data.identity.name} est en ligne. Trois choses à savoir pour la suite :
           </StepTitle>
           <ul className="m-0 flex list-none flex-col gap-3 p-0">
+            <li className="flex gap-3">
+              <Receipt aria-hidden className="size-5 shrink-0 text-lagon-600" />
+              <span>
+                <strong className="font-semibold">Barème des tarifs</strong> — Paramètres › Barème et facturation
+                <span className="block text-small text-muted-foreground">À saisir en premier : sans barème, aucun contrat d’inscription ne peut être établi.</span>
+              </span>
+            </li>
             <li className="flex gap-3">
               <ShieldCheck aria-hidden className="size-5 shrink-0 text-lagon-600" />
               <span>

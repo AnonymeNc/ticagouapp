@@ -7,11 +7,12 @@ import { Download, Plus, Trash2 } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/api";
 import { isoToDateFr, parseDateFr } from "@/lib/datetime";
-import { dateToIso, isoToField, nullToEmpty, optionalDateFr, optionalText, requiredText, selectClass, textOrNull } from "@/lib/formFields";
+import { dateToIso, isoToField, nullToEmpty, optionalDateFr, optionalPastDateFr, optionalText, requiredText, selectClass, textOrNull } from "@/lib/formFields";
 import { cn } from "@/lib/utils";
 import { mealsApi, textureLabels } from "@/features/meals/api";
 import { childrenApi, severityLabels, type ChildRecord, type Severity } from "../api";
@@ -177,8 +178,8 @@ const schema = z
     paiKitDetails: optionalText(500),
     paiDocumentId: z.string(),
     emergencyProtocol: optionalText(500),
-    vaccinations: z.array(z.object({ vaccine: requiredText(100, "Indiquez le vaccin."), lastDoseOn: optionalDateFr })),
-    vaccinationCheckedOn: optionalDateFr,
+    vaccinations: z.array(z.object({ vaccine: requiredText(100, "Indiquez le vaccin."), lastDoseOn: optionalPastDateFr })),
+    vaccinationCheckedOn: optionalPastDateFr,
     doctorName: optionalText(120),
     doctorPhone: optionalText(30),
     doctorAddress: optionalText(200),
@@ -327,10 +328,10 @@ function HealthForm({ child, onDone }: { child: ChildRecord; onDone: () => void 
               <Input {...form.register("paiReason")} />
             </FormField>
             <FormField label="Valide du" hint="JJ/MM/AAAA" error={errors.paiValidFrom?.message}>
-              <Input inputMode="numeric" {...form.register("paiValidFrom")} />
+              <DateInput inputMode="numeric" {...form.register("paiValidFrom")} />
             </FormField>
             <FormField label="Jusqu’au" hint="JJ/MM/AAAA" error={errors.paiValidUntil?.message}>
-              <Input inputMode="numeric" {...form.register("paiValidUntil")} />
+              <DateInput inputMode="numeric" {...form.register("paiValidUntil")} />
             </FormField>
             <FormField label="Emplacement de la trousse d’urgence" error={errors.paiKitLocation?.message}>
               <Input {...form.register("paiKitLocation")} />
@@ -359,7 +360,7 @@ function HealthForm({ child, onDone }: { child: ChildRecord; onDone: () => void 
               <Input {...form.register(`vaccinations.${i}.vaccine`)} />
             </FormField>
             <FormField label="Dernière dose" hint="JJ/MM/AAAA" error={errors.vaccinations?.[i]?.lastDoseOn?.message}>
-              <Input inputMode="numeric" {...form.register(`vaccinations.${i}.lastDoseOn`)} />
+              <DateInput inputMode="numeric" {...form.register(`vaccinations.${i}.lastDoseOn`)} />
             </FormField>
             <Button type="button" variant="ghost" className="self-center" aria-label={`Retirer le vaccin ${i + 1}`} onClick={() => vaccinations.remove(i)}>
               <Trash2 aria-hidden />
@@ -372,7 +373,7 @@ function HealthForm({ child, onDone }: { child: ChildRecord; onDone: () => void 
             Ajouter un vaccin
           </Button>
           <FormField label="Carnet vérifié le" hint="JJ/MM/AAAA" error={errors.vaccinationCheckedOn?.message}>
-            <Input inputMode="numeric" className="w-36" {...form.register("vaccinationCheckedOn")} />
+            <DateInput inputMode="numeric" className="w-36" {...form.register("vaccinationCheckedOn")} />
           </FormField>
         </div>
       </Panel>

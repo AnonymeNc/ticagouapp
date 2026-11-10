@@ -35,7 +35,7 @@ public class HostReports {
 
     static final String HOTE = "HOTE";
     private static final Pattern SLUG = Pattern.compile("^[a-z0-9][a-z0-9-]{1,40}$");
-    private static final List<String> SUBSCRIPTION = List.of("number", "plan", "places", "desktops", "tablets", "validUntil", "modules");
+    private static final List<String> SUBSCRIPTION = List.of("number", "plan", "places", "desktops", "tablets", "validUntil");
 
     private final ParcRepository repository;
     private final AuditService audit;
@@ -101,6 +101,11 @@ public class HostReports {
             if (value.isTextual()) {
                 kept.put(field, value.asText().length() > 200 ? value.asText().substring(0, 200) : value.asText());
             }
+        }
+        // Rubriques masquées à la demande de la crèche (ADR 0022) : des noms en majuscules, rien d'autre.
+        var hidden = entry.path("hiddenSections");
+        if (hidden.isTextual() && hidden.asText().matches("[A-Z_,]{0,200}")) {
+            kept.put("hiddenSections", hidden.asText());
         }
         var subscription = entry.path("subscription");
         if (subscription.isObject()) {

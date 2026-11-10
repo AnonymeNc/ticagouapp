@@ -4,12 +4,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConfirmProvider } from "@/features/auth/Confirm";
 import { connected, mockServer, renderApp } from "@/test/mockServer";
 import { DeleteCreche } from "./DeleteCreche";
+import { CrecheAccess, CrecheRubriques } from "./InstanceActions";
 import type { Row } from "@/features/parc/api";
 import type { Order, OrdersBoard } from "./api";
 
 const row = (o: Partial<Row>): Row => ({
   slug: "niaoulis", name: "Les Niaoulis", city: null, clientName: "Les Niaoulis", lifecycle: "CLIENT", health: { level: "OK", reasons: [] }, lastContactAt: null,
-  version: "1.4.2", plan: "Gestion", modules: [], places: 24, activeChildren: 20, licenseState: "ACTIVE", validUntil: "2027-08-31", deadline: null, desktops: 1,
+  version: "1.4.2", plan: "Ti’Cagou", places: 24, activeChildren: 20, licenseState: "ACTIVE", validUntil: "2027-08-31", deadline: null, desktops: 1,
   desktopLimit: 1, tablets: 2, tabletLimit: 2, backupAt: null, backupStale: false, diskUsedPercent: 40, container: "healthy", alerts: [], lastCallAt: null,
   balanceDue: 0, daysLate: 0, ...o,
 });
@@ -57,7 +58,7 @@ describe("ordres aux instances", () => {
     renderApp("/ordres");
     const table = await screen.findByRole("table");
     const rows = within(table).getAllByRole("row");
-    expect(rows[1]).toHaveTextContent("Gestion, 24 places, 1 PC, 2 tablettes, jusqu’au 31/08/2027, + repas");
+    expect(rows[1]).toHaveTextContent("Ti’Cagou, 24 places, 1 PC, 2 tablettes, jusqu’au 31/08/2027");
     expect(rows[1]).toHaveTextContent("À confirmer");
     expect(rows[2].textContent).toContain("Lien de démarrage :https://tiare.ticagou.nc/setup?jeton=abc123");
     expect(screen.getByText(/Abonnement non aligné sur le contrat/)).toBeInTheDocument();
@@ -83,9 +84,9 @@ describe("ordres aux instances", () => {
     await waitFor(() => expect(calls.find((c) => c.method === "POST" && c.path === "/ordres")?.body).toEqual({ type: "CREER", slug: "kids", params: { nom: "Kids Club Bourail" } }));
 
     await user.click(screen.getByRole("button", { name: "Démonstration…" }));
-    await user.selectOptions(screen.getByLabelText("Formule montrée"), "Gestion");
+    expect(screen.queryByLabelText("Formule montrée")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Lancer la démonstration" }));
-    await waitFor(() => expect(calls.filter((c) => c.method === "POST" && c.path === "/ordres")[1]?.body).toEqual({ type: "DEMO", params: { formule: "Gestion" } }));
+    await waitFor(() => expect(calls.filter((c) => c.method === "POST" && c.path === "/ordres")[1]?.body).toEqual({ type: "DEMO", params: {} }));
   });
 
   it("mise à jour : la témoin d'abord", async () => {
@@ -157,6 +158,42 @@ describe("supprimer une crèche depuis la console", () => {
     const paths = calls.map((c) => `${c.method} ${c.path}`);
     expect(paths.indexOf("GET /ordres/e1/export")).toBeLessThan(paths.indexOf("POST /ordres/e1/export/recu"));
     expect(paths.filter((p) => p === "POST /ordres/e1/export/recu")).toHaveLength(1);
+  });
+
+  it("rubriques masquées, mot de passe oublié, téléphone perdu et code du portail par ordre (ADR 0022)", async () => {
+    const calls = mockServer({
+      "GET /parc/niaoulis/ordres": () => ({ body: [] }),
+      "POST /ordres": (call) => ({ status: 201, body: order({ ...(call.body as Partial<Order>), status: "EN_ATTENTE" }) }),
+    });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <ConfirmProvider>
+          <CrecheRubriques row={row({})} hidden={["REPAS"]} />
+          <CrecheAccess row={row({})} />
+        </ConfirmProvider>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("checkbox", { name: "Repas" })).not.toBeChecked();
+    const apply = screen.getByRole("button", { name: "Appliquer (code)" });
+    expect(apply).toBeDisabled();
+    await user.click(screen.getByRole("checkbox", { name: "Personnel (planning, congés, heures)" }));
+    await user.click(apply);
+    await waitFor(() => expect(calls.filter((c) => c.method === "POST")).toHaveLength(1));
+    expect(calls.find((c) => c.method === "POST")?.body).toEqual({ type: "RUBRIQUES", slug: "niaoulis", params: { masquer: "REPAS,PERSONNEL" }, reason: undefined });
+
+    expect(screen.getByRole("button", { name: /Mot de passe oublié/ })).toBeDisabled();
+    await user.type(screen.getByLabelText("Identifiant du compte"), "nathalie.kaloi");
+    await user.click(screen.getByRole("button", { name: /Mot de passe oublié/ }));
+    await waitFor(() => expect(calls.filter((c) => c.method === "POST")).toHaveLength(2));
+    await user.click(screen.getByRole("button", { name: /Téléphone perdu/ }));
+    await waitFor(() => expect(calls.filter((c) => c.method === "POST")).toHaveLength(3));
+    await user.click(screen.getByRole("button", { name: "Code du portail parents" }));
+    await waitFor(() => expect(calls.filter((c) => c.method === "POST")).toHaveLength(4));
+    const posts = calls.filter((c) => c.method === "POST").map((c) => c.body);
+    expect(posts[1]).toMatchObject({ type: "MOT_DE_PASSE", params: { identifiant: "nathalie.kaloi" } });
+    expect(posts[2]).toMatchObject({ type: "TELEPHONE_PERDU", params: { identifiant: "nathalie.kaloi" } });
+    expect(posts[3]).toMatchObject({ type: "CODE_PORTAIL", slug: "niaoulis" });
   });
 
   it("export incomplet : rien n'est signalé reçu, donc rien n'est supprimé", async () => {

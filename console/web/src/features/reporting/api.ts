@@ -1,13 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
-export type Plan = "ESSENTIEL" | "GESTION" | "COMPLET";
-
-/** Filtres du reporting : dates AAAA-MM-JJ (affichées JJ/MM/AAAA). */
-export type Filter = { from: string; to: string; clientId: string; plan: Plan | "" };
+/** Filtres du reporting : dates AAAA-MM-JJ (affichées JJ/MM/AAAA). Une seule formule (ADR 0021) : pas de filtre par formule. */
+export type Filter = { from: string; to: string; clientId: string };
 
 export type Report = {
-  filter: { from: string; to: string; clientId: string | null; plan: Plan | null };
+  filter: { from: string; to: string; clientId: string | null };
   kpis: {
     revenueHt: number;
     subscriptionsHt: number;
@@ -39,9 +37,6 @@ export function query(filter: Filter): string {
   const params = new URLSearchParams({ du: filter.from, au: filter.to });
   if (filter.clientId) {
     params.set("client", filter.clientId);
-  }
-  if (filter.plan) {
-    params.set("formule", filter.plan);
   }
   return params.toString();
 }
@@ -87,8 +82,6 @@ export function presetRange(preset: Exclude<Preset, "autre">, today: Date): { fr
     }
   }
 }
-
-export const planLabels: Record<Plan, string> = { ESSENTIEL: "Essentiel", GESTION: "Gestion", COMPLET: "Complet" };
 
 /** 110 → « 11 % », 25 → « 2,5 % ». */
 export function rateLabel(tenths: number): string {

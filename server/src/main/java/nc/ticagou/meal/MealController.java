@@ -41,15 +41,12 @@ import nc.ticagou.meal.MealDtos.NoteRequest;
 import nc.ticagou.meal.MealDtos.QuarterDto;
 import nc.ticagou.meal.MealDtos.QuarterSummary;
 import nc.ticagou.meal.MealDtos.ReopenRequest;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /**
  * Repas (maquette Droits par rôle, ligne « Repas et menus ») : direction et cuisine modifient, éducatrices
  * consultent, comptabilité sans accès. Clôture et réouverture d'un trimestre : direction.
  */
 @RestController
-@RequiresModule(LicenseModule.REPAS)
 @RequestMapping("/api/v1")
 @Tag(name = "Repas", description = "Comptage des repas, vue cuisine, menus, récapitulatif trimestriel")
 public class MealController {

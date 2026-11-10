@@ -3,6 +3,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { todayIso } from "@/lib/age";
 import { errorMessage } from "@/lib/api";
@@ -67,7 +68,7 @@ export function PaymentDialog({ target, onClose, onDone }: { target: PaymentTarg
           <DialogDescription>{target.title} · reste dû {formatXpf(target.remaining)}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Date du paiement"><Input value={date} onChange={(e) => setDate(e.target.value)} inputMode="numeric" /></FormField>
+          <FormField label="Date du paiement"><DateInput value={date} onChange={(e) => setDate(e.target.value)} inputMode="numeric" /></FormField>
           <FormField label="Montant (F)"><Input value={amountField} onChange={(e) => setAmountField(e.target.value)} inputMode="numeric" /></FormField>
         </div>
         <fieldset className="m-0 flex flex-col gap-1.5 border-0 p-0">

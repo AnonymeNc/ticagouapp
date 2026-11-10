@@ -12,59 +12,44 @@
 
 - **Un abonnement annuel** par structure : sa date de fin est celle de la période payée (`creche.sh abonnement`). Payable
   d'avance, mensualisable par prélèvement.
-- **Un prix selon la taille** (places agréées) : c'est ce que l'abonnement contrôle (`--places`).
-- **Trois formules** : Essentiel, Gestion, Complet ([ADR 0015](../adr/0015-formules-et-modules.md)).
-- **Des modules à la carte**, qui s'ajoutent à toute formule. Le logiciel ne montre que ce qui est compris : menus et
-  paramètres suivent la formule.
+- **Un seul prix, 15 000 F par mois**, aligné sur Meeko (99 € HT, ≈ 11 800 F) avec ce que Meeko n'a pas : un éditeur sur
+  place, en Nouvelle-Calédonie, et le **support rapide compris**. Les places agréées restent dans l'abonnement (`--places`)
+  pour le contrôle de la capacité, pas pour le prix.
+- **Une seule formule, tout compris** ([ADR 0021](../adr/0021-formule-unique.md)) : toutes les fonctions de Ti'Cagou,
+  pour toutes les crèches. Rien à choisir, rien à ajouter.
 - **Des prestations ponctuelles** facturées à part : mise en route, formation, saisie depuis le papier.
 - **La reprise des données est offerte** depuis un fichier numérique (§ 4) : changer de logiciel ne coûte rien de plus.
 - L'**hébergement**, les **sauvegardes**, les **mises à jour** et le **support standard** sont compris dans l'abonnement : c'est ce qui justifie un paiement
   récurrent plutôt qu'un achat unique.
 
-## 2. Les formules
+## 2. La formule Ti'Cagou
 
-| Par mois | Micro (jusqu'à 15 places) | Structure (16 à 40) | Grande (41 à 80) |
-|---|---|---|---|
-| **Essentiel** | 6 500 F | 9 500 F | 14 000 F |
-| **Gestion** | 11 500 F | 16 500 F | 23 500 F |
-| **Complet** | 18 500 F | 26 000 F | 36 500 F |
+| Par mois | Jusqu'à 80 places |
+|---|---|
+| **Ti'Cagou, tout compris, support rapide compris** | **15 000 F HT** |
 
-Par an, payé d'avance : 12 mois. Au-delà de 80 places ou pour plusieurs structures : sur devis, − 15 % par structure
-supplémentaire.
+Par an, payé d'avance : 180 000 F HT. Au-delà de 80 places ou pour plusieurs structures : sur devis, − 15 % par
+structure supplémentaire. Barème en vigueur depuis le 01/11/2026 (console : « Barème formule unique ») ; les contrats
+signés avant gardent leur prix.
 
-| | Essentiel | Gestion | Complet |
-|---|---|---|---|
-| Enfants et familles : santé, PAI, autorisations, personnes autorisées | ✔ | ✔ | ✔ |
-| Présences des enfants sur tablette, départ contrôlé, hors connexion | ✔ | ✔ | ✔ |
-| Présences du personnel | ✔ | ✔ | ✔ |
-| Encadrement en temps réel, tableau de bord | ✔ | ✔ | ✔ |
-| Hébergement, sauvegardes chiffrées, mises à jour, support standard | ✔ | ✔ | ✔ |
-| Inscriptions, liste d'attente, contrats | | ✔ | ✔ |
-| Facturation avec aides, encaissements, statistiques | | ✔ | ✔ |
-| Comptabilité : export CSV et FEC | | | ✔ |
-| Personnel : fiches, diplômes, planning, heures | | | ✔ |
-| Repas : menus, fiche cuisine, récapitulatif des aides | | | ✔ |
-| Portail parents : journée, photos, messages, factures, signatures | | ✔ | ✔ |
+Tout est compris : enfants et familles (santé, PAI, autorisations, personnes autorisées), présences des enfants et du
+personnel sur tablette (départ contrôlé, hors connexion), encadrement en temps réel, inscriptions et pré-inscription en
+ligne, contrats, facturation avec aides et encaissements, statistiques, comptabilité (CSV et FEC), personnel (fiches,
+diplômes, planning, heures, espace pro), repas (menus, fiche cuisine, températures), portail parents (journée, album
+photos et vidéos, messages, factures, signatures), hébergement, sauvegardes chiffrées, mises à jour, **support rapide**
+(éditeur joignable en Nouvelle-Calédonie, aux heures de la crèche).
 
-Chaque formule comprend **1 PC et 2 tablettes**.
+La formule comprend **1 PC et 2 tablettes**.
 
-## 3. Modules à la carte (par mois)
+## 3. Options (par mois)
 
-Ils s'ajoutent à toute formule. Une formule revient moins cher que ses modules pris séparément : environ 8 % de moins pour
-Gestion et 15 % pour Complet.
-
-| Module | Micro | Structure | Grande | A besoin de |
-|---|---|---|---|---|
-| **Inscriptions et contrats** | 2 000 F | 3 000 F | 4 000 F | |
-| **Facturation et statistiques** | 4 000 F | 5 500 F | 7 500 F | Inscriptions et contrats |
-| **Comptabilité** | 1 000 F | 1 500 F | 2 000 F | Facturation |
-| **Personnel** | 2 500 F | 3 500 F | 5 000 F | |
-| **Repas** | 2 000 F | 2 500 F | 3 500 F | |
-| **Portail parents** | 3 500 F | 5 000 F | 7 000 F | |
-
-Équipement supplémentaire : **PC** + 1 500 F par mois ; **tablette** + 1 000 F par mois.
+Équipement supplémentaire : **PC** + 1 500 F par mois ; **tablette** + 1 000 F par mois. Plus de Support Premium : le
+support rapide est compris.
 
 Engagement : 1 an, renouvelable. **− 10 %** sur l'abonnement pour un engagement de 3 ans payé annuellement.
+
+Les contrats signés avant la formule unique (Essentiel, Gestion, modules à la carte) gardent leur prix jusqu'à leur
+avenant ou leur renouvellement, qui passe à la formule unique.
 
 ## 4. Prestations ponctuelles
 
@@ -91,41 +76,34 @@ personnes autorisées avant de valider ([ADR 0016](../adr/0016-reprise-des-donne
 
 ## 5. Niveaux de support
 
-| | **Standard** (compris) | **Premium** (+ 4 000 F par mois) |
-|---|---|---|
-| Canal | e-mail, formulaire | e-mail et téléphone |
-| Délai de première réponse | 1 jour ouvré | 4 heures ouvrées |
-| Prise en main à distance | oui | oui, prioritaire |
-| Intervention sur site | facturée (§ 4) | 2 heures par an comprises |
-| Engagement de disponibilité | — | à définir une fois l'hébergeur choisi |
+Un seul niveau, **compris dans la formule** : c'est l'avantage d'un éditeur calédonien.
+
+| | **Support rapide** (compris) |
+|---|---|
+| Canal | téléphone, WhatsApp, e-mail (coordonnées affichées dans l'aide de l'application) |
+| Délai de première réponse | 4 heures ouvrées, heure de Nouméa |
+| Prise en main à distance | oui |
+| Intervention sur site | facturée (§ 4) |
+| Engagement de disponibilité | à définir une fois l'hébergeur choisi |
 
 ## 6. Exemples de devis
 
-**Crèche de 20 places, Essentiel, 1 PC, 2 tablettes**
+**Crèche de 20 places, 1 PC, 2 tablettes**
 
 | Ligne | Mensuel | Annuel |
 |---|---|---|
-| **Essentiel Structure** | **9 500 F** | **114 000 F** |
+| **Ti'Cagou** | **15 000 F** | **180 000 F** |
 | Première année : mise en route, formation direction (reprise des données offerte) | | 30 000 + 30 000 = **60 000 F** |
 
-**Micro-crèche de 12 places, Gestion et Repas, 1 PC, 2 tablettes**
+**Crèche de 48 places, 2 PC, 5 tablettes, engagement 3 ans**
 
 | Ligne | Mensuel | Annuel |
 |---|---|---|
-| Gestion Micro | 11 500 F | 138 000 F |
-| Repas | 2 000 F | 24 000 F |
-| **Total abonnement** | **13 500 F** | **162 000 F** |
-| Première année : mise en route, formation direction, 1 séance équipe (reprise des données offerte) | | 30 000 + 30 000 + 15 000 = **75 000 F** |
-
-**Crèche de 48 places, Complet, 2 PC, 5 tablettes, support Premium**
-
-| Ligne | Mensuel | Annuel |
-|---|---|---|
-| Complet Grande | 36 500 F | 438 000 F |
+| Ti'Cagou | 15 000 F | 180 000 F |
 | PC supplémentaire (1) | 1 500 F | 18 000 F |
 | Tablettes supplémentaires (3) | 3 000 F | 36 000 F |
-| Support Premium | 4 000 F | 48 000 F |
-| **Total abonnement** | **45 000 F** | **540 000 F** |
+| Remise engagement 3 ans (− 10 %) | − 1 950 F | − 23 400 F |
+| **Total abonnement** | **17 550 F** | **210 600 F** |
 | Première année : mise en route, formation direction, 2 séances équipes (reprise des données offerte) | | 30 000 + 30 000 + 30 000 = **90 000 F** |
 
 Ces exemples supposent un fichier numérique ; depuis le papier, ajouter la saisie (§ 4).
@@ -145,9 +123,9 @@ comptable).
 | Exploitation du serveur | 4 h par mois | |
 | Mises à jour et corrections | votre temps de développement | |
 
-**Attention à Essentiel Micro.** À 6 500 F par mois, il ne couvre pas 0,75 h de support à 9 000 F de l'heure (6 750 F) plus
-l'hébergement. C'est un prix d'appel : il ne tient que si ces crèches demandent peu de support ou passent à Gestion.
-Gestion et Complet font la marge.
+**Marge à surveiller.** À 15 000 F par mois, une crèche couvre 0,75 h de support à 9 000 F de l'heure (6 750 F) et sa part
+d'hébergement, mais le support rapide compris est la promesse : à mesurer chaque mois dans la console (Reporting ›
+Rentabilité par crèche). Une crèche qui dépasse durablement 1 h de support par mois doit être regardée de près.
 
 ## 8. Comment valider ces prix
 

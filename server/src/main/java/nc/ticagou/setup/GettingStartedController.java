@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import nc.ticagou.auth.CurrentUser;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.LicenseService;
+import nc.ticagou.structure.Rubrique;
+import nc.ticagou.structure.RubriqueController;
 
 /**
  * Prise en main (lot 9) : la liste « Premiers pas » de la direction, calculée d'après l'état réel de la crèche, et les
@@ -34,17 +34,16 @@ public class GettingStartedController {
     }
 
     private final JdbcTemplate jdbc;
-    private final LicenseService licenses;
+    private final RubriqueController.Lookup rubriques;
     private final Support support;
 
-    public GettingStartedController(JdbcTemplate jdbc, LicenseService licenses,
-                                    @Value("${TICAGOU_SUPPORT_PHONE:}") String phone,
+    public GettingStartedController(JdbcTemplate jdbc, RubriqueController.Lookup rubriques, @Value("${TICAGOU_SUPPORT_PHONE:}") String phone,
                                     @Value("${TICAGOU_SUPPORT_WHATSAPP:}") String whatsapp,
                                     @Value("${TICAGOU_SUPPORT_EMAIL:}") String email,
                                     @Value("${TICAGOU_SUPPORT_HOURS:}") String hours,
                                     @Value("${TICAGOU_SUPPORT_DELAY:}") String delay) {
         this.jdbc = jdbc;
-        this.licenses = licenses;
+        this.rubriques = rubriques;
         this.support = new Support(blank(phone), blank(whatsapp), blank(email), blank(hours), blank(delay));
     }
 
@@ -60,27 +59,31 @@ public class GettingStartedController {
     public List<Step> steps() {
         var structureId = CurrentUser.get().structureId();
         var steps = new ArrayList<Step>();
+        // Rubriques masquées à la demande de la crèche (ADR 0022) : pas d'étape pour ce qu'elle n'utilise pas.
+        var hidden = rubriques.hidden(structureId);
         steps.add(new Step("structure", "Compléter la fiche de la structure (adresse, agrément)",
                 exists("SELECT 1 FROM structure WHERE id = ? AND address IS NOT NULL AND agrement_number IS NOT NULL", structureId),
-                "/parametres"));
-        steps.add(new Step("encadrement", "Vérifier les règles d’encadrement de l’agrément",
-                exists("SELECT 1 FROM ratio_rule WHERE structure_id = ?", structureId), "/parametres"));
-        if (licenses.allows(LicenseModule.INSCRIPTIONS)) {
-            steps.add(new Step("bareme", "Saisir le barème des tarifs",
-                    exists("SELECT 1 FROM tariff_schedule WHERE structure_id = ?", structureId), "/parametres"));
+                "/parametres?onglet=structure"));
+        // Le barème vient tôt : sans lui, aucun contrat d'accueil ne peut être établi, donc aucune inscription aboutir.
+        if (!hidden.contains(Rubrique.INSCRIPTIONS)) {
+            steps.add(new Step("bareme", "Saisir le barème des tarifs : indispensable avant d’établir un contrat d’inscription",
+                    exists("SELECT 1 FROM tariff_schedule WHERE structure_id = ? AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)",
+                            structureId), "/parametres?onglet=bareme"));
         }
+        steps.add(new Step("encadrement", "Vérifier les règles d’encadrement de l’agrément",
+                exists("SELECT 1 FROM ratio_rule WHERE structure_id = ?", structureId), "/parametres?onglet=encadrement"));
         steps.add(new Step("enfants", "Ajouter les enfants (ou reprendre un fichier Excel)",
                 exists("SELECT 1 FROM child WHERE structure_id = ?", structureId), "/enfants"));
         steps.add(new Step("equipe", "Créer les comptes de l’équipe",
-                count("SELECT count(*) FROM app_user WHERE structure_id = ? AND active", structureId) > 1, "/parametres"));
+                count("SELECT count(*) FROM app_user WHERE structure_id = ? AND active", structureId) > 1, "/parametres?onglet=utilisateurs"));
         steps.add(new Step("tablette", "Appairer la tablette de l’accueil",
-                exists("SELECT 1 FROM device WHERE structure_id = ? AND revoked_at IS NULL", structureId), "/parametres"));
-        if (licenses.allows(LicenseModule.PORTAIL_PARENTS)) {
+                exists("SELECT 1 FROM device WHERE structure_id = ? AND revoked_at IS NULL", structureId), "/parametres?onglet=appareils"));
+        if (!hidden.contains(Rubrique.PORTAIL_PARENTS)) {
             steps.add(new Step("portail", "Ouvrir le portail aux parents",
-                    exists("SELECT 1 FROM portal_settings WHERE structure_id = ? AND state = 'ACTIF'", structureId), "/parametres"));
+                    exists("SELECT 1 FROM portal_settings WHERE structure_id = ? AND state = 'ACTIF'", structureId), "/parametres?onglet=portail"));
         }
         steps.add(new Step("sauvegarde", "Vérifier qu’une sauvegarde a réussi",
-                exists("SELECT 1 FROM backup_run WHERE status = 'REUSSIE'", null), "/parametres"));
+                exists("SELECT 1 FROM backup_run WHERE status = 'REUSSIE'", null), "/parametres?onglet=sauvegardes"));
         return steps;
     }
 

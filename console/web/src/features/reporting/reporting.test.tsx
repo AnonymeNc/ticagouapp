@@ -5,7 +5,7 @@ import { connected, mockServer, renderApp } from "@/test/mockServer";
 import { exportHref, presetRange, type Report } from "./api";
 
 const report: Report = {
-  filter: { from: "2026-01-01", to: "2026-11-09", clientId: null, plan: null },
+  filter: { from: "2026-01-01", to: "2026-11-09", clientId: null },
   kpis: { revenueHt: 1_846_000, subscriptionsHt: 1_513_720, servicesHt: 332_280, collected: 1_638_250, tgc: 203_060, rates: [110], mrr: 171_000,
     departures: 0, churnTenths: 0 },
   months: [{ month: "2026-10", ht: 200_000, tgc: 22_000, ttc: 222_000, collected: 150_000 }, { month: "2026-11", ht: 100_000, tgc: 11_000, ttc: 111_000, collected: 0 }],
@@ -15,7 +15,7 @@ const report: Report = {
     { clientId: "c2", client: "Kids Club Bourail", notDue: 66_600, d30: 0, d60: 0, d90: 0, over: 0, total: 66_600 },
   ],
   agingTotal: { clientId: null, client: "Total", notDue: 66_600, d30: 174_960, d60: 0, d90: 0, over: 0, total: 241_560 },
-  mrrByPlan: [{ key: "COMPLET", label: "Complet", monthly: 89_500 }, { key: "MODULES", label: "Modules à la carte", monthly: 9_000 }],
+  mrrByPlan: [{ key: "FORMULE", label: "Formule Ti’Cagou", monthly: 89_500 }, { key: "OPTIONS", label: "PC, tablettes et support", monthly: 9_000 }],
   upsell: [{ slug: "paita", name: "Païta", text: "3 PC utilisés pour 2 au contrat", monthly: 1_500 }],
   risks: [{ slug: "bancouliers", name: "Les Petits Bancouliers", kind: "CONNEXION", text: "aucune connexion direction depuis 19 jours" }],
   profitability: [{ slug: "cagous", name: "Les P’tits Cagous", revenue: 9_500, supportMinutes: 90, cost: 14_700, margin: -5_200 }],
@@ -51,9 +51,9 @@ describe("reporting", () => {
     const excel = screen.getByRole("link", { name: "Excel" });
     expect(excel.getAttribute("href")).toMatch(/^\/api\/v1\/reporting\/reporting\.xlsx\?du=\d{4}-01-01&au=/);
     await user.selectOptions(screen.getByLabelText("Client"), "c1");
-    await user.selectOptions(screen.getByLabelText("Formule"), "GESTION");
-    await waitFor(() => expect(calls.at(-1)?.path).toMatch(/client=c1&formule=GESTION$/));
-    expect(screen.getByRole("link", { name: "Journal des ventes" }).getAttribute("href")).toMatch(/journal-ventes\.csv\?.*client=c1&formule=GESTION$/);
+    expect(screen.queryByLabelText("Formule")).not.toBeInTheDocument();
+    await waitFor(() => expect(calls.at(-1)?.path).toMatch(/client=c1$/));
+    expect(screen.getByRole("link", { name: "Journal des ventes" }).getAttribute("href")).toMatch(/journal-ventes\.csv\?.*client=c1$/);
 
     await user.click(within(profit).getByRole("button", { name: "Modifier" }));
     await user.clear(screen.getByLabelText("Heure de support (F)"));
@@ -67,7 +67,7 @@ describe("reporting", () => {
     expect(presetRange("exercice", today)).toEqual({ from: "2026-01-01", to: "2026-11-09" });
     expect(presetRange("douze", today)).toEqual({ from: "2025-12-01", to: "2026-11-09" });
     expect(presetRange("trimestre", today)).toEqual({ from: "2026-10-01", to: "2026-11-09" });
-    expect(exportHref("encaissements.csv", { from: "2026-01-01", to: "2026-03-31", clientId: "", plan: "" })).toBe(
+    expect(exportHref("encaissements.csv", { from: "2026-01-01", to: "2026-03-31", clientId: "" })).toBe(
       "/api/v1/reporting/encaissements.csv?du=2026-01-01&au=2026-03-31",
     );
   });

@@ -27,8 +27,6 @@ import nc.ticagou.enrollment.EnrollmentDtos.RequestForm;
 import nc.ticagou.enrollment.EnrollmentDtos.RequestRecord;
 import nc.ticagou.enrollment.EnrollmentDtos.StageRequest;
 import nc.ticagou.enrollment.EnrollmentDtos.VisitRequest;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /**
  * Module Inscriptions. Droits (maquette Paramètres › Droits par rôle, ligne « Inscriptions et contrats ») :
@@ -37,7 +35,6 @@ import nc.ticagou.license.RequiresModule;
 @RestController
 @RequestMapping("/api/v1/enrollment-requests")
 @Tag(name = "Inscriptions", description = "Demandes d'inscription, de la prise de contact à la signature")
-@RequiresModule(LicenseModule.INSCRIPTIONS)
 public class EnrollmentController {
 
     static final String READERS = "hasAnyRole('DIRECTION', 'COMPTABILITE')";

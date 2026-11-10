@@ -37,15 +37,14 @@ describe("coquille du poste bureau", () => {
     expect(structureCall?.headers.Authorization).toBe("Bearer access-refresh-2");
   });
 
-  it("masque les menus des modules que la licence ne comprend pas", async () => {
-    mockApi({ ...connectedServer, "GET /system/modules": { body: { modules: ["REPAS", "INSCRIPTIONS"] } } });
+  it("masque les menus des rubriques que la crèche n’utilise pas (ADR 0022)", async () => {
+    mockApi({ ...connectedServer, "GET /rubriques": { body: { hidden: ["COMPTABILITE", "PERSONNEL", "REPAS"], labels: ["Comptabilité", "Personnel", "Repas"] } } });
     renderAt("/enfants");
 
     const nav = await screen.findByRole("navigation", { name: "Navigation principale" });
-    await waitFor(() => expect(nav).not.toHaveTextContent("Facturation"));
-    expect(nav).not.toHaveTextContent("Personnel");
-    expect(nav).not.toHaveTextContent("Statistiques");
-    expect(nav).toHaveTextContent("Repas");
+    await waitFor(() => expect(nav).not.toHaveTextContent("Personnel"));
+    expect(nav).not.toHaveTextContent("Repas");
+    expect(nav).toHaveTextContent("Facturation");
     expect(nav).toHaveTextContent("Inscriptions");
   });
 

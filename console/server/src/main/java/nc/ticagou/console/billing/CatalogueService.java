@@ -76,11 +76,11 @@ public class CatalogueService {
                 throw ApiException.rule("bareme_doublon", "Prix en double : %s %s.".formatted(item.label(), Objects.toString(item.tier(), "")));
             }
         }
-        for (var plan : Pricing.PLANS) {
-            for (var tier : List.of("MICRO", "STRUCTURE", "GRANDE")) {
-                if (!keys.contains("FORMULE/" + plan + "/" + tier)) {
-                    throw ApiException.rule("bareme_incomplet", "Il manque le prix de la formule %s %s.".formatted(plan, tier));
-                }
+        // Une seule formule (ADR 0021) : ses trois tailles doivent avoir un prix. Les anciennes formules et les
+        // modules à la carte peuvent rester, pour les contrats signés avant.
+        for (var tier : List.of("MICRO", "STRUCTURE", "GRANDE")) {
+            if (!keys.contains("FORMULE/" + Pricing.OFFER + "/" + tier)) {
+                throw ApiException.rule("bareme_incomplet", "Il manque le prix de la formule Ti’Cagou %s.".formatted(tier));
             }
         }
         var id = UUID.randomUUID();

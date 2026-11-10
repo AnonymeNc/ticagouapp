@@ -1,6 +1,5 @@
 /** Paramètres de la phase 8 : structure, sections et passages, sauvegardes, licence (miroir des DTO serveur). */
 import type { OpeningHours, Structure } from "@/features/structure/useStructure";
-import type { LicenseModule } from "@/features/license/useModules";
 import type { Section } from "@/features/structure/useSections";
 import { api } from "@/lib/api";
 
@@ -72,8 +71,6 @@ export type License = {
   /** Le serveur vérifie les clés avec la clé publique de développement. */
   license: {
     number: string; holder: string; plan: string; places: number;
-    /** Nul : clé antérieure aux modules, tout est compris. */
-    modules: LicenseModule[] | null;
     desktops: number; tablets: number; validUntil: string;
   } | null;
   renewalFrom: string | null;

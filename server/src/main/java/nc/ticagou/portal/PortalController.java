@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 import nc.ticagou.portal.PortalDtos.ActivateRequest;
 import nc.ticagou.portal.PortalDtos.ConfirmAbsence;
 import nc.ticagou.portal.PortalDtos.DeactivateRequest;
@@ -41,7 +39,6 @@ import nc.ticagou.portal.PortalDtos.ThreadSummary;
 /** Portail parents optionnel (ADR 0010) : réglages et échanges avec les familles, côté crèche. */
 @RestController
 @RequestMapping("/api/v1")
-@RequiresModule(LicenseModule.PORTAIL_PARENTS)
 @Tag(name = "Portail parents", description = "Activation, partage, accès des familles, messages, absences, signatures")
 public class PortalController {
 

@@ -17,7 +17,9 @@ export function AppShell() {
           <Topbar />
           <LicenseBanner />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto print:overflow-visible">
+        {/* « relative » : les éléments en position absolue du contenu (légendes « sr-only » des tableaux) se placent dans
+            la zone qui défile ; sans lui, ils débordent de la fenêtre et la page entière gagne une seconde barre de défilement. */}
+        <div className="relative min-h-0 flex-1 overflow-y-auto print:static print:overflow-visible">
           <main className="mx-auto flex w-full max-w-[1360px] flex-col gap-8 p-6 print:max-w-none print:gap-4 print:p-0">
             <Outlet />
           </main>

@@ -16,8 +16,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 import nc.ticagou.reporting.ReportingExports.Export;
 import nc.ticagou.reporting.ReportingService.Report;
 
@@ -26,7 +24,6 @@ import nc.ticagou.reporting.ReportingService.Report;
 @RequestMapping("/api/v1/reporting")
 @Tag(name = "Statistiques", description = "Fréquentation, occupation, absences, facturation et aides")
 @PreAuthorize("hasAnyRole('DIRECTION', 'COMPTABILITE')")
-@RequiresModule(LicenseModule.FACTURATION)
 public class ReportingController {
 
     private static final MediaType XLSX = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

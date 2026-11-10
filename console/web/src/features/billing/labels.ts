@@ -16,7 +16,8 @@ export function rate(tenths: number): string {
 
 export const natureLabels: Record<TgcNature, string> = { ABONNEMENT: "Abonnement", PRESTATION: "Prestation", MATERIEL: "Matériel" };
 
-export const planLabels = { ESSENTIEL: "Essentiel", GESTION: "Gestion", COMPLET: "Complet" } as const;
+/** Une seule formule, tout compris (ADR 0021) ; les anciennes restent nommées pour les contrats signés avant. */
+export const planLabels = { ESSENTIEL: "Essentiel (ancienne formule)", GESTION: "Gestion (ancienne formule)", COMPLET: "Ti’Cagou" } as const;
 export const tierLabels = { MICRO: "Micro", STRUCTURE: "Structure", GRANDE: "Grande" } as const;
 export const methodLabels: Record<string, string> = { VIREMENT: "Virement", CHEQUE: "Chèque", ESPECES: "Espèces", AUTRE: "Autre" };
 

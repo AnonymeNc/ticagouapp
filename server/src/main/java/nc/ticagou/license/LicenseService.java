@@ -4,9 +4,6 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
@@ -21,8 +18,8 @@ import nc.ticagou.license.LicenseTerms.State;
 /**
  * Abonnement de la crèche (ADR 0013) : une ligne écrite par l'éditeur (deploy/creche.sh), effet immédiat. Les règles de
  * dates (évaluation, renouvellement, grâce, lecture seule) sont dans {@link LicenseTerms} (ADR 0011). L'abonnement
- * plafonne la capacité agréée, le nombre de tablettes et de PC ({@link DesktopClientService}) ; les modules absents
- * sont en lecture seule ({@link ModuleGuard}).
+ * plafonne la capacité agréée, le nombre de tablettes et de PC ({@link DesktopClientService}) ; échue, elle passe en
+ * lecture seule ({@link LicenseGuard}). Une seule formule : tout est compris (ADR 0021).
  */
 @Service
 public class LicenseService {
@@ -67,7 +64,7 @@ public class LicenseService {
                 status.daysLeft(), tablets, desktops, desktopLimit(license), sections, capacity, version, status.message());
     }
 
-    /** État du jour, sans les compteurs : lu à chaque modification ({@link ModuleGuard}). */
+    /** État du jour, sans les compteurs : lu à chaque modification ({@link LicenseGuard}). */
     public LicenseTerms.Status status() {
         return status(stored());
     }
@@ -138,12 +135,6 @@ public class LicenseService {
         }
     }
 
-    /** Module compris dans l'abonnement ; tout est ouvert en évaluation. */
-    public boolean allows(LicenseModule module) {
-        var license = stored();
-        return license == null || license.includes(module);
-    }
-
     /** Capacité agréée demandée : refusée au-delà des places de l'abonnement (sans abonnement, pas de limite). */
     public void requireCapacity(int capacity) {
         var license = stored();
@@ -155,18 +146,8 @@ public class LicenseService {
 
     License stored() {
         return jdbc.query("SELECT * FROM subscription WHERE id = 1", (rs, n) -> new License(rs.getString("number"),
-                rs.getString("holder"), rs.getString("plan"), rs.getInt("places"), modules(rs.getString("modules")),
+                rs.getString("holder"), rs.getString("plan"), rs.getInt("places"),
                 rs.getInt("desktops"), rs.getInt("tablets"), rs.getObject("valid_until", LocalDate.class)))
                 .stream().findFirst().orElse(null);
-    }
-
-    /** « FACTURATION,REPAS » ; nul = tous les modules. Un nom inconnu est ignoré : il n'ouvre rien. */
-    private static java.util.Set<LicenseModule> modules(String value) {
-        if (value == null) {
-            return null;
-        }
-        var known = EnumSet.allOf(LicenseModule.class).stream().collect(Collectors.toMap(Enum::name, m -> m));
-        return LicenseModule.withRequired(Arrays.stream(value.split(",")).map(String::strip).filter(known::containsKey)
-                .map(known::get).collect(Collectors.toCollection(() -> EnumSet.noneOf(LicenseModule.class))));
     }
 }

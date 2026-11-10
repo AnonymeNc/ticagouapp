@@ -4,6 +4,7 @@ import { ImageUp, Trash2 } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useStructure, type Structure } from "@/features/structure/useStructure";
@@ -131,7 +132,7 @@ export function StructureTab() {
         <FormField label="Courriel"><Input value={form.email} maxLength={254} onChange={(e) => set({ email: e.target.value })} /></FormField>
         <FormField label="Numéro RIDET" hint="7 chiffres, éventuellement suivis de .001"><Input value={form.ridet} onChange={(e) => set({ ridet: e.target.value })} /></FormField>
         <FormField label="Numéro d’agrément"><Input value={form.agrementNumber} maxLength={50} onChange={(e) => set({ agrementNumber: e.target.value })} /></FormField>
-        <FormField label="Date d’agrément"><Input value={form.agrementDate} placeholder="JJ/MM/AAAA" onChange={(e) => set({ agrementDate: e.target.value })} /></FormField>
+        <FormField label="Date d’agrément"><DateInput value={form.agrementDate} placeholder="JJ/MM/AAAA" onChange={(e) => set({ agrementDate: e.target.value })} /></FormField>
         <FormField label="Capacité agréée (places)" hint="Le total des places des sections ne peut pas la dépasser.">
           <Input value={form.capacity} inputMode="numeric" onChange={(e) => set({ capacity: e.target.value })} />
         </FormField>

@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -85,7 +84,7 @@ public class ParcService {
         return new Detail(row, Json.text(creche.host(), "/domain"), creche.clientSince(), creche.createdAt(), creche.supervisionName(),
                 creche.hostSeenAt(), repository.client(creche.clientId()), creche.supervisionStatus(),
                 creche.host() == null ? null : creche.host().get("subscription"), history, points,
-                repository.notes(creche.id()), audit.forTarget(target(slug), 100));
+                repository.notes(creche.id()), audit.forTarget(target(slug), 100), hiddenSections(creche.host()));
     }
 
     @Transactional(readOnly = true)
@@ -189,7 +188,7 @@ public class ParcService {
         var validUntil = Json.date(status, "/license/validUntil");
         return new Row(c.slug(), c.name(), c.city(), context.clientNames().get(c.clientId()), c.lifecycle(), health,
                 c.supervisionSeenAt(), version != null ? version : Json.text(host, "/image"), plan(subscription, licenseState),
-                modules(subscription), places != null ? places : Json.integer(status, "/usage/places"),
+                places != null ? places : Json.integer(status, "/usage/places"),
                 Json.integer(status, "/usage/activeChildren"), licenseState,
                 validUntil != null ? validUntil : Json.date(subscription, "/validUntil"), Json.date(status, "/license/deadline"),
                 Json.integer(status, "/license/desktops"), Json.integer(status, "/license/desktopLimit"),
@@ -261,7 +260,7 @@ public class ParcService {
         };
     }
 
-    /** « Gestion — jusqu'à 24 places » → « Gestion » ; en évaluation, sans contrat : « Évaluation ». */
+    /** « Ti’Cagou — jusqu'à 24 places » → « Ti’Cagou » ; en évaluation, sans contrat : « Évaluation ». */
     static String plan(JsonNode subscription, String licenseState) {
         var plan = Json.text(subscription, "/plan");
         if (plan != null) {
@@ -270,24 +269,17 @@ public class ParcService {
         return "EVALUATION".equals(licenseState) || "EVALUATION_TERMINEE".equals(licenseState) ? "Évaluation" : null;
     }
 
-    static List<String> modules(JsonNode subscription) {
-        var modules = Json.at(subscription, "/modules");
-        if (modules == null || modules.isNull() || modules.isMissingNode()) {
-            return List.of();
-        }
-        if (modules.isArray()) {
-            var list = new ArrayList<String>();
-            modules.forEach(m -> list.add(m.asText()));
-            return list;
-        }
-        return Arrays.stream(modules.asText().split(",")).map(String::strip).filter(s -> !s.isEmpty()).toList();
-    }
-
     static Integer diskPercent(Long free, Long total) {
         if (free == null || total == null || total <= 0) {
             return null;
         }
         return (int) Math.round(100.0 * (total - free) / total);
+    }
+
+    /** Rubriques masquées rapportées par l'hôte ; vide si rien n'est masqué ou si l'hôte ne l'a pas encore dit. */
+    static List<String> hiddenSections(JsonNode host) {
+        var text = Json.text(host, "/hiddenSections");
+        return text == null || text.isBlank() ? List.of() : Stream.of(text.split(",")).filter(s -> !s.isBlank()).toList();
     }
 
     static String target(String slug) {

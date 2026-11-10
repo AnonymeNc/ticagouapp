@@ -6,6 +6,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSections } from "@/features/structure/useSections";
@@ -101,7 +102,7 @@ export function NewsPage() {
             </select>
           </FormField>
           <FormField label="Affichée jusqu’au" hint="Facultatif, JJ/MM/AAAA. Sans date : 12 mois au plus.">
-            <Input value={expires} inputMode="numeric" placeholder={isoToDateFr("2026-12-19")} onChange={(e) => setExpires(e.target.value)} />
+            <DateInput value={expires} inputMode="numeric" placeholder={isoToDateFr("2026-12-19")} onChange={(e) => setExpires(e.target.value)} />
           </FormField>
           <FormField label="Pièce jointe" hint="Facultatif : menu, projet pédagogique, affiche. PDF, JPEG ou PNG, 5 Mo au plus.">
             <Input key={fileKey} type="file" accept="application/pdf,image/jpeg,image/png" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />

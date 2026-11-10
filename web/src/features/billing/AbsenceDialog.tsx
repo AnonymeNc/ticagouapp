@@ -4,6 +4,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { todayIso } from "@/lib/age";
 import { errorMessage } from "@/lib/api";
@@ -68,8 +69,8 @@ export function AbsenceDialog({ childId, children = [], documents, absence, defa
           </FormField>
         )}
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Du"><Input value={from} onChange={(e) => setFrom(e.target.value)} inputMode="numeric" /></FormField>
-          <FormField label="Au"><Input value={to} onChange={(e) => setTo(e.target.value)} inputMode="numeric" /></FormField>
+          <FormField label="Du"><DateInput value={from} onChange={(e) => setFrom(e.target.value)} inputMode="numeric" /></FormField>
+          <FormField label="Au"><DateInput value={to} onChange={(e) => setTo(e.target.value)} inputMode="numeric" /></FormField>
         </div>
         <FormField label="Motif">
           <select className={selectClass} value={reason?.id ?? ""} onChange={(e) => setReasonId(e.target.value)}>
@@ -77,7 +78,7 @@ export function AbsenceDialog({ childId, children = [], documents, absence, defa
           </select>
         </FormField>
         <FormField label="Prévenue le" hint={reason?.noticeApplies ? "Le préavis des congés s’applique à ce motif." : undefined}>
-          <Input value={notified} onChange={(e) => setNotified(e.target.value)} inputMode="numeric" />
+          <DateInput value={notified} onChange={(e) => setNotified(e.target.value)} inputMode="numeric" />
         </FormField>
         {documents ? (
           <FormField label="Justificatif" hint={reason?.proofRequired ? "Exigé pour déduire l’absence." : undefined}>

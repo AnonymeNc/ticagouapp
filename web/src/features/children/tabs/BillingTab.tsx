@@ -6,6 +6,7 @@ import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { useCurrentUser } from "@/features/auth/AuthProvider";
 import { billingApi, billingKeys, formatRate, parseRate, type ChildFunding } from "@/features/billing/api";
@@ -166,8 +167,8 @@ function FundingDialog({ childId, funding, onClose, onSaved }: { childId: string
           </select>
         </FormField>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Du"><Input value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
-          <FormField label="Au (facultatif)"><Input value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
+          <FormField label="Du"><DateInput value={from} onChange={(e) => setFrom(e.target.value)} /></FormField>
+          <FormField label="Au (facultatif)"><DateInput value={to} onChange={(e) => setTo(e.target.value)} /></FormField>
           <FormField label="Parent bénéficiaire"><Input value={beneficiary} maxLength={170} onChange={(e) => setBeneficiary(e.target.value)} /></FormField>
           <FormField label="N° de dossier"><Input value={fileNumber} maxLength={60} onChange={(e) => setFileNumber(e.target.value)} /></FormField>
         </div>

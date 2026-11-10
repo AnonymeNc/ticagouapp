@@ -17,7 +17,6 @@ export type Row = {
   lastContactAt: string | null;
   version: string | null;
   plan: string | null;
-  modules: string[];
   places: number | null;
   activeChildren: number | null;
   licenseState: string | null;
@@ -111,6 +110,8 @@ export type Detail = {
   points: Point[];
   notes: Note[];
   journal: JournalEvent[];
+  /** Rubriques masquées à la demande de la crèche (ADR 0022), rapportées par l’hôte. */
+  hiddenSections: string[];
 };
 
 export type SearchHit = { slug: string; name: string; city: string | null; clientName: string | null; level: Level };

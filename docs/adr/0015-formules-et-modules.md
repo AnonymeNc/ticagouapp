@@ -1,6 +1,6 @@
 # ADR 0015 — Formules et modules
 
-- **Statut** : acceptée
+- **Statut** : remplacée par l’[ADR 0021](0021-formule-unique.md) (une seule formule, tout compris)
 - **Date** : 05/11/2026
 - **Modifie** : ADR 0011 (modules), ADR 0013 (abonnement)
 

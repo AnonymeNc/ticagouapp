@@ -177,7 +177,7 @@ cd desktop; pnpm typecheck
 - **Paramètres** (`/parametres`), par groupes comme la maquette : structure (coordonnées, horaires, banque avec IBAN
   contrôlé et RIB imprimé sur les factures si coché), sections (trous et chevauchements signalés, passages à
   valider), encadrement, critères, repas, barème, financeurs, utilisateurs (avec la matrice des droits, en lecture),
-  sauvegardes, tablettes et abonnement. Les rubriques suivent la formule ([ADR 0015](docs/adr/0015-formules-et-modules.md)).
+  sauvegardes, tablettes et abonnement. Une seule formule, tout compris ([ADR 0021](docs/adr/0021-formule-unique.md)).
 - **Reprise des données** ([ADR 0016](docs/adr/0016-reprise-des-donnees.md)) : modèle Excel, aperçu sans écriture, relecture de la
   santé, import tout ou rien. Guide : [docs/wiki/14-reprise-des-donnees.md](docs/wiki/14-reprise-des-donnees.md).
 - **Sauvegardes** ([ADR 0007](docs/adr/0007-sauvegardes-chiffrees.md)) : chaque nuit ou à la demande, `pg_dump` et documents
@@ -191,6 +191,7 @@ cd desktop; pnpm typecheck
 ## Exploitation
 
 Créer une crèche, l'abonnement, les mises à jour, les sauvegardes et la restauration : [docs/EXPLOITATION.md](docs/EXPLOITATION.md).
+Se connecter à la console de l'éditeur et gérer ses crèches au quotidien : [docs/CONSOLE.md](docs/CONSOLE.md).
 
 ## Transmissions et portail parents
 

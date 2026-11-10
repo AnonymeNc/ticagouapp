@@ -62,7 +62,7 @@ Avant de vendre, la licence doit avoir un effet, sans mettre en danger les donn�
   saisir. Le support doit pouvoir envoyer une clé très vite : c'est l'activation d'une clé qui débloque tout, hors
   ligne.
 - Les bases de démonstration et de développement, installées il y a longtemps, passeraient en lecture seule :
-  `scripts/tester-en-local.ps1` lance le serveur avec `TICAGOU_EVALUATION_DAYS=3650`.
+  `scripts/tester-en-local.ps1` leur écrit un abonnement d'un an ; l'évaluation reste de 30 jours, comme en production.
 - La lecture seule bloque aussi le pointage des tablettes : la traçabilité des départs repasse sur papier. Ce choix
   est à revoir si une crèche le conteste.
 - Contourner la licence reste possible pour qui modifie le jar ou la base : la clé protège contre l'oubli et

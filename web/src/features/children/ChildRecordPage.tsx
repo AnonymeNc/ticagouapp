@@ -1,5 +1,5 @@
 import { ChildPortalTab } from "@/features/portal/ChildPortalTab";
-import { useModules } from "@/features/license/useModules";
+import { useRubriques } from "@/features/structure/useRubriques";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,7 +41,6 @@ export function ChildRecordPage() {
   const { id = "" } = useParams();
   const user = useCurrentUser();
   const canEdit = user.role === "DIRECTION";
-  const modules = useModules();
   const sections = useSections();
   // « ?onglet=contrat » : ouverture directe d'un onglet (retour de l'assistant de contrat).
   const [params] = useSearchParams();
@@ -49,6 +48,8 @@ export function ChildRecordPage() {
   const [tab, setTab] = useState<TabKey>(requested && TAB_KEYS.includes(requested) ? requested : "identite");
   // Contrats : direction et comptabilité seulement (ligne « Inscriptions et contrats » des droits par rôle).
   const canSeeContracts = user.role === "DIRECTION" || user.role === "COMPTABILITE";
+  // Rubriques masquées à la demande de la crèche (ADR 0022).
+  const rubriques = useRubriques();
   const [editingIdentity, setEditingIdentity] = useState(false);
   const record = useQuery({
     queryKey: childKeys.record(id),
@@ -79,10 +80,10 @@ export function ChildRecordPage() {
     { key: "personnes", label: "Personnes autorisées", count: child.authorizedPersons.length },
     { key: "sante", label: "Santé", alert: child.health.allergies.length > 0 || child.health.paiActive },
     { key: "autorisations", label: "Autorisations" },
-    ...(canSeeContracts && modules.has("INSCRIPTIONS") ? [{ key: "contrat" as const, label: "Contrat" }] : []),
+    ...(canSeeContracts && rubriques.shown("INSCRIPTIONS") ? [{ key: "contrat" as const, label: "Contrat" }] : []),
     ...(user.role !== "CUISINE" ? [{ key: "presences" as const, label: "Présences" }] : []),
-    ...((user.role === "DIRECTION" || user.role === "EDUCATRICE") && modules.has("PORTAIL_PARENTS") ? [{ key: "journee" as const, label: "Journée et portail" }] : []),
-    ...(canSeeContracts && modules.has("FACTURATION") ? [{ key: "facturation" as const, label: "Facturation" }] : []),
+    ...((user.role === "DIRECTION" || user.role === "EDUCATRICE") && rubriques.shown("PORTAIL_PARENTS") ? [{ key: "journee" as const, label: "Journée et portail" }] : []),
+    ...(canSeeContracts && rubriques.shown("FACTURATION") ? [{ key: "facturation" as const, label: "Facturation" }] : []),
     { key: "documents", label: "Documents", count: child.documents.length },
   ];
 
@@ -141,7 +142,7 @@ export function ChildRecordPage() {
         {tab === "contrat" && canSeeContracts && <ContractTab child={child} canEdit={canEdit} />}
         {tab === "presences" && <AbsencesTab child={child} canEdit={canEdit} />}
         {tab === "journee" && (
-          <ChildPortalTab child={{ id: child.id, firstName: child.firstName, familyId: child.family.id, health: child.health }} canEdit={canEdit && modules.has("PORTAIL_PARENTS")} />
+          <ChildPortalTab child={{ id: child.id, firstName: child.firstName, familyId: child.family.id, health: child.health }} canEdit={canEdit} />
         )}
         {tab === "facturation" && canSeeContracts && <BillingTab child={child} canEdit={canEdit} />}
         {tab === "documents" && <DocumentsTab child={child} canEdit={canEdit} />}

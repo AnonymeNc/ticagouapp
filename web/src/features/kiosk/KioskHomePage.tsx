@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
+import { useRubriques } from "@/features/structure/useRubriques";
 import { useQuery } from "@tanstack/react-query";
 import { Baby, CalendarX2, Clock, IdCard, NotebookPen, Pill, Plus } from "lucide-react";
-import { useModules } from "@/features/license/useModules";
 import { useNow } from "@/hooks/useNow";
 import { cn } from "@/lib/utils";
 import { kioskApi, newId, type KioskChild } from "./api";
@@ -85,7 +85,8 @@ function Grid({
   onUnplanned: () => void;
 }) {
   const { today, act, now, online } = useKiosk();
-  const modules = useModules("device");
+  // Rubrique Portail parents masquée (ADR 0022) : pas de bouton Journée.
+  const rubriques = useRubriques("device");
   useNow();
   // Absences signalées sur le portail parents (rien quand le portail n'est pas activé).
   const journal = useQuery({ queryKey: JOURNAL_KEY, queryFn: ({ signal }) => kioskApi.journal(signal), enabled: online, refetchInterval: 60_000 });
@@ -157,7 +158,7 @@ function Grid({
           <strong className="text-numeric-lg">{present}</strong> / {expected} présents / attendus
           {departed > 0 && <> · {departed} parti{departed > 1 ? "s" : ""}</>}
         </p>
-        {!readOnly && modules.has("PORTAIL_PARENTS") && (
+        {!readOnly && rubriques.shown("PORTAIL_PARENTS") && (
           <TouchButton variant="secondary" onClick={onJournal}>
             <NotebookPen aria-hidden className="size-6" />
             Journée

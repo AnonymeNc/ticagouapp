@@ -6,7 +6,7 @@ import type { BillingSettings, Board, ContractView, InvoiceDetail, InvoiceSummar
 
 const row = (slug: string, name: string): Row => ({
   slug, name, city: null, clientName: name, lifecycle: "CLIENT", health: { level: "OK", reasons: [] }, lastContactAt: null, version: "1.5.0",
-  plan: "Gestion", modules: [], places: 12, activeChildren: 10, licenseState: "ACTIVE", validUntil: "2027-10-31", deadline: null, desktops: 1,
+  plan: "Ti’Cagou", places: 12, activeChildren: 10, licenseState: "ACTIVE", validUntil: "2027-10-31", deadline: null, desktops: 1,
   desktopLimit: 1, tablets: 2, tabletLimit: 2, backupAt: null, backupStale: false, diskUsedPercent: 30, container: "healthy", alerts: [],
   lastCallAt: null, balanceDue: 0, daysLate: 0,
 });
@@ -197,26 +197,29 @@ describe("facturation de l'éditeur", () => {
     expect(screen.getByRole("button", { name: "Envoyer la sélection (1)" })).toBeEnabled();
   });
 
-  it("contrat : devis en direct puis enregistrement", async () => {
+  it("contrat : formule unique, devis en direct puis enregistrement", async () => {
     const empty: ContractView = { current: null, history: [], priceListLabel: null, monthly: null, period: null, expected: null, next: null };
-    const quote = { tier: "MICRO", onQuote: false, subtotal: 162_000, total: 162_000, lines: [{ code: "GESTION", label: "Gestion Micro", detail: "12 mois à 11 500 F", quantity: 12, unitPrice: 11_500, amount: 138_000, tgcNature: "ABONNEMENT" }, { code: "REPAS", label: "Module Repas", detail: "12 mois à 2 000 F", quantity: 12, unitPrice: 2_000, amount: 24_000, tgcNature: "ABONNEMENT" }] };
+    const quote = { tier: "MICRO", onQuote: false, subtotal: 246_000, total: 246_000, lines: [{ code: "COMPLET", label: "Ti'Cagou Micro", detail: "12 mois à 18 500 F", quantity: 12, unitPrice: 18_500, amount: 222_000, tgcNature: "ABONNEMENT" }, { code: "TABLETTE", label: "Tablette supplémentaire (2)", detail: "12 mois à 1 000 F", quantity: 24, unitPrice: 1_000, amount: 24_000, tgcNature: "ABONNEMENT" }] };
     const calls = mockServer({
       ...base,
-      "GET /parc/lagon-bleu": () => ({ body: { row: row("lagon-bleu", "Lagon Bleu"), domain: null, clientSince: null, createdAt: "2026-01-01T00:00:00Z", supervisionName: null, hostSeenAt: null, client: { id: "c1", name: "Lagon Bleu", kind: "PRIVE", ridet: null, address: null, directorName: null, directorEmail: null, directorPhone: null, billingEmail: null, reminderEmail: null, paymentDays: 30 }, status: null, subscription: null, history: [], points: [], notes: [], journal: [] } }),
+      "GET /parc/lagon-bleu": () => ({ body: { row: row("lagon-bleu", "Lagon Bleu"), domain: null, clientSince: null, createdAt: "2026-01-01T00:00:00Z", supervisionName: null, hostSeenAt: null, client: { id: "c1", name: "Lagon Bleu", kind: "PRIVE", ridet: null, address: null, directorName: null, directorEmail: null, directorPhone: null, billingEmail: null, reminderEmail: null, paymentDays: 30 }, status: null, subscription: null, history: [], points: [], notes: [], journal: [], hiddenSections: [] } }),
       "GET /parc/lagon-bleu/contrat": () => ({ body: empty }),
-      "POST /parc/lagon-bleu/contrat/devis": () => ({ body: [{ ...quote, total: 13_500 }, quote] }),
+      "POST /parc/lagon-bleu/contrat/devis": () => ({ body: [{ ...quote, total: 20_500 }, quote] }),
       "PUT /parc/lagon-bleu/contrat": () => ({ body: { contract: empty, complementInvoiceId: null, toCredit: 0, toCreditInvoiceNumber: null, amendment: [] } }),
     });
     const user = userEvent.setup();
     renderApp("/parc/lagon-bleu");
     await user.click(await screen.findByRole("tab", { name: "Abonnement" }));
     await user.click(await screen.findByRole("button", { name: "Saisir le contrat" }));
-    await user.click(screen.getByRole("checkbox", { name: "Repas" }));
+    expect(screen.getByLabelText("Formule")).toHaveValue("Ti’Cagou, tout compris");
+    expect(within(screen.getByLabelText("Formule").closest("form")!).queryByRole("checkbox", { name: "Repas" })).not.toBeInTheDocument();
+    await user.clear(screen.getByLabelText("Tablettes en plus"));
+    await user.type(screen.getByLabelText("Tablettes en plus"), "2");
     expect(await screen.findByText("Total HT par an")).toBeInTheDocument();
-    expect(screen.getByText("Soit 13 500 F HT par mois, TGC en sus.", { normalizer: (t) => t.replace(/\s+/g, " ") })).toBeInTheDocument();
+    expect(screen.getByText("Soit 20 500 F HT par mois, TGC en sus.", { normalizer: (t) => t.replace(/\s+/g, " ") })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Enregistrer le contrat" }));
     await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
-    expect(calls.find((c) => c.method === "PUT")!.body).toMatchObject({ plan: "GESTION", places: 12, modules: ["REPAS"], rhythm: "ANNUEL", engagementYears: 1 });
+    expect(calls.find((c) => c.method === "PUT")!.body).toMatchObject({ plan: "COMPLET", places: 12, modules: [], extraTablets: 2, rhythm: "ANNUEL", engagementYears: 1 });
   });
 
   it("paramètres : mentions manquantes signalées puis enregistrées", async () => {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { Link, useParams } from "react-router";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ContractCard, CrecheInvoices } from "@/features/billing/ContractCard";
-import { CrecheData, CrecheOrders, InstanceActions } from "@/features/orders/InstanceActions";
+import { CrecheAccess, CrecheData, CrecheOrders, CrecheRubriques, InstanceActions } from "@/features/orders/InstanceActions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HealthDot, Pill } from "@/components/ui/pill";
@@ -19,7 +19,6 @@ import {
   gigabytes,
   kindLabels,
   lifecycleLabels,
-  moduleLabels,
   subscriptionPill,
 } from "./labels";
 
@@ -143,6 +142,8 @@ function Fiche({ slug }: { slug: string }) {
             <ContractCard slug={row.slug} places={row.places} />
             <CrecheOrders slug={row.slug} />
             <SubscriptionTab detail={detail} />
+            <CrecheRubriques key={(detail.hiddenSections ?? []).join(",")} row={row} hidden={detail.hiddenSections ?? []} />
+            <CrecheAccess row={row} />
             <CrecheData row={row} />
           </div>
         )}
@@ -253,7 +254,6 @@ function HealthTab({ detail }: { detail: Detail }) {
         <Facts
           items={[
             ["Formule", row.plan],
-            ["Modules", row.modules.length ? row.modules.map((m) => moduleLabels[m] ?? m).join(", ") : "base seule"],
             ["Échéance", row.licenseState === "EVALUATION" ? `évaluation jusqu’au ${formatDay(row.deadline)}` : formatDay(row.validUntil)],
             ...(row.deadline && row.licenseState !== "EVALUATION" ? ([["Lecture seule le", formatDay(row.deadline)]] as [string, ReactNode][]) : []),
             ["PC / tablettes", `${row.desktops ?? "?"}/${row.desktopLimit ?? "?"} · ${row.tablets ?? "?"}/${row.tabletLimit ?? "?"}`],
@@ -348,7 +348,6 @@ function Bars({ points, value, max, unit, label }: { points: Point[]; value: (p:
 
 function SubscriptionTab({ detail }: { detail: Detail }) {
   const { row, subscription } = detail;
-  const modules = row.modules.map((m) => moduleLabels[m] ?? m);
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card title="Contrat enregistré dans l’instance">
@@ -360,7 +359,6 @@ function SubscriptionTab({ detail }: { detail: Detail }) {
               ["Places", subscription.places],
               ["PC / tablettes permis", `${subscription.desktops ?? "?"} / ${subscription.tablets ?? "?"}`],
               ["Échéance", formatDay(subscription.validUntil)],
-              ["Modules", modules.length ? modules.join(", ") : "base seule"],
             ]}
           />
         ) : (
@@ -380,7 +378,7 @@ function SubscriptionTab({ detail }: { detail: Detail }) {
           ]}
         />
         <p className="m-0 mt-4 text-small text-muted-foreground">
-          Pour renouveler ou changer la formule : « Reporter le contrat dans l’instance » ci-dessus ; un abonnement payé le
+          Pour renouveler l’abonnement ou changer les places : « Reporter le contrat dans l’instance » ci-dessus ; un abonnement payé le
           propose de lui-même, à confirmer dans les ordres.
         </p>
       </Card>

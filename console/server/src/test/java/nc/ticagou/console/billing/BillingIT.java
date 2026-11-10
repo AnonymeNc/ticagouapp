@@ -163,8 +163,9 @@ public class BillingIT {
         jdbc.execute("TRUNCATE outbox_message, payment_allocation, payment, invoice_line, invoice, subscription_contract, counter, "
                 + "creche_note, creche_snapshot, alert_history, creche, client, audit_event CASCADE");
         jdbc.update("UPDATE issuer SET name = NULL, ridet = NULL, address = NULL, iban = NULL, bank = NULL, copy_email = NULL");
-        jdbc.update("DELETE FROM price_list WHERE id <> '00000000-0000-0000-0000-000000002026'");
-        jdbc.update("UPDATE price_list SET valid_to = NULL");
+        // Barèmes de la migration : 2026 (jusqu'au 31/10/2026, V9), puis formule unique (V9).
+        jdbc.update("DELETE FROM price_list WHERE id NOT IN ('00000000-0000-0000-0000-000000002026', '00000000-0000-0000-0000-000000202611')");
+        jdbc.update("UPDATE price_list SET valid_to = CASE WHEN id = '00000000-0000-0000-0000-000000002026' THEN DATE '2026-10-31' END");
         jdbc.update("DELETE FROM tgc_rate WHERE valid_from > DATE '2026-01-01'");
         jdbc.update("UPDATE tgc_rate SET valid_to = NULL");
         clock.now = START;
@@ -211,14 +212,15 @@ public class BillingIT {
                 "latePenalties", "Pénalités de retard : taux légal."));
     }
 
-    static Map<String, Object> contract(String plan, int places, List<String> modules, String startsOn) {
+    /** Contrat à la formule unique (ADR 0021) : seules changent les places et les options. */
+    static Map<String, Object> contract(int places, int extraTablets, boolean premiumSupport, String startsOn) {
         var c = new HashMap<String, Object>();
-        c.put("plan", plan);
+        c.put("plan", "COMPLET");
         c.put("places", places);
-        c.put("modules", modules);
+        c.put("modules", List.of());
         c.put("extraDesktops", 0);
-        c.put("extraTablets", 0);
-        c.put("premiumSupport", false);
+        c.put("extraTablets", extraTablets);
+        c.put("premiumSupport", premiumSupport);
         c.put("engagementYears", 1);
         c.put("rhythm", "ANNUEL");
         c.put("extraStructure", false);
@@ -228,9 +230,9 @@ public class BillingIT {
         return c;
     }
 
-    /** Contrat Gestion Micro + Repas au 01/11/2026 et sa première facture annuelle, validée. */
+    /** Ti'Cagou Micro + 2 tablettes au 01/11/2026 et sa première facture annuelle, validée. */
     JsonNode subscribedAndInvoiced() throws Exception {
-        ok(put("/api/v1/parc/lagon-bleu/contrat"), contract("GESTION", 12, List.of("REPAS"), "2026-11-01"));
+        ok(put("/api/v1/parc/lagon-bleu/contrat"), contract(12, 2, false, "2026-11-01"));
         var draft = ok(post("/api/v1/parc/lagon-bleu/contrat/prochaine-facture"), null);
         mentions();
         confirmed();
@@ -241,12 +243,13 @@ public class BillingIT {
 
     @Test
     void contratBrouillonPuisValidationAvecCodeMentionsNumeroEtPdf() throws Exception {
-        var saved = ok(put("/api/v1/parc/lagon-bleu/contrat"), contract("GESTION", 12, List.of("REPAS", "PORTAIL_PARENTS"), "2026-11-01"));
-        assertThat(saved.at("/contract/monthly/total").asLong()).isEqualTo(13_500);
-        assertThat(saved.at("/contract/period/total").asLong()).isEqualTo(162_000);
+        // Ti'Cagou Micro 18 500 F + 2 tablettes à 1 000 F, par mois.
+        var saved = ok(put("/api/v1/parc/lagon-bleu/contrat"), contract(12, 2, false, "2026-11-01"));
+        assertThat(saved.at("/contract/monthly/total").asLong()).isEqualTo(20_500);
+        assertThat(saved.at("/contract/period/total").asLong()).isEqualTo(246_000);
         assertThat(saved.at("/contract/priceListLabel").asText()).isEqualTo("Barème 2026");
         assertThat(saved.at("/contract/expected/desktops").asInt()).isEqualTo(1);
-        assertThat(saved.at("/contract/expected/tablets").asInt()).isEqualTo(2);
+        assertThat(saved.at("/contract/expected/tablets").asInt()).isEqualTo(4);
         assertThat(saved.at("/contract/next/from").asText()).isEqualTo("2026-11-01");
         assertThat(jdbc.queryForObject("SELECT lifecycle FROM creche", String.class)).as("le prospect devient client").isEqualTo("CLIENT");
 
@@ -254,10 +257,11 @@ public class BillingIT {
         var id = draft.at("/summary/id").asText();
         assertThat(draft.at("/summary/subject").asText()).isEqualTo("Abonnement 11/2026 – 10/2027");
         assertThat(draft.at("/summary/state").asText()).isEqualTo("BROUILLON");
-        assertThat(draft.at("/summary/totalHt").asLong()).isEqualTo(162_000);
-        assertThat(draft.at("/summary/totalTgc").asLong()).isEqualTo(17_820);
-        assertThat(draft.at("/summary/totalTtc").asLong()).isEqualTo(179_820);
-        assertThat(draft.at("/lines/0/label").asText()).isEqualTo("Gestion Micro");
+        assertThat(draft.at("/summary/totalHt").asLong()).isEqualTo(246_000);
+        assertThat(draft.at("/summary/totalTgc").asLong()).isEqualTo(27_060);
+        assertThat(draft.at("/summary/totalTtc").asLong()).isEqualTo(273_060);
+        assertThat(draft.at("/lines/0/label").asText()).isEqualTo("Ti'Cagou Micro");
+        assertThat(draft.at("/lines/1/label").asText()).isEqualTo("Tablette supplémentaire (2)");
         assertThat(draft.at("/lines/0/detail").asText()).startsWith("01/11/2026 – 31/10/2027");
         problem(post("/api/v1/parc/lagon-bleu/contrat/prochaine-facture"), null, 201);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM invoice", Integer.class)).as("période suivante, pas de doublon").isEqualTo(2);
@@ -289,10 +293,22 @@ public class BillingIT {
         assertThat(message.get("cc").asText()).isEqualTo("facturation@ticagou.nc");
         assertThat(message.get("subject").asText()).isEqualTo("Votre facture F2026-0001");
         assertThat(message.get("body").asText()).startsWith("Bonjour Madame Wamytan,")
-                .contains("179 820 F TTC", "avant le 08/12/2026", "IBAN NC00");
+                .contains("273 060 F TTC", "avant le 08/12/2026", "IBAN NC00");
         assertThat(mail.sent).as("rien ne part sans clic").isEmpty();
         assertThat(jdbc.queryForList("SELECT action FROM audit_event ORDER BY at, id", String.class)).contains("CONTRAT_SIGNE",
                 "RENOUVELLEMENT_PREPARE", "EDITEUR_MODIFIE", "FACTURE_VALIDEE");
+    }
+
+    @Test
+    void uneSeuleFormuleSansModuleALaCarte() throws Exception {
+        // ADR 0021 : ni ancienne formule ni module ajouté pour un nouveau contrat ou un avenant.
+        var gestion = new HashMap<>(contract(12, 0, false, "2026-11-01"));
+        gestion.put("plan", "GESTION");
+        assertThat(problem(put("/api/v1/parc/lagon-bleu/contrat"), gestion, 400).toString()).contains("Une seule formule");
+        var withModule = new HashMap<>(contract(12, 0, false, "2026-11-01"));
+        withModule.put("modules", List.of("REPAS"));
+        assertThat(problem(put("/api/v1/parc/lagon-bleu/contrat"), withModule, 422).get("code").asText()).isEqualTo("module");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM subscription_contract", Integer.class)).isZero();
     }
 
     @Test
@@ -360,32 +376,32 @@ public class BillingIT {
         var payment = ok(post("/api/v1/paiements"), Map.of("crecheSlug", "lagon-bleu", "receivedOn", "2026-11-20", "amount", 4_860,
                 "method", "VIREMENT", "reference", "VIR 4860"));
         assertThat(payment.at("/allocations/0/invoiceNumber").asText()).as("affecté à la plus ancienne").isEqualTo("F2026-0001");
-        assertThat(ok(get("/api/v1/factures/" + id), null).at("/summary/remaining").asLong()).isEqualTo(174_960);
+        assertThat(ok(get("/api/v1/factures/" + id), null).at("/summary/remaining").asLong()).isEqualTo(268_200);
 
         clock.on("2026-12-24");
         var late = ok(get("/api/v1/factures/" + id), null).get("summary");
         assertThat(late.get("state").asText()).isEqualTo("RETARD");
         assertThat(late.get("daysLate").asLong()).isEqualTo(16);
         var row = ok(get("/api/v1/parc"), null);
-        assertThat(row.at("/creches/0/balanceDue").asLong()).isEqualTo(174_960);
+        assertThat(row.at("/creches/0/balanceDue").asLong()).isEqualTo(268_200);
         assertThat(row.at("/creches/0/daysLate").asLong()).isEqualTo(16);
         assertThat(row.at("/creches/0/health/reasons").toString()).contains("Impayé, J+16");
         assertThat(row.at("/summary/unpaid").asInt()).isEqualTo(1);
         var board = ok(get("/api/v1/tableau"), null);
-        assertThat(board.get("mrr").asLong()).as("Gestion Micro + Repas").isEqualTo(13_500);
-        assertThat(board.get("outstanding").asLong()).isEqualTo(174_960);
-        assertThat(board.get("overdue").asLong()).isEqualTo(174_960);
+        assertThat(board.get("mrr").asLong()).as("Ti'Cagou Micro + 2 tablettes").isEqualTo(20_500);
+        assertThat(board.get("outstanding").asLong()).isEqualTo(268_200);
+        assertThat(board.get("overdue").asLong()).isEqualTo(268_200);
         assertThat(board.at("/months/5/month").asText()).isEqualTo("2026-12");
-        assertThat(board.at("/months/4/invoiced").asLong()).as("novembre").isEqualTo(179_820);
+        assertThat(board.at("/months/4/invoiced").asLong()).as("novembre").isEqualTo(273_060);
         assertThat(board.at("/months/4/collected").asLong()).isEqualTo(4_860);
 
-        assertThat(problem(post("/api/v1/paiements"), Map.of("crecheSlug", "lagon-bleu", "receivedOn", "2026-12-24", "amount", 200_000,
-                "method", "CHEQUE", "allocations", List.of(Map.of("invoiceId", id, "amount", 200_000))), 422).get("detail").asText())
-                .contains("174 960 F restent dus");
-        var over = ok(post("/api/v1/paiements"), Map.of("crecheSlug", "lagon-bleu", "receivedOn", "2026-12-24", "amount", 180_000,
+        assertThat(problem(post("/api/v1/paiements"), Map.of("crecheSlug", "lagon-bleu", "receivedOn", "2026-12-24", "amount", 300_000,
+                "method", "CHEQUE", "allocations", List.of(Map.of("invoiceId", id, "amount", 300_000))), 422).get("detail").asText())
+                .contains("268 200 F restent dus");
+        var over = ok(post("/api/v1/paiements"), Map.of("crecheSlug", "lagon-bleu", "receivedOn", "2026-12-24", "amount", 280_000,
                 "method", "CHEQUE"));
-        assertThat(over.at("/payment/allocated").asLong()).isEqualTo(174_960);
-        assertThat(over.at("/payment/amount").asLong() - over.at("/payment/allocated").asLong()).as("trop-perçu").isEqualTo(5_040);
+        assertThat(over.at("/payment/allocated").asLong()).isEqualTo(268_200);
+        assertThat(over.at("/payment/amount").asLong() - over.at("/payment/allocated").asLong()).as("trop-perçu").isEqualTo(11_800);
         assertThat(ok(get("/api/v1/factures/" + id), null).at("/summary/state").asText()).isEqualTo("PAYEE");
         assertThat(ok(get("/api/v1/tableau"), null).get("dso").asInt()).as("émise le 08/11, soldée le 24/12").isEqualTo(46);
         assertThat(problem(post("/api/v1/paiements"), Map.of("crecheSlug", "lagon-bleu", "receivedOn", "2027-01-01", "amount", 10,
@@ -400,12 +416,12 @@ public class BillingIT {
     void avoirsPartielEtTotal() throws Exception {
         var invoice = subscribedAndInvoiced();
         var id = invoice.at("/summary/id").asText();
-        var repas = invoice.at("/lines/1");
-        assertThat(repas.get("label").asText()).isEqualTo("Module Repas");
-        var lineId = repas.get("id").asText();
+        var tablets = invoice.at("/lines/1");
+        assertThat(tablets.get("label").asText()).isEqualTo("Tablette supplémentaire (2)");
+        var lineId = tablets.get("id").asText();
 
         session.removeAttribute("console.confirmedAt");
-        var credit = Map.of("lines", List.of(Map.of("lineId", lineId, "amount", 24_000)), "reason", "Module Repas jamais utilisé");
+        var credit = Map.of("lines", List.of(Map.of("lineId", lineId, "amount", 24_000)), "reason", "Tablettes jamais livrées");
         problem(post("/api/v1/factures/" + id + "/avoir"), credit, 403);
         confirmed();
         var avoir = ok(post("/api/v1/factures/" + id + "/avoir"), credit);
@@ -416,7 +432,7 @@ public class BillingIT {
 
         var after = ok(get("/api/v1/factures/" + id), null);
         assertThat(after.at("/summary/credited").asLong()).isEqualTo(26_640);
-        assertThat(after.at("/summary/remaining").asLong()).isEqualTo(153_180);
+        assertThat(after.at("/summary/remaining").asLong()).isEqualTo(246_420);
         assertThat(after.at("/creditable/1/creditable").asLong()).isZero();
         assertThat(problem(post("/api/v1/factures/" + id + "/avoir"), Map.of("lines", List.of(Map.of("lineId", lineId, "amount", 1)),
                 "reason", "Encore"), 422).get("detail").asText()).contains("0 F au plus");
@@ -434,23 +450,23 @@ public class BillingIT {
     void avenantAuProrataEtRenouvellementPrepare() throws Exception {
         subscribedAndInvoiced();
         clock.on("2027-05-01");
-        var withMeals = new HashMap<>(contract("GESTION", 12, List.of("REPAS", "PERSONNEL"), "2026-11-01"));
-        withMeals.put("changeOn", "2027-05-01");
-        var saved = ok(put("/api/v1/parc/lagon-bleu/contrat"), withMeals);
-        // Personnel ajouté le 01/05/2027 : 2 500 F × 12 × 184 / 365 = 15 123 F.
+        var withSupport = new HashMap<>(contract(12, 2, true, "2026-11-01"));
+        withSupport.put("changeOn", "2027-05-01");
+        var saved = ok(put("/api/v1/parc/lagon-bleu/contrat"), withSupport);
+        // Support Premium ajouté le 01/05/2027 : 4 000 F × 12 × 184 / 365 = 24 197 F.
         var complement = ok(get("/api/v1/factures/" + saved.get("complementInvoiceId").asText()), null);
         assertThat(complement.at("/summary/kind").asText()).isEqualTo("COMPLEMENT");
-        assertThat(complement.at("/lines/0/label").asText()).isEqualTo("Complément : Module Personnel");
-        assertThat(complement.at("/summary/totalHt").asLong()).isEqualTo(15_123);
+        assertThat(complement.at("/lines/0/label").asText()).isEqualTo("Complément : Support Premium");
+        assertThat(complement.at("/summary/totalHt").asLong()).isEqualTo(24_197);
         assertThat(saved.at("/contract/history").size()).isEqualTo(2);
         assertThat(saved.at("/contract/current/startsOn").asText()).isEqualTo("2027-05-01");
 
         clock.on("2027-06-01");
-        var fewer = new HashMap<>(contract("GESTION", 12, List.of(), "2026-11-01"));
+        var fewer = new HashMap<>(contract(12, 0, false, "2026-11-01"));
         fewer.put("changeOn", "2027-06-01");
         var reduced = ok(put("/api/v1/parc/lagon-bleu/contrat"), fewer);
         assertThat(reduced.get("complementInvoiceId").isNull()).isTrue();
-        assertThat(reduced.get("toCredit").asLong()).as("Repas et Personnel retirés : à rendre par avoir").isPositive();
+        assertThat(reduced.get("toCredit").asLong()).as("tablettes et support retirés : à rendre par avoir").isPositive();
         assertThat(reduced.get("toCreditInvoiceNumber").asText()).isEqualTo("F2026-0001");
 
         // 45 jours avant la période suivante (01/11/2027) : le brouillon de renouvellement se prépare seul, une fois.
@@ -461,7 +477,7 @@ public class BillingIT {
         assertThat(contracts.prepareRenewals()).isZero();
         var renewal = jdbc.queryForMap("SELECT subject, total_ht, status FROM invoice WHERE period_from = DATE '2027-11-01'");
         assertThat(renewal.get("subject")).isEqualTo("Abonnement 11/2027 – 10/2028");
-        assertThat(renewal.get("total_ht")).as("Gestion Micro seul").isEqualTo(138_000L);
+        assertThat(renewal.get("total_ht")).as("Ti'Cagou Micro seul").isEqualTo(222_000L);
         assertThat(renewal.get("status")).isEqualTo("BROUILLON");
     }
 
@@ -510,16 +526,28 @@ public class BillingIT {
     @Test
     void parametresNouvelleVersionDuBaremeEtNouveauTaux() throws Exception {
         var settings = ok(get("/api/v1/bareme"), null);
-        assertThat(settings.at("/versions/0/list/label").asText()).isEqualTo("Barème 2026");
-        assertThat(settings.at("/versions/0/items").size()).isEqualTo(35);
+        // Barème de la formule unique (V9) : 15 000 F quelle que soit la taille, support compris, depuis le 01/11/2026.
+        assertThat(settings.at("/versions/0/list/label").asText()).isEqualTo("Barème formule unique");
+        assertThat(settings.at("/versions/0/list/validFrom").asText()).isEqualTo("2026-11-01");
+        assertThat(settings.at("/versions/0/items").size()).as("formule × 3 tailles, PC, tablette, 5 prestations").isEqualTo(10);
+        assertThat(settings.at("/versions/1/list/validTo").asText()).isEqualTo("2026-10-31");
+        for (var places : List.of(12, 30, 60)) {
+            var signedNow = new HashMap<>(contract(places, 0, false, "2026-12-01"));
+            signedNow.put("signedOn", "2026-11-08");
+            assertThat(ok(post("/api/v1/parc/lagon-bleu/contrat/devis"), signedNow).at("/0/total").asLong()).as(places + " places").isEqualTo(15_000);
+        }
+        var withSupport = new HashMap<>(contract(12, 0, true, "2026-12-01"));
+        withSupport.put("signedOn", "2026-11-08");
+        assertThat(problem(post("/api/v1/parc/lagon-bleu/contrat/devis"), withSupport, 422).get("detail").asText())
+                .as("support compris : plus de Support Premium au barème").contains("SUPPORT");
         assertThat(settings.get("missingMentions").size()).isEqualTo(4);
 
         var items = new ArrayList<Map<String, Object>>();
         settings.at("/versions/0/items").forEach(i -> {
             var item = new HashMap<String, Object>();
             i.fieldNames().forEachRemaining(f -> item.put(f, i.get(f).isNull() ? null : i.get(f).isNumber() ? i.get(f).asLong() : i.get(f).asText()));
-            if ("GESTION".equals(item.get("code")) && "MICRO".equals(item.get("tier"))) {
-                item.put("price", 12_000L);
+            if ("COMPLET".equals(item.get("code")) && "MICRO".equals(item.get("tier"))) {
+                item.put("price", 19_000L);
             }
             items.add(item);
         });
@@ -532,11 +560,11 @@ public class BillingIT {
         assertThat(problem(post("/api/v1/bareme"), version, 422).get("code").asText()).isEqualTo("bareme_date");
 
         // Contrat signé en 2027 : au nouveau barème ; celui signé en 2026 garde l'ancien prix.
-        var signed2027 = new HashMap<>(contract("GESTION", 12, List.of(), "2027-02-01"));
+        var signed2027 = new HashMap<>(contract(12, 0, false, "2027-02-01"));
         signed2027.put("signedOn", "2027-01-10");
-        assertThat(ok(post("/api/v1/parc/lagon-bleu/contrat/devis"), signed2027).at("/0/total").asLong()).isEqualTo(12_000);
-        assertThat(ok(post("/api/v1/parc/lagon-bleu/contrat/devis"), contract("GESTION", 12, List.of(), "2026-11-01")).at("/0/total").asLong())
-                .isEqualTo(11_500);
+        assertThat(ok(post("/api/v1/parc/lagon-bleu/contrat/devis"), signed2027).at("/0/total").asLong()).isEqualTo(19_000);
+        assertThat(ok(post("/api/v1/parc/lagon-bleu/contrat/devis"), contract(12, 0, false, "2026-11-01")).at("/0/total").asLong())
+                .isEqualTo(18_500);
 
         var rates = ok(post("/api/v1/tgc"), Map.of("nature", "PRESTATION", "rate", 130, "validFrom", "2027-01-01", "note", "Hausse"));
         assertThat(rates.get("tgcRates").size()).isEqualTo(4);
@@ -558,8 +586,8 @@ public class BillingIT {
     void reportingChiffreDAffairesTgcBalanceAgeeRentabiliteEtExports() throws Exception {
         var invoice = subscribedAndInvoiced();
         var id = invoice.at("/summary/id").asText();
-        var repas = invoice.at("/lines/1/id").asText();
-        ok(post("/api/v1/factures/" + id + "/avoir"), Map.of("lines", List.of(Map.of("lineId", repas, "amount", 24_000)), "reason", "Repas"));
+        var tablets = invoice.at("/lines/1/id").asText();
+        ok(post("/api/v1/factures/" + id + "/avoir"), Map.of("lines", List.of(Map.of("lineId", tablets, "amount", 24_000)), "reason", "Tablettes"));
         ok(post("/api/v1/parc/lagon-bleu/notes"), Map.of("kind", "APPEL", "text", "Formation à la facturation", "minutes", 90));
         clock.on("2026-11-20");
         ok(post("/api/v1/paiements"), Map.of("crecheSlug", "lagon-bleu", "receivedOn", "2026-11-20", "amount", 4_860, "method", "VIREMENT"));
@@ -567,42 +595,42 @@ public class BillingIT {
         var report = report("2026-01-01", "2026-12-31");
         long tgcOfInvoices = jdbc.queryForObject(
                 "SELECT sum(CASE WHEN type = 'AVOIR' THEN -total_tgc ELSE total_tgc END) FROM invoice WHERE status = 'VALIDEE'", Long.class);
-        assertThat(report.at("/kpis/tgc").asLong()).as("TGC égale aux factures moins avoirs").isEqualTo(tgcOfInvoices).isEqualTo(17_820 - 2_640);
+        assertThat(report.at("/kpis/tgc").asLong()).as("TGC égale aux factures moins avoirs").isEqualTo(tgcOfInvoices).isEqualTo(27_060 - 2_640);
         long byRate = 0;
         for (var rate : report.get("tgc")) {
             byRate += rate.get("tgc").asLong();
         }
         assertThat(byRate).isEqualTo(tgcOfInvoices);
         assertThat(report.at("/tgc/0/rate").asInt()).isEqualTo(110);
-        assertThat(report.at("/tgc/0/base").asLong()).isEqualTo(162_000 - 24_000);
-        assertThat(report.at("/kpis/revenueHt").asLong()).isEqualTo(138_000);
-        assertThat(report.at("/kpis/subscriptionsHt").asLong()).isEqualTo(138_000);
+        assertThat(report.at("/tgc/0/base").asLong()).isEqualTo(246_000 - 24_000);
+        assertThat(report.at("/kpis/revenueHt").asLong()).isEqualTo(222_000);
+        assertThat(report.at("/kpis/subscriptionsHt").asLong()).isEqualTo(222_000);
         assertThat(report.at("/kpis/collected").asLong()).isEqualTo(4_860);
-        assertThat(report.at("/kpis/mrr").asLong()).as("abonnement annuel ramené au mois").isEqualTo(13_500);
+        assertThat(report.at("/kpis/mrr").asLong()).as("abonnement annuel ramené au mois").isEqualTo(20_500);
         assertThat(report.get("months").size()).isEqualTo(12);
         assertThat(report.at("/months/10/month").asText()).isEqualTo("2026-11");
-        assertThat(report.at("/months/10/ht").asLong()).isEqualTo(138_000);
+        assertThat(report.at("/months/10/ht").asLong()).isEqualTo(222_000);
         assertThat(report.at("/months/10/collected").asLong()).isEqualTo(4_860);
-        assertThat(report.get("mrrByPlan").toString()).contains("\"key\":\"GESTION\"", "\"key\":\"MODULES\"");
+        assertThat(report.get("mrrByPlan").toString()).contains("\"key\":\"FORMULE\"", "\"key\":\"OPTIONS\"").doesNotContain("MODULES");
         long planTotal = 0;
         for (var p : report.get("mrrByPlan")) {
             planTotal += p.get("monthly").asLong();
         }
-        assertThat(planTotal).isEqualTo(13_500);
+        assertThat(planTotal).isEqualTo(20_500);
         assertThat(report.at("/kpis/departures").asInt()).isZero();
         assertThat(report.at("/kpis/churnTenths").asInt()).isZero();
         assertThat(ok(get("/api/v1/tableau"), null).get("mrrPrevious").asLong()).as("contrat commencé en novembre").isZero();
 
         // Rentabilité : 90 min sur 12 mois à 9 000 F de l'heure, plus 1 200 F d'hébergement.
         assertThat(report.at("/profitMonths").asInt()).isEqualTo(12);
-        assertThat(report.at("/profitability/0/revenue").asLong()).isEqualTo(13_500);
+        assertThat(report.at("/profitability/0/revenue").asLong()).isEqualTo(20_500);
         assertThat(report.at("/profitability/0/cost").asLong()).isEqualTo(1_125 + 1_200);
-        assertThat(report.at("/profitability/0/margin").asLong()).isEqualTo(13_500 - 2_325);
+        assertThat(report.at("/profitability/0/margin").asLong()).isEqualTo(20_500 - 2_325);
         ok(put("/api/v1/reporting/reglages"), Map.of("supportHourlyRate", 12_000, "hostingPerCreche", 1_500));
         assertThat(report("2026-01-01", "2026-12-31").at("/profitability/0/cost").asLong()).isEqualTo(1_500 + 1_500);
 
-        // Balance âgée aux bornes : échéance le 08/12/2026, reste 179 820 − 26 640 − 4 860.
-        long remaining = 148_320;
+        // Balance âgée aux bornes : échéance le 08/12/2026, reste 273 060 − 26 640 − 4 860.
+        long remaining = 241_560;
         assertThat(report.at("/aging/0/notDue").asLong()).isEqualTo(remaining);
         var bounds = new String[][] {{"2026-12-08", "notDue"}, {"2026-12-09", "d30"}, {"2027-01-07", "d30"}, {"2027-01-08", "d60"},
                 {"2027-02-06", "d60"}, {"2027-02-07", "d90"}, {"2027-03-08", "d90"}, {"2027-03-09", "over"}};
@@ -615,8 +643,8 @@ public class BillingIT {
         assertThat(report("2026-01-01", "2026-12-31").at("/agingTotal/over").asLong()).isEqualTo(remaining);
         assertThat(report("2026-01-01", "2026-12-31").get("risks").toString()).as("un seul retard").doesNotContain("PAIEMENT");
 
-        // Filtres : une autre formule ne voit rien de cette crèche.
-        var other = ok(get("/api/v1/reporting").param("du", "2026-01-01").param("au", "2026-12-31").param("formule", "COMPLET"), null);
+        // Filtres : une ancienne formule ne voit rien de cette crèche, à la formule unique.
+        var other = ok(get("/api/v1/reporting").param("du", "2026-01-01").param("au", "2026-12-31").param("formule", "GESTION"), null);
         assertThat(other.at("/kpis/revenueHt").asLong()).isZero();
         assertThat(other.get("aging").size()).isZero();
         problem(get("/api/v1/reporting").param("du", "2026-12-31").param("au", "2026-01-01"), null, 422);
@@ -625,7 +653,7 @@ public class BillingIT {
         var csv = call(get("/api/v1/reporting/journal-ventes.csv").param("du", "2026-01-01").param("au", "2026-12-31"), null).getResponse();
         var text = csv.getContentAsString(StandardCharsets.UTF_8);
         assertThat(text).startsWith("﻿Date;Pièce;Type;Client;RIDET;Crèche;Formule;Objet;Échéance;Total HT;TGC;Total TTC;Base HT 11 %;TGC 11 %\r\n");
-        assertThat(text).contains("08/11/2026;F2026-0001;Facture;", ";Gestion;", ";08/12/2026;162000;17820;179820;162000;17820\r\n");
+        assertThat(text).contains("08/11/2026;F2026-0001;Facture;", ";Ti’Cagou;", ";08/12/2026;246000;27060;273060;246000;27060\r\n");
         assertThat(text).contains(";AV2026-0001;Avoir;", ";-24000;-2640;-26640;-24000;-2640\r\n");
         assertThat(csv.getHeader("Content-Disposition")).contains("journal-ventes-2026-01-01-2026-12-31.csv");
         var receipts = call(get("/api/v1/reporting/encaissements.csv").param("du", "2026-01-01").param("au", "2026-12-31"), null)

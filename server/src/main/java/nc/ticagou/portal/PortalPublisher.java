@@ -13,8 +13,6 @@ import org.springframework.stereotype.Component;
 import nc.ticagou.attendance.ChildAttendanceRepository;
 import nc.ticagou.journal.DailyEntry;
 import nc.ticagou.journal.DailyEntryRepository;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.LicenseService;
 
 /**
  * Ajoute à la file d'envoi les changements susceptibles d'intéresser les parents, dans la transaction qui les
@@ -30,18 +28,15 @@ public class PortalPublisher {
 
     private final PortalSettingsRepository settings;
     private final PortalOutboxRepository outbox;
-    private final LicenseService licenses;
     private final DailyEntryRepository entries;
     private final ChildAttendanceRepository attendances;
     private final StructureNewsRepository news;
     private final Clock clock;
 
-    public PortalPublisher(PortalSettingsRepository settings, PortalOutboxRepository outbox, LicenseService licenses,
-                           DailyEntryRepository entries, ChildAttendanceRepository attendances,
+    public PortalPublisher(PortalSettingsRepository settings, PortalOutboxRepository outbox, DailyEntryRepository entries, ChildAttendanceRepository attendances,
                            StructureNewsRepository news, Clock clock) {
         this.settings = settings;
         this.outbox = outbox;
-        this.licenses = licenses;
         this.entries = entries;
         this.attendances = attendances;
         this.news = news;
@@ -51,7 +46,7 @@ public class PortalPublisher {
     @EventListener
     public void on(PortalChange change) {
         var current = settings.findById(change.structureId());
-        if (current.isEmpty() || !current.get().isActive() || !licenses.allows(LicenseModule.PORTAIL_PARENTS)) {
+        if (current.isEmpty() || !current.get().isActive()) {
             return;
         }
         enqueue(change);

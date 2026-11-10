@@ -56,28 +56,62 @@ const open = async (name: RegExp) => {
   return user;
 };
 
-describe("paramètres selon la formule", () => {
-  it("Essentiel : seules les rubriques de la base apparaissent", async () => {
-    server(director, { "GET /system/modules": { body: { modules: [] } } });
+describe("une seule formule", () => {
+  it("toutes les rubriques apparaissent à la direction", async () => {
+    server(director);
     renderAt("/parametres");
 
     const nav = await screen.findByRole("navigation", { name: "Rubriques des paramètres" });
-    await waitFor(() => expect(within(nav).queryByRole("button", { name: /^Repas et régimes/ })).not.toBeInTheDocument());
-    for (const name of [/^Critères d’inscription/, /^Barème et facturation/, /^Financeurs et aides/, /^Comptabilité/, /^Portail parents/]) {
-      expect(within(nav).queryByRole("button", { name })).not.toBeInTheDocument();
-    }
-    for (const name of [/^Structure/, /^Sections et tranches d’âge/, /^Règles d’encadrement/, /^Utilisateurs et rôles/, /^Sauvegardes/, /^Tablettes et abonnement/]) {
+    for (const name of [/^Structure/, /^Critères d’inscription/, /^Repas et régimes/, /^Barème et facturation/, /^Financeurs et aides/,
+      /^Comptabilité/, /^Utilisateurs et rôles/, /^Sauvegardes/, /^Tablettes et abonnement/, /^Portail parents/]) {
       expect(within(nav).getByRole("button", { name })).toBeInTheDocument();
     }
   });
 
-  it("une rubrique suit son module : le barème sans les règles de facturation", async () => {
-    server(director, { "GET /system/modules": { body: { modules: ["INSCRIPTIONS"] } } });
+  it("les rubriques masquées à la demande de la crèche disparaissent (ADR 0022)", async () => {
+    server(director, { "GET /rubriques": { body: { hidden: ["FACTURATION", "COMPTABILITE", "PORTAIL_PARENTS"], labels: ["Facturation", "Comptabilité", "Portail parents"] } } });
     renderAt("/parametres");
 
     const nav = await screen.findByRole("navigation", { name: "Rubriques des paramètres" });
-    expect(await within(nav).findByRole("button", { name: /^Barème et facturation/ })).toBeInTheDocument();
-    await waitFor(() => expect(within(nav).queryByRole("button", { name: /^Financeurs et aides/ })).not.toBeInTheDocument());
+    await waitFor(() => expect(within(nav).queryByRole("button", { name: /^Comptabilité/ })).not.toBeInTheDocument());
+    for (const name of [/^Financeurs et aides/, /^Portail parents/]) {
+      expect(within(nav).queryByRole("button", { name })).not.toBeInTheDocument();
+    }
+    expect(within(nav).getByRole("button", { name: /^Barème et facturation/ })).toBeInTheDocument();
+  });
+});
+
+describe("barème et formules de facturation", () => {
+  it("enregistre les formules du barème et les affiche", async () => {
+    const tariff = {
+      id: "t-1", label: "Barème 2027", criterion: "HEURES_SEMAINE", weeksPerYear: 47, registrationFee: 0,
+      validFrom: "2027-01-01", validTo: null, bands: [{ lowerBound: 0, hourlyRate: 620 }],
+      formulas: [{ label: "Temps plein", monthlyFee: 98_500 }], used: false, version: 0,
+    };
+    const { calls } = server(director, {
+      "GET /tariff-schedules": { body: [tariff] },
+      "PUT /tariff-schedules/t-1": { body: tariff },
+      "GET /billing-rules": { body: [] },
+    });
+    renderAt("/parametres?onglet=bareme");
+
+    const card = await screen.findByRole("region", { name: "Barème 2027" });
+    expect(within(card).getByRole("table", { name: "Formules de facturation" })).toHaveTextContent(/Temps plein.*98\s500/);
+
+    const user = userEvent.setup();
+    await user.click(within(card).getByRole("button", { name: /Modifier/ }));
+    expect(screen.getByLabelText("Libellé de la formule 1")).toHaveValue("Temps plein");
+    await user.click(screen.getByRole("button", { name: "Ajouter une formule" }));
+    await user.type(screen.getByLabelText("Libellé de la formule 2"), "Matins seulement");
+    await user.type(screen.getByLabelText("Forfait mensuel de la formule 2"), "60 000");
+    // Une ligne vide est ignorée.
+    await user.click(screen.getByRole("button", { name: "Ajouter une formule" }));
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    await waitFor(() => expect(calls.find((c) => c.key === "PUT /tariff-schedules/t-1")).toBeDefined());
+    expect((calls.find((c) => c.key === "PUT /tariff-schedules/t-1")!.body as { formulas: unknown }).formulas).toEqual([
+      { label: "Temps plein", monthlyFee: 98_500 }, { label: "Matins seulement", monthlyFee: 60_000 },
+    ]);
   });
 });
 

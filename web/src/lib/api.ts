@@ -145,7 +145,14 @@ async function toApiError(response: Response): Promise<ApiError> {
 
 /** Message à afficher pour une erreur quelconque (réseau compris). */
 export function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) return error.message;
+  if (error instanceof ApiError) {
+    // Message général sans précision : on donne le détail par champ, s'il est connu.
+    const details = Object.values(error.errors).filter(Boolean);
+    if (details.length > 0 && !details.some((d) => error.message.includes(d))) {
+      return `${error.message.replace(/\.$/, "")} : ${details.join(" ")}`;
+    }
+    return error.message;
+  }
   return "Le serveur de la crèche ne répond pas. Vérifiez qu’il est allumé et connecté au réseau.";
 }
 

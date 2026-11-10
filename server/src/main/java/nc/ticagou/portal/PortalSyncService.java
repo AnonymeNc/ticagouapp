@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import nc.ticagou.audit.AuditAction;
 import nc.ticagou.audit.AuditService;
 import nc.ticagou.audit.AuditService.Actor;
-import nc.ticagou.license.LicenseModule;
 import nc.ticagou.license.LicenseService;
 import nc.ticagou.portal.PortalClient.PortalException;
 import nc.ticagou.portal.SyncDtos.Batch;
@@ -113,11 +112,6 @@ public class PortalSyncService {
             }
             if (settings.getState() == PortalSettings.State.PURGE_EN_COURS) {
                 return purge(settings);
-            }
-            if (!licenses.allows(LicenseModule.PORTAIL_PARENTS)) {
-                // Licence sans le module : effacement du portail, comme une désactivation.
-                transactions.executeWithoutResult(s -> startPurge(structureId, "licence sans le module"));
-                return purge(settingsRepository.findById(structureId).orElseThrow());
             }
             try {
                 settings = announceAccess(structureId);

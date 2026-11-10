@@ -27,7 +27,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import nc.ticagou.IntegrationTest;
-import nc.ticagou.license.LicenseModule;
 import nc.ticagou.license.TestLicenses;
 
 /**
@@ -508,16 +507,6 @@ class PortalIT extends IntegrationTest {
     }
 
     @Test
-    void sansLePortailPasDeTransmission() throws Exception {
-        TestLicenses.apply(jdbc, 48, Set.of(), 2, TODAY.plusYears(1));
-
-        var refused = send(transmission("MOT", List.of(childId), Map.of(), "Bonne journée", true));
-
-        assertThat(refused.get("outcome").asText()).isEqualTo("REFUSEE");
-        assertThat(refused.get("code").asText()).isEqualTo("module_absent");
-    }
-
-    @Test
     void finDAccesDesParentsSuitLAbonnement() throws Exception {
         activate();
         sync();
@@ -535,16 +524,6 @@ class PortalIT extends IntegrationTest {
         // Rien de changé : rien de renvoyé.
         sync();
         assertThat(received("STRUCTURE")).hasSize(2);
-    }
-
-    @Test
-    void moduleAbsentDeLaLicence() throws Exception {
-        TestLicenses.apply(jdbc, 48, Set.of(LicenseModule.FACTURATION), 2, TODAY.plusYears(1));
-        var result = perform(post("/api/v1/portal/activate"), director,
-                Map.of("portalUrl", portal.url(), "activationCode", FakePortal.CODE));
-        assertThat(status(result)).isEqualTo(403);
-        assertThat(body(result).get("code").asText()).isEqualTo("module_absent");
-        assertThat(body(getAs(director, "/api/v1/portal")).get("moduleIncluded").asBoolean()).isFalse();
     }
 
     @Test

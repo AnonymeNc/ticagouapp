@@ -6,12 +6,13 @@ import { Camera } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/DateInput";
 import { Input } from "@/components/ui/input";
 import { useSections } from "@/features/structure/useSections";
 import { ageInMonths, formatAge, todayIso } from "@/lib/age";
 import { errorMessage } from "@/lib/api";
 import { isoToDateFr, parseDateFr } from "@/lib/datetime";
-import { dateToIso, isoToField, nullToEmpty, optionalDateFr, optionalText, requiredDateFr, requiredText, selectClass, textOrNull } from "@/lib/formFields";
+import { dateToIso, isoToField, nullToEmpty, optionalDateFr, optionalText, requiredPastDateFr, requiredText, selectClass, textOrNull } from "@/lib/formFields";
 import { childrenApi } from "../api";
 import { ChildAvatar, SectionBadge } from "../components";
 import { useRefreshChild, type ChildTabProps } from "../ChildRecordPage";
@@ -21,7 +22,7 @@ const schema = z
   .object({
     firstName: requiredText(80, "Indiquez le prénom."),
     lastName: requiredText(80, "Indiquez le nom."),
-    birthDate: requiredDateFr("Indiquez la date de naissance."),
+    birthDate: requiredPastDateFr("Indiquez la date de naissance."),
     sectionId: z.string(),
     entryDate: optionalDateFr,
     exitDate: optionalDateFr,
@@ -158,7 +159,7 @@ function IdentityForm({ child, onDone }: { child: ChildTabProps["child"]; onDone
         <Input {...form.register("lastName")} />
       </FormField>
       <FormField label="Date de naissance" hint="JJ/MM/AAAA" error={errors.birthDate?.message}>
-        <Input inputMode="numeric" {...form.register("birthDate")} />
+        <DateInput inputMode="numeric" {...form.register("birthDate")} />
       </FormField>
       <FormField label="Section" error={errors.sectionId?.message}>
         <select className={selectClass} {...form.register("sectionId")}>
@@ -167,10 +168,10 @@ function IdentityForm({ child, onDone }: { child: ChildTabProps["child"]; onDone
         </select>
       </FormField>
       <FormField label="Date d’entrée" hint="JJ/MM/AAAA" error={errors.entryDate?.message}>
-        <Input inputMode="numeric" {...form.register("entryDate")} />
+        <DateInput inputMode="numeric" {...form.register("entryDate")} />
       </FormField>
       <FormField label="Date de sortie" hint="Dernier jour d’accueil" error={errors.exitDate?.message}>
-        <Input inputMode="numeric" {...form.register("exitDate")} />
+        <DateInput inputMode="numeric" {...form.register("exitDate")} />
       </FormField>
       <FormField label="Langues parlées à la maison" error={errors.homeLanguages?.message} className="sm:col-span-2">
         <Input {...form.register("homeLanguages")} />

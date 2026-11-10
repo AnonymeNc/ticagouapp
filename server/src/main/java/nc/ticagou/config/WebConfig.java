@@ -17,7 +17,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
 import nc.ticagou.auth.MfaGuard;
-import nc.ticagou.license.ModuleGuard;
+import nc.ticagou.license.LicenseGuard;
 
 /**
  * L'instance sert aussi le front : le bureau dans le navigateur, les tablettes sur {@code /kiosk}, installé en PWA. Toute adresse qui n'est ni un fichier ni l'API renvoie {@code index.html}
@@ -29,11 +29,11 @@ public class WebConfig implements WebMvcConfigurer {
     private static final Logger log = LoggerFactory.getLogger(WebConfig.class);
 
     private final TiCagouProperties properties;
-    private final ModuleGuard moduleGuard;
+    private final LicenseGuard licenseGuard;
     private final MfaGuard mfaGuard;
 
-    public WebConfig(TiCagouProperties properties, ModuleGuard moduleGuard, MfaGuard mfaGuard) {
-        this.moduleGuard = moduleGuard;
+    public WebConfig(TiCagouProperties properties, LicenseGuard licenseGuard, MfaGuard mfaGuard) {
+        this.licenseGuard = licenseGuard;
         this.mfaGuard = mfaGuard;
         this.properties = properties;
     }
@@ -41,7 +41,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(mfaGuard).addPathPatterns("/api/**");
-        registry.addInterceptor(moduleGuard).addPathPatterns("/api/**");
+        registry.addInterceptor(licenseGuard).addPathPatterns("/api/**");
     }
 
     /** La racine n'est pas une ressource pour le gestionnaire de fichiers : sans cela, elle répond 404. */

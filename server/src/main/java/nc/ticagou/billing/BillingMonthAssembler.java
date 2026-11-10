@@ -285,7 +285,7 @@ public class BillingMonthAssembler {
                     version.getHourlyRate(),
                     version.getDays().stream().map(d -> new DayPlan(d.dayOfWeek(), d.arrivesAt(), d.leavesAt())).toList(),
                     Objects.requireNonNullElse(version.getMonthlyReservedMinutes(), version.getMonthlyMinutes()),
-                    version.getBillingMode()));
+                    version.getBillingMode(), version.getFormulaLabel()));
         }
         var sessions = contract.getAdaptationSessions().stream()
                 .map(s -> new Session(s.sessionDate(), s.startsAt(), s.endsAt())).toList();

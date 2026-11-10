@@ -79,7 +79,7 @@ export function LoginPage() {
           {form.formState.isSubmitting ? "Connexion…" : "Se connecter"}
         </Button>
         <p className="m-0 text-small text-muted-foreground">
-          {askCode ? "Téléphone perdu ? Demandez à la direction de réinitialiser votre accès, ou contactez Ti’Cagou." : "Mot de passe oublié ? Demandez à la direction de vous en définir un nouveau."}
+          {askCode ? "Téléphone perdu ? Demandez à la direction de réinitialiser votre accès, ou contactez Ti’Cagou." : "Mot de passe oublié ? Demandez à la direction de vous en définir un nouveau ; la direction, elle, demande un lien à l’éditeur de Ti’Cagou."}
         </p>
       </form>
     </FocusLayout>

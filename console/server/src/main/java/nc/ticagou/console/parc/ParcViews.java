@@ -18,7 +18,7 @@ public final class ParcViews {
 
     /** Une ligne de la vue du parc. */
     public record Row(String slug, String name, String city, String clientName, String lifecycle, Health health,
-                      Instant lastContactAt, String version, String plan, List<String> modules, Integer places,
+                      Instant lastContactAt, String version, String plan, Integer places,
                       Integer activeChildren, String licenseState, LocalDate validUntil, LocalDate deadline,
                       Integer desktops, Integer desktopLimit, Integer tablets, Integer tabletLimit,
                       Instant backupAt, boolean backupStale, Integer diskUsedPercent, String container,
@@ -49,7 +49,7 @@ public final class ParcViews {
 
     public record Detail(Row row, String domain, LocalDate clientSince, Instant createdAt, String supervisionName,
                          Instant hostSeenAt, Client client, JsonNode status, JsonNode subscription, List<AlertView> history,
-                         List<Point> points, List<Note> notes, List<AuditService.Event> journal) {
+                         List<Point> points, List<Note> notes, List<AuditService.Event> journal, List<String> hiddenSections) {
     }
 
     public record SearchHit(String slug, String name, String city, String clientName, Health.Level level) {

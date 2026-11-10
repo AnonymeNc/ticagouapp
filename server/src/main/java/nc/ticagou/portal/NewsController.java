@@ -26,8 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 import nc.ticagou.portal.PortalDtos.BroadcastRequest;
 import nc.ticagou.portal.PortalDtos.BroadcastResult;
 import nc.ticagou.portal.PortalDtos.NewsDto;
@@ -35,7 +33,6 @@ import nc.ticagou.portal.PortalDtos.NewsDto;
 /** Actualités de la crèche et messages à plusieurs familles, publiés sur le portail parents. */
 @RestController
 @RequestMapping("/api/v1")
-@RequiresModule(LicenseModule.PORTAIL_PARENTS)
 @Tag(name = "Portail parents", description = "Actualités de la crèche et messages à plusieurs familles")
 public class NewsController {
 

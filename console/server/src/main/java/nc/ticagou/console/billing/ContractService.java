@@ -51,7 +51,7 @@ public class ContractService {
     }
 
     /** Abonnement que l'instance devrait porter, et ses écarts avec ce que l'hôte lit dans sa base. */
-    public record Expected(String plan, Set<String> modules, int places, int desktops, int tablets, LocalDate validUntil,
+    public record Expected(String plan, int places, int desktops, int tablets, LocalDate validUntil,
                            List<String> differences) {
     }
 
@@ -306,11 +306,6 @@ public class ContractService {
     // --- Abonnement attendu
 
     private Expected expected(ParcRepository.Creche creche, Contract contract, Pricing.PriceList list) {
-        var cat = catalogue.catalogue(list.id());
-        var tier = Pricing.tier(list, contract.places());
-        var included = cat.find("FORMULE", contract.plan(), tier).map(Pricing.PriceItem::included).orElse(Set.of());
-        var modules = new LinkedHashSet<String>(included);
-        modules.addAll(contract.modules());
         var desktops = list.includedDesktops() + contract.extraDesktops();
         var tablets = list.includedTablets() + contract.extraTablets();
         var validUntil = invoices.paidThrough(creche.id()).orElse(null);
@@ -319,35 +314,22 @@ public class ContractService {
         if (sub == null || sub.isNull()) {
             differences.add(creche.host() == null ? "Abonnement de l’instance pas encore lu (rapport de l’hôte)" : "L’instance n’a pas d’abonnement");
         } else {
+            // Une seule formule (ADR 0021) : l'instance doit afficher « Ti’Cagou — … » ; « Complet », « Gestion »… viennent
+            // d'un abonnement à reporter de nouveau.
             var plan = sub.path("plan").asText("");
-            var label = contract.plan().charAt(0) + contract.plan().substring(1).toLowerCase();
-            if (!plan.toLowerCase().startsWith(label.toLowerCase())) {
-                differences.add("Formule : %s dans l’instance, %s au contrat".formatted(plan.isBlank() ? "?" : plan.split("\\s+[—–-]\\s+")[0], label));
+            if (!plan.replace('\'', '’').startsWith("Ti’Cagou")) {
+                differences.add("Formule : %s dans l’instance, Ti’Cagou au contrat".formatted(plan.isBlank() ? "?" : plan.split("\\s+[—–-]\\s+")[0]));
             }
             compare(differences, "Places", sub.path("places"), contract.places());
             compare(differences, "PC", sub.path("desktops"), desktops);
             compare(differences, "Tablettes", sub.path("tablets"), tablets);
-            var actual = new LinkedHashSet<String>();
-            for (var m : sub.path("modules").asText("").split(",")) {
-                if (!m.isBlank()) {
-                    actual.add(m.strip());
-                }
-            }
-            if (!actual.equals(modules)) {
-                var missing = new LinkedHashSet<>(modules);
-                missing.removeAll(actual);
-                var extra = new LinkedHashSet<>(actual);
-                extra.removeAll(modules);
-                differences.add("Modules :%s%s".formatted(missing.isEmpty() ? "" : " manquent " + String.join(", ", missing),
-                        extra.isEmpty() ? "" : " en trop " + String.join(", ", extra)));
-            }
             var until = sub.path("validUntil").asText(null);
             if (validUntil != null && until != null && !until.startsWith(validUntil.toString())) {
                 differences.add("Échéance : %s dans l’instance, %s payée au contrat".formatted(Dates.format(LocalDate.parse(until.substring(0, 10))),
                         Dates.format(validUntil)));
             }
         }
-        return new Expected(contract.plan(), modules, contract.places(), desktops, tablets, validUntil, differences);
+        return new Expected(contract.plan(), contract.places(), desktops, tablets, validUntil, differences);
     }
 
     private static void compare(List<String> differences, String label, JsonNode actual, int expected) {
@@ -376,11 +358,12 @@ public class ContractService {
     }
 
     private static void validate(Input in) {
-        if (!Pricing.PLANS.contains(in.plan())) {
-            throw ApiException.rule("formule", "Formule inconnue.");
+        // Nouveaux contrats et avenants : la formule unique, sans module à ajouter (ADR 0021).
+        if (!Pricing.OFFER.equals(in.plan())) {
+            throw ApiException.rule("formule", "Une seule formule : Ti’Cagou, tout compris.");
         }
-        if (in.modules() != null && !Pricing.MODULES.containsAll(in.modules())) {
-            throw ApiException.rule("module", "Module inconnu.");
+        if (in.modules() != null && !in.modules().isEmpty()) {
+            throw ApiException.rule("module", "La formule Ti’Cagou comprend tout : aucun module à ajouter.");
         }
         if (in.freeDiscount() > 0 && (in.freeDiscountReason() == null || in.freeDiscountReason().isBlank())) {
             throw ApiException.rule("remise_motif", "Une remise libre doit être motivée.");

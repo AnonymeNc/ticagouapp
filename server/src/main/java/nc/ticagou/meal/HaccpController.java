@@ -26,8 +26,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 import nc.ticagou.meal.HaccpService.Kind;
 import nc.ticagou.meal.HaccpService.Point;
 import nc.ticagou.meal.HaccpService.Reading;
@@ -35,7 +33,6 @@ import nc.ticagou.meal.HaccpService.Reading;
 /** Relevés de températures HACCP (lot 4, module Repas). */
 @RestController
 @RequestMapping("/api/v1/haccp")
-@RequiresModule(LicenseModule.REPAS)
 @Tag(name = "Repas", description = "Relevés de températures (HACCP)")
 public class HaccpController {
 

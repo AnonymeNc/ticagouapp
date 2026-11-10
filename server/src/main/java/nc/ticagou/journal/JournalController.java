@@ -24,14 +24,11 @@ import jakarta.validation.Valid;
 import nc.ticagou.auth.CurrentUser;
 import nc.ticagou.journal.JournalDtos.EntryCorrection;
 import nc.ticagou.journal.JournalDtos.EntryDto;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** Transmissions du jour, relues et corrigées au bureau ; la saisie se fait sur la tablette. */
 @RestController
 @RequestMapping("/api/v1/journal")
 @Tag(name = "Transmissions", description = "Repas, siestes, changes, activités et photos de la journée")
-@RequiresModule(LicenseModule.PORTAIL_PARENTS)
 public class JournalController {
 
     static final String TEAM = "hasAnyRole('DIRECTION', 'EDUCATRICE')";

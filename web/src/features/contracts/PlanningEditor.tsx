@@ -115,6 +115,38 @@ export function PlanningEditor({ days, onChange, opening }: {
 }
 
 /**
+ * Formule de facturation du barème (« Temps plein », « Matins seulement »…) ou calcul à l'heure d'après le planning.
+ * Rien à choisir quand le barème ne propose aucune formule.
+ */
+export function FormulaChoice({ value, quote, onChange }: {
+  value: string | null;
+  quote: { formulas?: { label: string; monthlyFee: number }[]; hourlyFee: number };
+  onChange: (formula: string | null) => void;
+}) {
+  if (!quote.formulas?.length) return null;
+  const options = [
+    { key: null, title: "Calcul à l’heure", amount: `${formatXpf(quote.hourlyFee)} par mois`, detail: "D’après le planning et la tranche du barème." },
+    ...quote.formulas.map((f) => ({ key: f.label, title: f.label, amount: `${formatXpf(f.monthlyFee)} par mois`, detail: "Forfait du barème, le même chaque mois." })),
+  ];
+  return (
+    <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+      <legend className="mb-2 text-label">Formule de facturation</legend>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {options.map((o) => (
+          <label key={o.key ?? ""} className={cn("flex cursor-pointer gap-3 rounded-lg border p-4", value === o.key ? "border-lagon-600 bg-lagon-50" : "border-input")}>
+            <input type="radio" name="formula" checked={value === o.key} onChange={() => onChange(o.key)} className="mt-1 accent-lagon-600" />
+            <span className="flex flex-col gap-1">
+              <span className="font-semibold">{o.title} — <span className="tabular-nums">{o.amount}</span></span>
+              <span className="text-small text-muted-foreground">{o.detail}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+/**
  * Mensualisé ou au réel, avec les deux montants côte à côte : la directrice choisit avec la famille. Le défaut vient
  * des Paramètres (Barème et facturation).
  */

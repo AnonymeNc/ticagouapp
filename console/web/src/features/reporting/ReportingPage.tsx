@@ -9,14 +9,12 @@ import { errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   exportHref,
-  planLabels,
   presetRange,
   rateLabel,
   useReport,
   useSaveSettings,
   type AgingRow,
   type Filter,
-  type Plan,
   type Preset,
   type Report,
 } from "./api";
@@ -27,12 +25,12 @@ const monthName = (ym: string) =>
 
 /**
  * Reporting (maquette « Reporting ») : chiffre d'affaires, encaissé, TGC et départs de la période ; balance âgée à ce jour ;
- * revenu mensuel par formule et vente additionnelle ; risque de départ ; rentabilité par crèche ; détail par mois et TGC
+ * revenu mensuel (formule, options, remises) et vente additionnelle ; risque de départ ; rentabilité par crèche ; détail par mois et TGC
  * par taux. Exports pour le comptable : journal des ventes, encaissements, classeur Excel.
  */
 export function ReportingPage() {
   const [preset, setPreset] = useState<Preset>("exercice");
-  const [filter, setFilter] = useState<Filter>(() => ({ ...presetRange("exercice", new Date()), clientId: "", plan: "" }));
+  const [filter, setFilter] = useState<Filter>(() => ({ ...presetRange("exercice", new Date()), clientId: "" }));
   const report = useReport(filter);
   const data = report.data;
 
@@ -100,14 +98,6 @@ export function ReportingPage() {
             ))}
           </select>
         </Field>
-        <Field label="Formule" htmlFor="formule">
-          <select id="formule" className={selectClass} value={filter.plan} onChange={(e) => setFilter({ ...filter, plan: e.target.value as Plan | "" })}>
-            <option value="">Toutes</option>
-            {(Object.keys(planLabels) as Plan[]).map((p) => (
-              <option key={p} value={p}>{planLabels[p]}</option>
-            ))}
-          </select>
-        </Field>
       </section>
 
       {report.isError && <p role="alert" className="text-danger-700">{errorMessage(report.error)}</p>}
@@ -149,7 +139,7 @@ function Body({ report }: { report: Report }) {
           <Aging rows={report.aging} total={report.agingTotal} />
         </Card>
 
-        <Card title="Revenu mensuel par formule" aside={<span className="text-small text-muted-foreground">{xpf(k.mrr)} HT par mois</span>}>
+        <Card title="Revenu mensuel" aside={<span className="text-small text-muted-foreground">{xpf(k.mrr)} HT par mois</span>}>
           {report.mrrByPlan.length === 0 ? (
             <Empty>Aucun contrat en cours.</Empty>
           ) : (

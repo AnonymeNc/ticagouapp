@@ -16,6 +16,7 @@ import { EnrollmentBoardPage } from "@/features/enrollment/EnrollmentBoardPage";
 import { EnrollmentRequestPage } from "@/features/enrollment/EnrollmentRequestPage";
 import { NewRequestPage } from "@/features/enrollment/NewRequestPage";
 import { LoginPage } from "@/features/auth/LoginPage";
+import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { KitchenPage } from "@/features/meals/KitchenPage";
 import { MenusPage } from "@/features/meals/MenusPage";
 import { QuarterPage } from "@/features/meals/QuarterPage";
@@ -42,6 +43,8 @@ import { ReportingPage } from "@/features/reporting/ReportingPage";
 export const routes: RouteObject[] = [
   // Pré-inscription en ligne (ADR 0020) : page publique, sans session, intégrable au site de la crèche.
   { path: "/preinscription", element: <PreinscriptionPage /> },
+  // Lien de réinitialisation du mot de passe, créé par l'éditeur depuis sa console : page publique, le jeton fait foi.
+  { path: "/reinitialiser", element: <ResetPasswordPage /> },
   {
     // Tablette appairée : session par PIN, jamais conservée ; file d'attente hors connexion (ADR 0005)
     path: "/kiosk",

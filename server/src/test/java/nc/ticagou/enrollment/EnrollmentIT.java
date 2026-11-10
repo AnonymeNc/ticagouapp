@@ -191,6 +191,35 @@ class EnrollmentIT extends IntegrationTest {
     }
 
     @Test
+    void lErreurDeSaisieDitQuelChampCorrigerEtPourquoi() throws Exception {
+        var future = form("Tiaré", List.of());
+        future.put("birthDate", TODAY.plusDays(3).toString());
+        var one = perform(post("/api/v1/enrollment-requests"), director, future);
+        assertThat(status(one)).isEqualTo(400);
+        assertThat(body(one).get("detail").asText()).isEqualTo("Date de naissance : ne peut pas être dans le futur.");
+        assertThat(body(one).get("errors").get("birthDate").asText()).isEqualTo("Date de naissance : ne peut pas être dans le futur.");
+
+        var several = form("", List.of());
+        several.put("email", "pas-une-adresse");
+        several.put("phone", null);
+        var detail = body(perform(post("/api/v1/enrollment-requests"), director, several)).get("detail").asText();
+        assertThat(detail).startsWith("Certaines informations sont à corriger : ")
+                .contains("Prénom de l’enfant : à renseigner.").contains("E-mail : adresse e-mail invalide.");
+
+        var unreadable = form("Tiaré", List.of());
+        unreadable.put("desiredStart", "31/02/2027");
+        var bad = perform(post("/api/v1/enrollment-requests"), director, unreadable);
+        assertThat(status(bad)).isEqualTo(400);
+        assertThat(body(bad).get("detail").asText()).isEqualTo("Date d’entrée souhaitée : valeur au mauvais format.");
+
+        // Erreur produite par Spring (identifiant mal formé) : message en français, pas « Failed to convert… ».
+        var malformed = getAs(director, "/api/v1/enrollment-requests/pas-un-identifiant");
+        assertThat(status(malformed)).isEqualTo(400);
+        assertThat(body(malformed).get("code").asText()).isEqualTo("bad_request");
+        assertThat(body(malformed).get("detail").asText()).startsWith("La demande est incomplète ou mal formée");
+    }
+
+    @Test
     void droitsParRole() throws Exception {
         var id = create(form("Hinano", List.of()));
         createUser(director, "COMPTABILITE", "compta", "Mot-de-passe-compta", null);

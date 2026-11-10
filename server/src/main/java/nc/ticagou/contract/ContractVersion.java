@@ -46,7 +46,7 @@ public class ContractVersion {
     /** Résultat du calcul, recopié dans la version. */
     public record Pricing(UUID tariffScheduleId, TariffCriterion criterion, long bandLowerBound, long hourlyRate,
                           int weeksPerYear, int weeklyMinutes, int monthlyMinutes, long monthlyFee,
-                          long registrationFee) {
+                          long registrationFee, String formulaLabel) {
     }
 
     @Id
@@ -127,6 +127,10 @@ public class ContractVersion {
     @Column(name = "registration_fee", nullable = false)
     private long registrationFee;
 
+    /** Formule de facturation choisie (forfait du barème) ; nulle : forfait calculé à l'heure. */
+    @Column(name = "formula_label")
+    private String formulaLabel;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -176,10 +180,15 @@ public class ContractVersion {
         this.monthlyMinutes = pricing.monthlyMinutes();
         this.monthlyFee = pricing.monthlyFee();
         this.registrationFee = pricing.registrationFee();
+        this.formulaLabel = pricing.formulaLabel();
     }
 
     public BillingMode getBillingMode() {
         return billingMode;
+    }
+
+    public String getFormulaLabel() {
+        return formulaLabel;
     }
 
     public void sign(LocalDate signedOn, UUID signedDocumentId) {

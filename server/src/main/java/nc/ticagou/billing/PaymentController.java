@@ -22,12 +22,9 @@ import nc.ticagou.billing.PaymentDtos.MarkReminderSentRequest;
 import nc.ticagou.billing.PaymentDtos.PaymentDto;
 import nc.ticagou.billing.PaymentDtos.PaymentRequest;
 import nc.ticagou.billing.PaymentDtos.ReminderDto;
-import nc.ticagou.license.LicenseModule;
-import nc.ticagou.license.RequiresModule;
 
 /** Encaissements, lettrage et relances : direction et comptabilité. */
 @RestController
-@RequiresModule(LicenseModule.FACTURATION)
 @RequestMapping("/api/v1/billing")
 @Tag(name = "Encaissements", description = "Paiements, lettrage, impayés et relances")
 @PreAuthorize(BillingSettingsController.MANAGERS)
