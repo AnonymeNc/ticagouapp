@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { scrollIntoContent } from "@/app/layout/scroll";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FilePlus2, Plus } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
@@ -30,6 +31,12 @@ export function DocumentTemplatesTab() {
   const templates = useQuery({ queryKey: keys.list, queryFn: ({ signal }) => api<Template[]>("/document-templates", { signal }) });
   const settings = useQuery({ queryKey: keys.settings, queryFn: ({ signal }) => api<Settings>("/document-settings", { signal }) });
   const [editing, setEditing] = useState<{ id: string | null; subject: Subject; title: string; body: string } | null>(null);
+  // Le formulaire s'ouvre sous la liste : on l'amène à l'écran (« Modifier » ou « Nouveau modèle »).
+  const editor = useRef<HTMLElement>(null);
+  const opened = editing ? editing.id ?? "nouveau" : null;
+  useEffect(() => {
+    if (opened) scrollIntoContent(editor.current);
+  }, [opened]);
   const fields = useQuery({
     queryKey: ["document-fields", editing?.subject],
     queryFn: ({ signal }) => api<Field[]>(`/document-templates/fields?subject=${editing!.subject}`, { signal }),
@@ -146,7 +153,7 @@ export function DocumentTemplatesTab() {
       </section>
 
       {editing && (
-        <section aria-label="Édition du modèle" className="flex flex-col gap-3 rounded-lg border border-lagon-600 bg-card p-5 shadow-1">
+        <section ref={editor} aria-label="Édition du modèle" className="flex flex-col gap-3 rounded-lg border border-lagon-600 bg-card p-5 shadow-1">
           <h2 className="m-0 text-title-3">{editing.id ? "Modifier le modèle" : "Nouveau modèle"}</h2>
           {!editing.id && (
             <FormField label="Pour">

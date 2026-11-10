@@ -160,17 +160,18 @@ export function StructureTab() {
 
       <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
         <legend className="mb-2 text-label">Horaires d’ouverture</legend>
-        <table className="border-collapse text-left">
+        {/* Lignes et colonnes aérées : les heures d'ouverture et de fermeture ne se touchent plus. */}
+        <table className="w-fit border-separate border-spacing-x-0 border-spacing-y-2 text-left">
           <thead>
-            <tr className="text-label text-muted-foreground"><th className="py-1 pr-4">Jour</th><th className="pr-4">Ouvert</th><th className="pr-4">Ouverture</th><th>Fermeture</th></tr>
+            <tr className="text-label text-muted-foreground"><th className="pr-6">Jour</th><th className="pr-6">Ouvert</th><th className="pr-6">Ouverture</th><th>Fermeture</th></tr>
           </thead>
           <tbody>
             {form.days.map((d, i) => (
               <tr key={i}>
-                <td className="py-1 pr-4">{DAY_NAMES[i]}</td>
-                <td className="pr-4"><input type="checkbox" aria-label={`${DAY_NAMES[i]} ouvert`} checked={d.open} onChange={(e) => setDay(i, { open: e.target.checked })} /></td>
-                <td className="pr-4">{d.open ? <Input type="time" aria-label={`Ouverture ${DAY_NAMES[i]}`} value={d.opens} onChange={(e) => setDay(i, { opens: e.target.value })} /> : <span className="text-muted-foreground">Fermé</span>}</td>
-                <td>{d.open && <Input type="time" aria-label={`Fermeture ${DAY_NAMES[i]}`} value={d.closes} onChange={(e) => setDay(i, { closes: e.target.value })} />}</td>
+                <td className="pr-6">{DAY_NAMES[i]}</td>
+                <td className="pr-6"><input type="checkbox" aria-label={`${DAY_NAMES[i]} ouvert`} checked={d.open} onChange={(e) => setDay(i, { open: e.target.checked })} /></td>
+                <td className="pr-6">{d.open ? <Input type="time" className="w-32" aria-label={`Ouverture ${DAY_NAMES[i]}`} value={d.opens} onChange={(e) => setDay(i, { opens: e.target.value })} /> : <span className="text-muted-foreground">Fermé</span>}</td>
+                <td>{d.open && <Input type="time" className="w-32" aria-label={`Fermeture ${DAY_NAMES[i]}`} value={d.closes} onChange={(e) => setDay(i, { closes: e.target.value })} />}</td>
               </tr>
             ))}
           </tbody>

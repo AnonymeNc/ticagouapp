@@ -201,6 +201,26 @@ function Set-DevAbonnement {
     $null = Invoke-Quiet "docker exec ticagou-web-postgres psql -U ticagou -d ticagou -c `"$sql`""
 }
 
+# Portail local : chaque rechargement de la démonstration (ou remise à zéro) crée une nouvelle crèche dans le portail,
+# et l'ancienne y restait, avec les mêmes familles : les parents voyaient plusieurs « Les P'tits Niaoulis ». On retire
+# du portail local les crèches qu'aucune base locale (ticagou, ticagou_demo…) n'utilise plus.
+function Remove-PortalOrphans {
+    $live = @()
+    $bases = cmd /c 'docker exec ticagou-web-postgres psql -U ticagou -d ticagou -tAc "SELECT datname FROM pg_database WHERE datname LIKE ''ticagou%''" 2>nul'
+    foreach ($base in $bases) {
+        $base = "$base".Trim()
+        if (-not $base) { continue }
+        $live += cmd /c "docker exec ticagou-web-postgres psql -U ticagou -d $base -tAc `"SELECT portal_structure_id FROM portal_settings WHERE portal_structure_id IS NOT NULL`" 2>nul"
+    }
+    $live = @($live | ForEach-Object { "$_".Trim() } | Where-Object { $_ -match '^[0-9a-f-]{36}$' })
+    # Prudence : sans aucune crèche locale reliée (base illisible…), on ne retire rien.
+    if ($live.Count -eq 0) { return }
+    $list = ($live | ForEach-Object { "'$_'" }) -join ','
+    $removed = @(cmd /c "docker exec parents-portal-portail-db-1 psql -U portail -d portail -tAc `"DELETE FROM portal_structure WHERE id NOT IN ($list) RETURNING name`" 2>nul" |
+        Where-Object { "$_".Trim() })
+    if ($removed.Count -gt 0) { Write-Host "  Portail : $($removed.Count) ancienne(s) crèche(s) de test retirée(s) (rechargements précédents)." }
+}
+
 # Clé de la console en développement : gardée d'un lancement à l'autre (elle chiffre les secrets TOTP en base).
 function Get-ConsoleKey {
     $file = Join-Path $env:APPDATA 'ticagou\console-cle-dev.txt'
@@ -338,6 +358,7 @@ if ($Demo -and $serverUp) {
     Set-DemoAbonnement
 }
 if (-not $Demo -and $serverUp) { Set-DevAbonnement }
+if ($Portail -and $code) { Remove-PortalOrphans }
 if ($Console) { $null = Wait-Url 'http://localhost:8095/actuator/health' 300 'Console de l''éditeur' 'Console' }
 
 # --- Résumé -------------------------------------------------------------------------------------

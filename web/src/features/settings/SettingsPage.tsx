@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { scrollContentToTop } from "@/app/layout/scroll";
 import { useRubriques, type Rubrique } from "@/features/structure/useRubriques";
 import { useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -93,6 +94,8 @@ export function SettingsPage() {
   // Rubrique d'un module absent (lien ancien, modules reçus après coup) : on revient à la première disponible.
   const available = groups.flatMap((g) => g.items);
   const tab = available.some((i) => i.key === chosen) ? chosen : available[0]?.key;
+  // Nouvelle rubrique (clic ou lien) : on la montre depuis son début.
+  useEffect(() => scrollContentToTop(), [tab]);
   const structure = useStructure();
   return (
     <>

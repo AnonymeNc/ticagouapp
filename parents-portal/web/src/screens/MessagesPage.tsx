@@ -45,11 +45,11 @@ export function MessagesPage() {
   return (
     <Page title="Messages">
       {me.families.length > 1 && (
-        <div role="tablist" aria-label="Conversations" className="flex gap-1 rounded-full bg-sunken p-1">
+        <div role="tablist" aria-label="Conversations" className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-sunken p-1">
           {me.families.map((f) => (
             <button key={f.structureId} role="tab" type="button" aria-selected={f.structureId === family.structureId}
               onClick={() => setStructureId(f.structureId)}
-              className={cn("min-h-11 grow rounded-full px-3 text-[16px] font-semibold", f.structureId === family.structureId && "bg-surface text-lagon-700 shadow-[var(--shadow-1)]")}>
+              className={cn("min-h-11 shrink-0 grow whitespace-nowrap rounded-full px-4 text-[16px] font-semibold", f.structureId === family.structureId && "bg-surface text-lagon-700 shadow-[var(--shadow-1)]")}>
               {f.structureName}
             </button>
           ))}
