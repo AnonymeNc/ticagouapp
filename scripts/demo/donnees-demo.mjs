@@ -24,7 +24,7 @@
  * chaque famille, autorisation à signer. Avec Mailpit : réponses de parents, absence signalée, demande d'accueil,
  * retard annoncé et autorisation signée, à traiter pendant la démonstration.
  */
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -728,6 +728,15 @@ async function educatorSession(staffIds) {
   return { userId: staffIds[educ.firstName], sessionId: pin.sessionId };
 }
 
+/**
+ * Identifiant stable d'une transmission du jeu (enfant, jour, heure, type) : relancé le même jour (--aujourdhui), le
+ * script renvoie les mêmes opérations, que la tablette reconnaît (DEJA_RECUE) au lieu de les écrire une seconde fois.
+ */
+function stableId(...parts) {
+  const h = createHash("sha256").update(parts.join("|")).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${((parseInt(h[16], 16) & 3) | 8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
 async function journal(kids, staffIds, onlyToday = false) {
   step(onlyToday ? "Transmissions du jour" : "Journées détaillées des deux dernières semaines");
   const author = await educatorSession(staffIds);
@@ -741,7 +750,7 @@ async function journal(kids, staffIds, onlyToday = false) {
       for (const [time, kind, details, text] of dayOf(kid, kid.section === "Bébés")) {
         if (d === TODAY && (minutes(time) > nowM || minutes(time) < minutes(kid.arrives))) continue;
         operations.push({
-          clientId: randomUUID(), type: "TRANSMISSION", occurredAt: at(d, time), userId: author.userId, sessionId: author.sessionId,
+          clientId: stableId("journal", kid.id, d, time, kind), type: "TRANSMISSION", occurredAt: at(d, time), userId: author.userId, sessionId: author.sessionId,
           entry: { kind, childIds: [kid.id], details, text, shared: true },
         });
       }
@@ -749,13 +758,15 @@ async function journal(kids, staffIds, onlyToday = false) {
   }
   const hina = kids.find((k) => k.firstName === "Hina");
   if (hina && weekday(TODAY) <= 5 && nowM > minutes("11:00")) {
-    operations.push({ clientId: randomUUID(), type: "TRANSMISSION", occurredAt: at(TODAY, "11:00"), userId: author.userId, sessionId: author.sessionId,
+    operations.push({ clientId: stableId("medicament", hina.id, TODAY), type: "TRANSMISSION", occurredAt: at(TODAY, "11:00"), userId: author.userId, sessionId: author.sessionId,
       entry: { kind: "MEDICAMENT", childIds: [hina.id], details: { medicine: "Paracétamol sirop", dose: "2,5 ml" }, text: "Donné sur ordonnance, comme convenu avec vous.", shared: true } });
   }
+  const results = [];
   for (let i = 0; i < operations.length; i += 200) {
-    await post("/kiosk/operations", { operations: operations.slice(i, i + 200) }, { auth: tabletToken });
+    results.push(...((await post("/kiosk/operations", { operations: operations.slice(i, i + 200) }, { auth: tabletToken }))?.results ?? []));
   }
-  console.log(`    ${operations.length} transmissions`);
+  const known = results.filter((r) => r.outcome === "DEJA_RECUE").length;
+  console.log(`    ${operations.length - known} transmissions${known ? ` (${known} déjà présentes)` : ""}`);
 }
 
 async function album(kids, staffIds) {

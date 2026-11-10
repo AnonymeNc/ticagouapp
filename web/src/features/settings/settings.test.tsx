@@ -283,3 +283,28 @@ describe("Paramètres › Modèles de documents", () => {
       .toEqual({ subject: "ENFANT", title: "Attestation CAFAT", body: "Pour {{enfant.prenom}}" }));
   });
 });
+
+describe("défilement des paramètres", () => {
+  it("remonte en haut à chaque rubrique et amène le formulaire d'un modèle à l'écran", async () => {
+    const scrollTo = vi.fn();
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollTo", { configurable: true, value: scrollTo });
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: scrollIntoView });
+    server(director, {
+      "GET /document-templates": { body: [{ id: "t1", subject: "ENFANT", title: "Attestation de présence", body: "Texte", version: 1, validFrom: "2026-01-01" }] },
+      "GET /document-settings": { body: { signatory: null, hasStamp: false } },
+      "GET /document-templates/fields": { body: [] },
+    });
+    renderAt("/parametres");
+    const nav = await screen.findByRole("navigation", { name: "Rubriques des paramètres" });
+    scrollTo.mockClear();
+
+    await userEvent.click(within(nav).getByRole("button", { name: /^Modèles de documents/ }));
+    await waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }));
+
+    await userEvent.click(await screen.findByRole("button", { name: "Modifier" }));
+    expect(await screen.findByRole("region", { name: "Édition du modèle" })).toBeInTheDocument();
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(screen.getByRole("region", { name: "Édition du modèle" }));
+  });
+});
