@@ -26,8 +26,13 @@ instances.
 - Connexions manquées limitées : 20 par adresse en 10 minutes, compte bloqué 15 minutes après 5 échecs.
 - **Code TOTP redemandé** pour les actions sensibles (valider une facture, émettre un avoir, confirmer un ordre) : valable
   5 minutes.
-- **Réseau** : Caddy n'accepte que les adresses de `CONSOLE_ADRESSES_AUTORISEES` ; sans liste, la console n'est pas
-  publiée (accès par tunnel SSH). `/actuator` reste bloqué.
+- **Réseau** (`CONSOLE_ACCES`, amendement du 11/11/2026) : `internet` par défaut, la console est joignable depuis
+  n'importe quel ordinateur ; `adresses` la réserve aux adresses IP de `CONSOLE_ADRESSES_AUTORISEES` ; `tunnel` ne publie
+  aucun site. La liste d'adresses liait la console à un réseau (l'adresse IP de la box du bureau), pas à un ordinateur :
+  elle empêchait de travailler en déplacement ou derrière une adresse qui change, sans protéger davantage le compte, que
+  gardent déjà le mot de passe, le code du téléphone (obligatoire, redemandé pour les actions sensibles), les limites de
+  tentatives et le journal. Un `socle.env` sans `CONSOLE_ACCES` garde l'ancien comportement : rien ne s'ouvre seul ; un
+  réglage invalide arrête `creche.sh` avant d'écrire le site. `/actuator` et `/interne` restent bloqués.
 - **Journal** (`audit_event`) de toute connexion et de toute écriture.
 
 **Aucun e-mail ne part sans clic** de l'éditeur : factures et relances sont préparées dans une boîte d'envoi. L'envoi

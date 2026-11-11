@@ -59,7 +59,7 @@ services:
     networks: [ticagou]
 
   # Console de l'éditeur (ADR 0017) : ./creche.sh socle --console
-  # Publiée par Caddy seulement pour CONSOLE_ADRESSES_AUTORISEES ; toujours joignable par tunnel SSH sur 127.0.0.1:8095.
+  # Publiée par Caddy selon CONSOLE_ACCES (internet, adresses, tunnel) ; toujours joignable par tunnel SSH sur 127.0.0.1:8095.
   console:
     profiles: [console]
     build: ../console

@@ -77,18 +77,46 @@ base_de_service() {
     fermer_base "$1"
 }
 
-# Site de la console : seulement pour les adresses autorisées ; sans liste, pas de site (tunnel SSH).
+# Accès à la console (CONSOLE_ACCES, ADR 0017) :
+#   internet  site public, depuis n'importe quel ordinateur : mot de passe et code du téléphone à chaque connexion ;
+#   adresses  site réservé aux adresses IP de CONSOLE_ADRESSES_AUTORISEES (réseau du bureau, adresse fixe) ;
+#   tunnel    pas de site : ssh -L 8095:127.0.0.1:8095 <serveur>.
+# Sans réglage (socle.env d'avant ce choix) : adresses si une liste est donnée, sinon tunnel ; rien ne s'ouvre seul.
+acces_console() {
+    acces=${CONSOLE_ACCES:-}
+    if [ -z "$acces" ]; then
+        if [ -n "${CONSOLE_ADRESSES_AUTORISEES:-}" ]; then acces=adresses; else acces=tunnel; fi
+    fi
+    case $acces in
+        internet|tunnel) ;;
+        adresses) [ -n "${CONSOLE_ADRESSES_AUTORISEES:-}" ] || { echo "CONSOLE_ACCES=adresses : renseignez CONSOLE_ADRESSES_AUTORISEES." >&2; exit 1; } ;;
+        *) echo "CONSOLE_ACCES : internet, adresses ou tunnel (lu : $acces)." >&2; exit 1 ;;
+    esac
+    echo "$acces"
+}
+
 ecrire_site_console() {
-    if [ -z "${CONSOLE_DOMAIN:-}" ] || [ -z "${CONSOLE_ADRESSES_AUTORISEES:-}" ]; then
+    # Réglage invalide : on s'arrête avant d'écrire le site (jamais ouvert par erreur).
+    acces=$(acces_console) || exit 1
+    if [ -z "${CONSOLE_DOMAIN:-}" ] || [ "$acces" = tunnel ]; then
         rm -f "$SITES/console.caddy"
         echo "Console sans site public : ssh -L 8095:127.0.0.1:8095 <serveur>, puis http://localhost:8095"
         return
     fi
     {
         echo "$CONSOLE_DOMAIN {"
-        [ "${TLS_INTERNE:-}" = 1 ] && printf '\ttls internal\n'
-        printf '\timport securite\n\t@refuse not remote_ip %s\n\trespond @refuse 404\n\treverse_proxy console:8095\n}\n' "$CONSOLE_ADRESSES_AUTORISEES"
+        if [ "${TLS_INTERNE:-}" = 1 ]; then printf '\ttls internal\n'; fi
+        printf '\timport securite\n'
+        if [ "$acces" = adresses ]; then
+            printf '\t@refuse not remote_ip %s\n\trespond @refuse 404\n' "$CONSOLE_ADRESSES_AUTORISEES"
+        fi
+        printf '\treverse_proxy console:8095\n}\n'
     } >"$SITES/console.caddy"
+    if [ "$acces" = internet ]; then
+        echo "Console : https://$CONSOLE_DOMAIN, depuis n'importe quel ordinateur (mot de passe et code à chaque connexion)."
+    else
+        echo "Console : https://$CONSOLE_DOMAIN, seulement depuis $CONSOLE_ADRESSES_AUTORISEES."
+    fi
 }
 
 # socle [--portail] [--console]
