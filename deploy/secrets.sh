@@ -75,6 +75,9 @@ base=$(lire DOMAINE_BASE)
 defaut TICAGOU_DONNEES /opt/ticagou/donnees
 defaut PORTAL_DOMAIN "parents.$base"
 defaut CONSOLE_DOMAIN "console.$base"
+# Console joignable depuis n'importe quel ordinateur, protégée par mot de passe et code (ADR 0017) ; « adresses » ou
+# « tunnel » pour la fermer davantage. Une liste d'adresses déjà saisie est respectée : rien ne s'ouvre sans vous.
+[ -n "$(lire CONSOLE_ADRESSES_AUTORISEES)" ] || defaut CONSOLE_ACCES internet
 
 generer POSTGRES_PASSWORD base64
 generer PORTAL_DB_PASSWORD base64

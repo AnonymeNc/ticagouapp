@@ -12,8 +12,8 @@ Ce guide dit où cliquer. L'installation du serveur et de la console est dans [E
 
 | | Adresse | Premier compte |
 |---|---|---|
-| **Serveur en production** | `https://console.ticagou.nc` (la valeur de `CONSOLE_DOMAIN` dans `socle.env`), ouverte seulement depuis les adresses IP de `CONSOLE_ADRESSES_AUTORISEES` | `https://console.ticagou.nc/premier-compte?jeton=<CONSOLE_SETUP_TOKEN>` |
-| Sans adresse IP fixe | tunnel SSH : `ssh -L 8095:127.0.0.1:8095 <serveur>`, puis `http://localhost:8095` | `http://localhost:8095/premier-compte?jeton=<CONSOLE_SETUP_TOKEN>` |
+| **Serveur en production** | `https://console.ticagou.nc` (la valeur de `CONSOLE_DOMAIN` dans `socle.env`), depuis n'importe quel ordinateur (`CONSOLE_ACCES=internet`) | `https://console.ticagou.nc/premier-compte?jeton=<CONSOLE_SETUP_TOKEN>` |
+| Console fermée (`CONSOLE_ACCES=tunnel`) | tunnel SSH : `ssh -L 8095:127.0.0.1:8095 <serveur>`, puis `http://localhost:8095` | `http://localhost:8095/premier-compte?jeton=<CONSOLE_SETUP_TOKEN>` |
 | Sur votre PC (essai) | `scripts\tester-en-local.ps1 -Demo -Console`, puis `http://localhost:1421` | `http://localhost:1421/premier-compte?jeton=dev` |
 
 1. La première fois, ouvrez l'adresse « premier compte » : choisissez votre identifiant et votre mot de passe.
@@ -21,6 +21,10 @@ Ce guide dit où cliquer. L'installation du serveur et de la console est dans [E
    Authenticator, Microsoft Authenticator…). Ensuite, chaque connexion demande identifiant, mot de passe et le code à 6
    chiffres.
 3. Les actions sensibles (ordres, validation de facture) redemandent ce code.
+
+Nouvel ordinateur : rien à faire, ouvrez l'adresse et connectez-vous ; le code vient de votre téléphone. Si la console
+répond « introuvable » (404) hors du bureau, `socle.env` est encore en `CONSOLE_ACCES=adresses` (ou sans `CONSOLE_ACCES`,
+avec une liste d'adresses) : passez-le à `internet` et relancez `./creche.sh socle --console`.
 
 Vous avez perdu votre téléphone : sur le serveur, `./creche.sh console-telephone-perdu <identifiant>` ; le QR code se
 réaffiche à la connexion suivante.
