@@ -7,11 +7,17 @@ La V1 (client lourd) est archivée dans `ticagou-creche-v1-client-lourd`. MVP : 
 pointage tablette, taux d'encadrement temps réel, repas, facturation mensuelle avec aides, personnel,
 sauvegardes. V2 : portail parents en ligne optionnel.
 
+**Dépôt `ticagouapp`** : repart de `ticagou-web` (remote `ticagou-web`, laissé tel quel) pour livrer les **applications
+mobiles** avec Capacitor : Ti'Cagou Direction (iOS, Android **et ordinateur**, même code React responsive),
+Ti'Cagou Pointage (tablette), Ti'Cagou Parents. Référence : [étude](docs/etude-application-mobile.md) et
+**[plan d'implémentation](docs/plan-application-mobile.md)**, à suivre phase par phase et à tenir à jour (§ Avancement).
+
 ## Architecture (monorepo)
 - `server/` : Java 21, Spring Boot 3, Maven, PostgreSQL 17, Flyway, Spring Security. API REST `/api/v1`, SSE pour le temps réel.
 - `web/` : React 19 + TypeScript + Vite, Tailwind + shadcn/ui, TanStack Query/Table, React Hook Form + Zod.
   Le même front expose une route `/kiosk` (pointage tablette, PWA). Servi par le serveur, même origine que l'API.
 - `parents-portal/` : portail parents et supervision, hébergés.
+- `mobile/` (à créer, ADR 0023) : coques Capacitor des applications Direction, Pointage et Parents.
 - `deploy/` : image Docker, socle (PostgreSQL, Caddy), `creche.sh` pour exploiter les crèches.
 - `docs/design/` : maquettes / handoff Claude Design (référence visuelle à respecter).
 - `docs/adr/` : décisions d'architecture.
