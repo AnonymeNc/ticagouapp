@@ -1,6 +1,6 @@
 # ADR 0002 — Authentification, rôles et journal d'audit
 
-- **Statut** : acceptée, complétée par l'[ADR 0013](0013-web-heberge-instance-par-creche.md) (double authentification, cookie de session, assistant par jeton)
+- **Statut** : acceptée, complétée par l'[ADR 0013](0013-web-heberge-instance-par-creche.md) (double authentification, cookie de session, assistant par jeton) et par l'[ADR 0024](0024-authentification-applications.md) (jeton de rafraîchissement des applications mobiles dans le trousseau)
 - **Date** : 31/10/2026
 
 ## Contexte

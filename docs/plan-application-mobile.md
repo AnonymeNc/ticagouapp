@@ -1,6 +1,6 @@
 # Plan — Applications mobiles Ti'Cagou (Capacitor)
 
-- **Statut** : à démarrer (phase 0)
+- **Statut** : en cours (phase 1, maquettes)
 - **Date** : 14/11/2026
 - **Source** : [étude](etude-application-mobile.md), option B retenue
 - **Exigence** : l'application de la direction est la même sur téléphone, tablette **et ordinateur** (navigateur).
@@ -20,11 +20,13 @@ notifications natives. Toutes les règles métier du CLAUDE.md s'appliquent sans
 ## 1. Décisions à faire trancher par l'utilisateur (avant la phase concernée)
 
 1. Un téléphone de direction compte-t-il comme un PC dans l'abonnement ? (phase 2)
+   → **Tranché le 14/11/2026 : non**, compté à part, plafond de 10 téléphones ([ADR 0028](adr/0028-postes-mobiles-et-abonnement.md)).
 2. Distribution de Direction et Pointage : store public ou distribution privée (Apple Business Manager, Managed Google
    Play) ? (phase 8)
 3. Compte développeur Apple / Google : au nom de quelle entité ? Créés **par l'utilisateur** (Claude ne crée pas de
    compte ni ne paie). (phase 8)
 4. Builds iOS : Mac disponible, ou CI macOS (GitHub Actions, Codemagic) ? (phase 2)
+   → **Tranché le 14/11/2026 : CI macOS GitHub Actions** (suppose le dépôt GitHub, décision 6).
 5. iPad pris en charge pour le pointage, ou Android seulement ? (phase 6)
 6. Création d'un dépôt GitHub pour `ticagouapp` (aujourd'hui local seulement). (dès que l'utilisateur le souhaite)
 
@@ -113,7 +115,7 @@ Les maquettes d'une phase sont validées par l'utilisateur avant le développeme
 
 | Phase | État |
 |---|---|
-| 0 ADR | à faire |
+| 0 ADR | fait le 14/11/2026 : ADR 0023 à 0028 ; ADR 0002, 0005, 0011, 0013, 0017, 0018, 0021 marqués |
 | 1 Maquettes | à faire |
 | 2 Socle | à faire |
 | 3 Direction responsive | à faire |

@@ -1,6 +1,6 @@
 # ADR 0018 — Notifications sur le téléphone des parents (Web Push)
 
-- **Statut** : acceptée
+- **Statut** : acceptée, complétée par l'[ADR 0026](0026-notifications-natives.md) (notifications natives APNs et FCM des applications)
 - **Date** : 10/11/2026
 - Complète l'[ADR 0010](0010-portail-parents-flux-de-donnees.md) (portail parents).
 

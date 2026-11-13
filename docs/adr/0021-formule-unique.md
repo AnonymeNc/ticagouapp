@@ -3,6 +3,7 @@
 - **Statut** : acceptée
 - **Date** : 10/11/2026
 - **Remplace** : [ADR 0015](0015-formules-et-modules.md) (formules et modules)
+- **Complétée par** : [ADR 0028](0028-postes-mobiles-et-abonnement.md) (applications Direction comprises, téléphones hors du compte des PC)
 
 ## Contexte
 

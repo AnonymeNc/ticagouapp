@@ -1,6 +1,6 @@
 # ADR 0011 — Licence : évaluation, grâce, lecture seule et PC comptés
 
-- **Statut** : acceptée, modifiée par l'[ADR 0013](0013-web-heberge-instance-par-creche.md) (abonnement au lieu de la clé signée ; les règles de dates restent)
+- **Statut** : acceptée, modifiée par l'[ADR 0013](0013-web-heberge-instance-par-creche.md) (abonnement au lieu de la clé signée ; les règles de dates restent) et par l'[ADR 0028](0028-postes-mobiles-et-abonnement.md) (téléphones de la direction hors du compte des PC)
 - **Date** : 03/11/2026
 
 ## Contexte

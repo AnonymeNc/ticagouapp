@@ -1,6 +1,6 @@
 # ADR 0013 — Application web hébergée, une instance par crèche
 
-- **Statut** : acceptée
+- **Statut** : acceptée, modifiée par l'[ADR 0024](0024-authentification-applications.md) (applications mobiles hors de la même origine : jeton porteur, CORS) et complétée par l'[ADR 0025](0025-choix-de-la-creche.md) (annuaire des crèches)
 - **Date** : 05/11/2026
 - **Remplace** : ADR 0009 (HTTPS local, mDNS). **Modifie** : ADR 0001, 0002, 0005, 0007, 0011, 0012.
 

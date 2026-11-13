@@ -1,6 +1,6 @@
 # ADR 0005 — Tablettes appairées, pointage hors connexion et temps réel
 
-- **Statut** : acceptée, complétée par l'[ADR 0013](0013-web-heberge-instance-par-creche.md) (HTTPS public, stockage chiffré)
+- **Statut** : acceptée, complétée par l'[ADR 0013](0013-web-heberge-instance-par-creche.md) (HTTPS public, stockage chiffré) et par l'[ADR 0023](0023-applications-mobiles-capacitor.md) (application Pointage native, clé dans le Keystore)
 - **Date** : 31/10/2026
 
 ## Contexte
