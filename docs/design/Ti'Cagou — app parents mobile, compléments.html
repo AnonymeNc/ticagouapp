@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ti'Cagou — app parents mobile, compléments</title>
+<link rel="stylesheet" href="charte-mobile.css">
+</head>
+<body>
+<div class="doc">
+<header>
+  <h1>Ti'Cagou Parents — compléments pour l’application des stores</h1>
+  <p>Phase 1 du <a href="../plan-application-mobile.md">plan</a>. Complète <a href="Ti'Cagou — app parents mobile.html">app parents mobile</a>
+    (connexion, fil de la journée, messages, absences, factures, documents), qui reste la référence et n’est pas modifiée. Écrans ajoutés pour
+    l’application iOS / Android : accueil, connexion par code, autorisation des notifications, verrouillage, suppression du compte.
+    Famille de démonstration : Anne Poédi, enfants Tom et Léna.</p>
+  <div class="notes ecart"><b>Écarts à valider</b>
+    <ul>
+      <li>Dans l’application, la connexion se fait par <b>code reçu par e-mail</b> (6 chiffres) : le lien magique ouvrirait le navigateur, pas
+        l’application. La PWA garde le lien.</li>
+      <li>La maquette existante montre un mot de passe ; le portail réel utilise lien ou code par e-mail (pas de mot de passe). Ces
+        compléments suivent le portail réel.</li>
+      <li><b>Supprimer mon compte</b> efface tout de suite l’accès au portail (adresse, sessions, appareils, notifications) et prévient la crèche.
+        Les données tenues par la crèche (dossier, factures) ne sont pas effacées par le parent : la crèche les purge selon ses obligations
+        (ordre <code>PURGE_FAMILY</code> existant, déclenché par la direction). Le plan disait « branchée sur PURGE_FAMILY » : à confirmer.</li>
+    </ul></div>
+</header>
+
+<section class="group">
+  <h2>Accueil et connexion</h2>
+  <div class="row">
+    <div class="screen"><span class="label">Pa1 · Première ouverture</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="padding-top:30px;gap:18px">
+          <div class="brand">Ti’Cagou</div>
+          <div style="height:300px;border-radius:24px;background:linear-gradient(160deg,var(--lagon-100),var(--niaouli-100));display:grid;place-items:center;color:var(--lagon-700)"><svg class="i" style="width:96px;height:96px;stroke-width:1.2"><use href="#image"/></svg></div>
+          <h1 style="font-size:28px">La journée de votre enfant, dans votre poche</h1>
+          <p class="muted">Repas, sieste, photos, messages avec l’équipe, absences, factures. Votre crèche vous a invité·e par e-mail.</p>
+          <div class="spacer"></div>
+          <a class="btn primary block">Se connecter</a>
+          <p class="xs muted" style="text-align:center">Pas encore d’invitation ? Demandez-la à la direction de la crèche.</p>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Pas de création de compte libre : l’accès vient de la crèche (ADR 0010).</p></div>
+
+    <div class="screen"><span class="label">Pa2 · Adresse e-mail</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Connexion</h1></div></div>
+        <div class="content" style="gap:16px">
+          <p class="muted">L’adresse donnée à la crèche. Nous y envoyons un code à 6 chiffres.</p>
+          <div class="field"><label>Adresse e-mail</label><div class="input focus">anne.poedi@mail.nc</div></div>
+          <div class="spacer"></div><a class="btn primary block">Recevoir un code</a>
+        </div><div class="homebar"><i></i></div></div></div>
+
+    <div class="screen"><span class="label">Pa3 · Code reçu</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Code reçu par e-mail</h1></div></div>
+        <div class="content" style="gap:16px">
+          <p class="muted">Envoyé à <b>anne.poedi@mail.nc</b>. Il est valable 15 minutes.</p>
+          <div class="otp"><span>7</span><span>3</span><span>0</span><span>9</span><span class="focus"></span><span></span></div>
+          <a class="small strong" style="color:var(--lagon-600)">Renvoyer le code</a>
+          <div class="spacer"></div><a class="btn primary block">Valider</a>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Session gardée dans le trousseau du téléphone (ADR 0024), jusqu’à la fin de l’accès donné par la crèche.</p></div>
+  </div>
+</section>
+
+<section class="group">
+  <h2>Notifications</h2>
+  <p class="lead">On explique avant de déclencher la demande du système : un refus est difficile à rattraper sur iPhone.</p>
+  <div class="row">
+    <div class="screen"><span class="label">Pa4 · Avant la demande du système</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="padding-top:60px;gap:18px;align-items:center;text-align:center">
+          <span class="iconbtn" style="width:88px;height:88px;border-radius:26px;background:var(--lagon-100);color:var(--lagon-700)"><svg class="i l" style="width:46px;height:46px"><use href="#bell"/></svg></span>
+          <h1 style="font-size:26px">Être prévenu·e quand la crèche partage quelque chose</h1>
+          <div class="list" style="width:100%;text-align:left">
+            <div class="item"><svg class="i"><use href="#image"/></svg><div class="main"><b>Photos et vidéos</b></div></div>
+            <div class="item"><svg class="i"><use href="#message"/></svg><div class="main"><b>Messages de l’équipe</b></div></div>
+            <div class="item"><svg class="i"><use href="#clipboardlist"/></svg><div class="main"><b>Actualités et documents à signer</b></div></div>
+          </div>
+          <p class="small muted">Jamais d’information de santé dans une notification. Vous choisirez les catégories ensuite.</p>
+          <div class="spacer"></div>
+          <a class="btn primary block">Activer les notifications</a><a class="btn ghost block">Plus tard</a>
+        </div><div class="homebar"><i></i></div></div></div>
+
+    <div class="screen"><span class="label">Pa5 · Demande du système (iOS)</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="opacity:.3;padding-top:60px"><h1>Être prévenu·e…</h1></div>
+        <div style="position:absolute;inset:0;background:#0003;display:grid;place-items:center">
+          <div style="width:270px;background:#f2f2f2f0;border-radius:14px;text-align:center;overflow:hidden">
+            <div style="padding:18px 16px"><b>« Ti’Cagou » souhaite vous envoyer des notifications</b><p class="xs" style="margin-top:6px">Les notifications peuvent inclure des alertes, des sons et des pastilles d’icônes.</p></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #ccc"><span style="padding:11px;color:#0a64d6;border-right:1px solid #ccc">Refuser</span><span style="padding:11px;color:#0a64d6;font-weight:700">Autoriser</span></div></div></div></div>
+      <p class="caption">Texte imposé par iOS. Sur Android 13+, équivalent système.</p></div>
+
+    <div class="screen"><span class="label">Pa6 · Réglages des notifications</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Notifications</h1><small>Sur ce téléphone</small></div></div>
+        <div class="content">
+          <div class="list">
+            <div class="item"><div class="main"><b>Photos et vidéos</b></div><span class="toggle on"></span></div>
+            <div class="item"><div class="main"><b>Messages</b></div><span class="toggle on"></span></div>
+            <div class="item"><div class="main"><b>Actualités</b></div><span class="toggle on"></span></div>
+            <div class="item"><div class="main"><b>Documents à signer</b></div><span class="toggle on"></span></div>
+            <div class="item"><div class="main"><b>Factures</b><span>Désactivé par défaut</span></div><span class="toggle"></span></div>
+          </div>
+          <div class="banner info"><svg class="i s"><use href="#shield"/></svg><span>Les notifications passent par Apple ou Google. Elles annoncent seulement qu’il y a du nouveau : « Nouvelle photo de Tom ».</span></div>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Mêmes catégories que la PWA (ADR 0018), réglées par appareil.</p></div>
+  </div>
+</section>
+
+<section class="group">
+  <h2>Compte : verrouillage et suppression</h2>
+  <div class="row">
+    <div class="screen"><span class="label">Pa7 · Mon compte</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><div class="title"><h1>Mon compte</h1></div></div>
+        <div class="content">
+          <div class="card hstack"><span class="avatar staff">AP</span><div style="flex:1"><b>Anne Poédi</b><p class="small muted">anne.poedi@mail.nc</p></div></div>
+          <div class="list">
+            <div class="item"><svg class="i"><use href="#face"/></svg><div class="main"><b>Verrouiller avec Face ID</b><span>À chaque ouverture de l’application</span></div><span class="toggle on"></span></div>
+            <div class="item"><svg class="i"><use href="#bell"/></svg><div class="main"><b>Notifications</b></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><svg class="i"><use href="#building"/></svg><div class="main"><b>Mes crèches</b><span>Les P’tits Niaoulis</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><svg class="i"><use href="#info"/></svg><div class="main"><b>Confidentialité</b><span>Ce que la crèche partage avec vous</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+          </div>
+          <div class="list">
+            <div class="item"><svg class="i"><use href="#logout"/></svg><div class="main"><b>Se déconnecter</b></div></div>
+            <div class="item" style="color:var(--danger-700)"><svg class="i"><use href="#trash"/></svg><div class="main"><b>Supprimer mon compte</b></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+          </div>
+        </div>
+        <nav class="tabbar"><a><svg class="i"><use href="#home"/></svg>Journée</a><a><svg class="i"><use href="#message"/></svg>Messages</a><a><svg class="i"><use href="#receipt"/></svg>Factures</a><a><svg class="i"><use href="#clipboardlist"/></svg>Documents</a><a class="on"><svg class="i"><use href="#user"/></svg>Compte</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">Verrouillage proposé, désactivé par défaut (ADR 0024).</p></div>
+
+    <div class="screen"><span class="label">Pa8 · Supprimer mon compte</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Supprimer mon compte</h1></div></div>
+        <div class="content">
+          <div class="card"><b>Ce qui est effacé tout de suite</b>
+            <ul class="small" style="margin:6px 0 0;padding-left:18px"><li>votre accès au portail des P’tits Niaoulis ;</li><li>vos sessions et appareils, vos notifications ;</li><li>les photos et messages gardés sur ce téléphone.</li></ul></div>
+          <div class="card"><b>Ce qui reste à la crèche</b>
+            <p class="small" style="margin-top:6px">Le dossier de Tom et Léna, les contrats et les factures sont tenus par la crèche, qui doit en garder certains. La crèche est prévenue de votre demande et vous recontacte pour l’export ou l’effacement de ces données.</p></div>
+          <div class="field"><label>Pour confirmer, tapez le code envoyé à anne.poedi@mail.nc</label><div class="otp"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+          <div class="spacer"></div>
+          <a class="btn danger block">Supprimer définitivement mon compte</a>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Exigence Apple (suppression depuis l’application). Le second responsable de l’enfant garde son propre accès.</p></div>
+
+    <div class="screen"><span class="label">Pa9 · Application verrouillée</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="padding-top:140px;gap:16px;align-items:center;text-align:center">
+          <div class="brand" style="font-size:30px">Ti’Cagou</div>
+          <span class="iconbtn" style="width:72px;height:72px;margin-top:40px;color:var(--lagon-700)"><svg class="i l" style="width:44px;height:44px"><use href="#face"/></svg></span>
+          <p class="strong">Déverrouillez avec Face ID</p><div class="spacer"></div><a class="btn secondary block">Utiliser le code de l’iPhone</a>
+        </div><div class="homebar"><i></i></div></div></div>
+  </div>
+</section>
+</div>
+<script src="icones-mobile.js"></script>
+</body>
+</html>

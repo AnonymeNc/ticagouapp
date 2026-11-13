@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ti'Cagou — Direction mobile</title>
+<link rel="stylesheet" href="charte-mobile.css">
+</head>
+<body>
+<div class="doc">
+<header>
+  <h1>Ti'Cagou Direction — téléphone</h1>
+  <p>Maquettes de la phase 1 du <a href="../plan-application-mobile.md">plan des applications mobiles</a>. Même application que le
+    navigateur de l'ordinateur (un seul code React, ADR 0023) : ces écrans sont la largeur « téléphone » (moins de 640 px) des
+    pages existantes. Données de démonstration : <b>Les P'tits Niaoulis</b> (Dumbéa), directrice Nathalie Kaloï. iPhone 390 × 844.</p>
+  <div class="notes">
+    <b>Principes</b>
+    <ul>
+      <li>Navigation basse à 5 entrées selon le rôle : DIRECTION et EDUCATRICE → Accueil, Présences, Enfants, Messages, Plus ;
+        COMPTABILITE → Accueil, Facturation, Statistiques, Inscriptions, Plus ; CUISINE → Accueil, Repas, Enfants, Plus.
+        « Plus » liste toutes les autres rubriques du menu latéral (même ordre, mêmes rubriques masquables, ADR 0022).</li>
+      <li>Les informations de santé (allergies, PAI, régime) restent visibles partout où l'enfant apparaît : pastille rouge dans les
+        listes, bandeau en tête de la fiche, rappel dans les feuilles d'action.</li>
+      <li>Les dialogues deviennent des feuilles qui montent du bas ; les actions principales restent au pouce (barre basse).</li>
+      <li>Montants en F CFA (XPF), sans décimale ; dates JJ/MM/AAAA ; heure de Nouméa.</li>
+    </ul>
+  </div>
+  <div class="notes ecart">
+    <b>Écarts avec les maquettes existantes (à valider)</b>
+    <ul>
+      <li>Le menu latéral du bureau devient une barre basse + « Plus » sur téléphone ; la recherche globale (Ctrl K) devient l'icône loupe
+        de la barre du haut.</li>
+      <li>Le tableau de bord « matinée type » est réduit à quatre blocs empilés (encadrement, présences, à traiter, repas) ; les graphiques
+        de la semaine restent sur tablette et ordinateur.</li>
+      <li>Nouveaux écrans sans équivalent bureau : choix de la crèche, verrouillage Face ID, mise à jour requise, réglage des notifications.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ============================================================ A. Démarrage -->
+<section class="group">
+  <h2>A. Premier lancement : crèche, connexion, double authentification, verrouillage</h2>
+  <p class="lead">ADR 0024 et 0025. La crèche se choisit une fois (QR, code ou adresse) ; la connexion garde le mot de passe + code TOTP ;
+    le verrouillage Face ID / empreinte est obligatoire avant de garder la session 30 jours.</p>
+  <div class="row">
+
+    <div class="screen"><span class="label">A1 · Bienvenue — choisir sa crèche</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="padding-top:28px; gap:18px">
+          <div class="brand">Ti’Cagou <span class="chip lagon" style="margin-left:4px">Direction</span></div>
+          <div><h1 style="font-size:28px">Bienvenue</h1>
+            <p class="muted" style="margin-top:6px">Pour commencer, indiquez la crèche dans laquelle vous travaillez.</p></div>
+          <a class="card hstack annot" data-n="1" style="text-decoration:none;color:inherit;border-color:var(--lagon-600);border-width:2px">
+            <span class="iconbtn boxed" style="background:var(--lagon-100);color:var(--lagon-700)"><svg class="i"><use href="#qr"/></svg></span>
+            <span class="main" style="flex:1"><b style="display:block">Scanner le QR de la crèche</b><span class="small muted">Sur l'ordinateur : Paramètres › Postes › Ouvrir sur mon téléphone</span></span>
+            <svg class="i s muted"><use href="#chevron"/></svg></a>
+          <a class="card hstack annot" data-n="2" style="text-decoration:none;color:inherit">
+            <span class="iconbtn boxed"><svg class="i"><use href="#keyboard"/></svg></span>
+            <span style="flex:1"><b style="display:block">Taper le code de la crèche</b><span class="small muted">6 caractères, sur la fiche de mise en service</span></span>
+            <svg class="i s muted"><use href="#chevron"/></svg></a>
+          <a class="card hstack annot" data-n="3" style="text-decoration:none;color:inherit">
+            <span class="iconbtn boxed"><svg class="i"><use href="#globe"/></svg></span>
+            <span style="flex:1"><b style="display:block">Autre adresse</b><span class="small muted">https://… donnée par Ti’Cagou</span></span>
+            <svg class="i s muted"><use href="#chevron"/></svg></a>
+          <div class="spacer"></div>
+          <p class="xs muted" style="text-align:center">Vous êtes parent ? Téléchargez plutôt l’application <b>Ti’Cagou Parents</b>.</p>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">1 : ouvre le scanner. 2 : code saisi (alphabet sans 0/O/1/I/L). 3 : repli, https obligatoire.</p>
+    </div>
+
+    <div class="screen"><span class="label">A2 · Scanner le QR</span>
+      <div class="phone"><div class="statusbar dark" style="background:#1f1b17"><span>9:41</span><span class="notch" style="background:#000"></span><span>5G</span></div>
+        <div class="scanner"><div class="frame"></div>
+          <div style="position:absolute;top:18px;left:16px;right:16px;display:flex;justify-content:space-between;color:#fff">
+            <span class="iconbtn" style="color:#fff"><svg class="i"><use href="#x"/></svg></span><span class="iconbtn" style="color:#fff"><svg class="i"><use href="#sun"/></svg></span></div>
+          <p style="position:absolute;bottom:90px;left:24px;right:24px;text-align:center;color:#fff">Visez le QR affiché sur l’ordinateur de la crèche</p>
+          <a class="btn secondary" style="position:absolute;bottom:28px;left:24px;right:24px">Taper le code à la place</a>
+        </div><div class="homebar" style="background:#1f1b17"><i style="background:#fff"></i></div></div>
+      <p class="caption">Scanner natif (plugin barcode-scanner). Le QR contient <code>https://&lt;instance&gt;/app</code> ; lu par l’appareil photo sans l’application, il renvoie vers les stores.</p>
+    </div>
+
+    <div class="screen"><span class="label">A3 · Code saisi, crèche trouvée</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Code de la crèche</h1></div></div>
+        <div class="content" style="gap:16px">
+          <div class="otp"><span>N</span><span>K</span><span>7</span><span>Q</span><span>2</span><span class="focus">M</span></div>
+          <div class="card" style="border-color:var(--success-600)">
+            <div class="hstack"><span class="iconbtn boxed" style="background:var(--success-100);color:var(--success-700)"><svg class="i"><use href="#building"/></svg></span>
+              <div style="flex:1"><b>Les P’tits Niaoulis</b><p class="small muted">Dumbéa · ptits-niaoulis.ticagou.nc</p></div>
+              <span class="chip ok"><svg class="i s"><use href="#check"/></svg>Trouvée</span></div>
+          </div>
+          <p class="small muted">Vérifiez qu’il s’agit bien de votre crèche avant de continuer.</p>
+          <div class="spacer"></div>
+          <a class="btn primary block">Continuer</a>
+          <p class="xs muted" style="text-align:center">Code introuvable ? Il figure sur la fiche de mise en service et dans Paramètres › Postes.</p>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Résolution par l’annuaire (<code>annuaire.ticagou.nc/v1/NK7Q2M.json</code>), puis <code>/api/v1/health</code> et <code>/api/v1/app/compat</code> de l’instance.</p>
+    </div>
+
+    <div class="screen"><span class="label">A4 · Connexion</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="padding-top:20px; gap:16px">
+          <div class="brand">Ti’Cagou</div>
+          <div class="hstack card tight"><svg class="i muted"><use href="#building"/></svg><div style="flex:1"><b class="small">Les P’tits Niaoulis</b><p class="xs muted">Dumbéa</p></div><a class="small strong" style="color:var(--lagon-600)">Changer</a></div>
+          <h1 style="font-size:26px">Connexion</h1>
+          <div class="field"><label>Identifiant</label><div class="input">nathalie.kaloi</div></div>
+          <div class="field"><label>Mot de passe</label><div class="input focus">••••••••••••</div></div>
+          <a class="small strong" style="color:var(--lagon-600)">Mot de passe oublié ?</a>
+          <div class="spacer"></div>
+          <a class="btn primary block">Se connecter</a>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Même formulaire que le navigateur. L’application envoie <code>X-Ticagou-App: direction/1.0.0 (ios)</code> et reçoit le jeton de rafraîchissement dans la réponse (ADR 0024).</p>
+    </div>
+
+    <div class="screen"><span class="label">A5 · Double authentification</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Code de vérification</h1></div></div>
+        <div class="content" style="gap:16px">
+          <p class="muted">Ouvrez votre application d’authentification (Google Authenticator, Microsoft Authenticator…) et tapez le code à 6 chiffres de <b>Ti’Cagou — Les P’tits Niaoulis</b>.</p>
+          <div class="otp"><span>4</span><span>8</span><span>2</span><span class="focus"></span><span></span><span></span></div>
+          <div class="banner info"><svg class="i s"><use href="#info"/></svg><span>Sur un téléphone, le code peut se coller depuis l’application d’authentification : appui long sur la première case.</span></div>
+          <div class="spacer"></div>
+          <a class="btn primary block">Valider</a>
+          <a class="btn ghost block">Je n’ai plus mon téléphone d’authentification</a>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Inchangée (ADR 0013) : obligatoire pour DIRECTION et COMPTABILITE. « Plus mon téléphone » explique la procédure de réinitialisation.</p>
+    </div>
+
+    <div class="screen"><span class="label">A6 · Activer le verrouillage</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="padding-top:60px; gap:18px; align-items:center; text-align:center">
+          <span class="iconbtn" style="width:88px;height:88px;border-radius:26px;background:var(--lagon-100);color:var(--lagon-700)"><svg class="i l" style="width:48px;height:48px"><use href="#face"/></svg></span>
+          <h1 style="font-size:26px">Protéger l’accès avec Face ID</h1>
+          <p class="muted">Ti’Cagou contient des informations de santé d’enfants. À chaque ouverture, et après 2 minutes hors de l’application, votre visage (ou le code de l’iPhone) sera demandé.</p>
+          <div class="card" style="text-align:left;width:100%"><div class="hstack"><svg class="i" style="color:var(--success-700)"><use href="#check"/></svg><span class="small">Vous restez connectée 30 jours, sans retaper mot de passe ni code.</span></div></div>
+          <div class="spacer"></div>
+          <a class="btn primary block"><svg class="i"><use href="#face"/></svg>Activer Face ID</a>
+          <a class="btn ghost block">Utiliser seulement le code de l’iPhone</a>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Obligatoire (ADR 0024). Sans verrou sur le téléphone, l’application ne garde pas la session et redemande le mot de passe à chaque ouverture. Android : « empreinte ».</p>
+    </div>
+
+    <div class="screen"><span class="label">A7 · Application verrouillée</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="padding-top:110px; gap:16px; align-items:center; text-align:center">
+          <div class="brand" style="font-size:30px">Ti’Cagou</div>
+          <p class="muted">Les P’tits Niaoulis · Nathalie Kaloï</p>
+          <span class="iconbtn" style="width:72px;height:72px;margin-top:40px;color:var(--lagon-700)"><svg class="i l" style="width:44px;height:44px"><use href="#face"/></svg></span>
+          <p class="strong">Regardez votre téléphone pour déverrouiller</p>
+          <div class="spacer"></div>
+          <a class="btn secondary block">Utiliser le code de l’iPhone</a>
+          <a class="btn ghost block">Changer de crèche ou se déconnecter</a>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">Le contenu est masqué aussi dans le sélecteur d’applications (privacy-screen). Le jeton de rafraîchissement n’est lu qu’après le déverrouillage.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ B. Quotidien -->
+<section class="group">
+  <h2>B. Le quotidien : encadrement en direct, présences, fiche enfant, départ bloqué</h2>
+  <p class="lead">Les gestes de la journée, au pouce. Le taux d’encadrement arrive par le flux temps réel (SSE) comme au bureau.</p>
+  <div class="row">
+
+    <div class="screen"><span class="label">B1 · Tableau de bord</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><div class="title"><small>Mardi 17/11/2026 · Les P’tits Niaoulis</small><h1>Bonjour Nathalie</h1></div>
+          <span class="iconbtn"><svg class="i"><use href="#search"/></svg></span><span class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></span></div>
+        <div class="content scroll-hint">
+          <a class="banner ko annot" data-n="1" style="text-decoration:none"><svg class="i"><use href="#userx"/></svg><span style="flex:1"><b>Départ à valider</b><br>Lila G. — personne non autorisée, à l’accueil</span><svg class="i s"><use href="#chevron"/></svg></a>
+          <div class="card annot" data-n="2">
+            <div class="head"><h3>Encadrement en direct</h3><span class="chip ok"><svg class="i s"><use href="#wifi"/></svg>en direct</span></div>
+            <div class="stack">
+              <div><div class="hstack small"><span class="chip bebes">Bébés</span><span class="spacer"></span><b>6 enfants · 2 adultes</b><span class="chip ok">1 pour 3</span></div><div class="ratio" style="margin-top:6px"><div class="bar"><i style="width:60%;background:var(--success-600)"></i></div></div></div>
+              <div><div class="hstack small"><span class="chip moyens">Moyens</span><span class="spacer"></span><b>9 enfants · 1 adulte</b><span class="chip ko">1 pour 9</span></div><div class="ratio" style="margin-top:6px"><div class="bar"><i style="width:100%;background:var(--danger-600)"></i></div></div><p class="xs" style="color:var(--danger-700);margin-top:4px">Maximum 1 pour 8 · Mereana arrive à 10:00</p></div>
+              <div><div class="hstack small"><span class="chip grands">Grands</span><span class="spacer"></span><b>8 enfants · 2 adultes</b><span class="chip ok">1 pour 4</span></div><div class="ratio" style="margin-top:6px"><div class="bar"><i style="width:40%;background:var(--success-600)"></i></div></div></div>
+            </div>
+          </div>
+          <div class="grid3">
+            <div class="kpi"><div class="v">23</div><div class="l">présents / 26 attendus</div></div>
+            <div class="kpi"><div class="v">5</div><div class="l">adultes</div></div>
+            <div class="kpi"><div class="v" style="color:var(--warning-700)">2</div><div class="l">absences signalées</div></div>
+          </div>
+          <div class="card"><div class="head"><h3>À traiter</h3><a>Tout voir</a></div>
+            <div class="stack small">
+              <div class="hstack"><svg class="i s" style="color:var(--info-700)"><use href="#message"/></svg><span style="flex:1">3 messages de parents</span><svg class="i s muted"><use href="#chevron"/></svg></div>
+              <div class="hstack"><svg class="i s" style="color:var(--warning-700)"><use href="#calendar"/></svg><span style="flex:1">1 demande de congé (Léa K.)</span><svg class="i s muted"><use href="#chevron"/></svg></div>
+              <div class="hstack"><svg class="i s" style="color:var(--warning-700)"><use href="#receipt"/></svg><span style="flex:1">4 factures impayées · 312 400 F</span><svg class="i s muted"><use href="#chevron"/></svg></div>
+            </div></div>
+        </div>
+        <nav class="tabbar"><a class="on"><svg class="i"><use href="#home"/></svg>Accueil</a><a><svg class="i"><use href="#clipboard"/></svg>Présences</a><a><svg class="i"><use href="#users"/></svg>Enfants</a><a><svg class="i"><use href="#message"/></svg>Messages<span class="badge">3</span></a><a><svg class="i"><use href="#menu"/></svg>Plus</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">1 : alerte bloquante en tête, toujours. 2 : une ligne par section, seuil du barème en vigueur (table paramétrable). Les cartes suivantes défilent : repas du jour, personnel présent.</p>
+    </div>
+
+    <div class="screen"><span class="label">B2 · Présences du jour</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><div class="title"><h1>Présences</h1><small>Mardi 17/11/2026 · 23 présents</small></div><span class="iconbtn"><svg class="i"><use href="#calendar"/></svg></span></div>
+        <div class="content scroll-hint">
+          <div class="seg"><span class="on">Tous</span><span>Bébés</span><span>Moyens</span><span>Grands</span><span>Équipe</span></div>
+          <div class="list-title">Présents · 23</div>
+          <div class="list">
+            <div class="item"><span class="avatar bebes">LG</span><div class="main"><b>Lila Gope <span class="health inline"><svg class="i s"><use href="#alert"/></svg>Arachide</span></b><span>Arrivée 07:46 · par Kevin (père)</span></div><span class="chip ko">Départ bloqué</span></div>
+            <div class="item"><span class="avatar moyens">NW</span><div class="main"><b>Noa Wahéo</b><span>Arrivée 07:31 · départ prévu 16:30</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><span class="avatar grands">TP</span><div class="main"><b>Tom Poédi <span class="health inline"><svg class="i s"><use href="#heart"/></svg>PAI asthme</span></b><span>Arrivée 07:14 · départ prévu 17:00</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><span class="avatar bebes">LP</span><div class="main"><b>Léna Poédi <span class="health inline">Sans lactose</span></b><span>Arrivée 07:14 · départ prévu 17:00</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><span class="avatar moyens">KK</span><div class="main"><b>Kaïna Kaloï</b><span>Arrivée 08:02 · départ prévu 16:30</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+          </div>
+          <div class="list-title">Attendus · 1</div>
+          <div class="list"><div class="item"><span class="avatar moyens">EI</span><div class="main"><b>Elio Ihage</b><span>Attendu à 08:30</span></div><a class="btn sm secondary">Pointer</a></div></div>
+          <div class="list-title">Absents · 2</div>
+          <div class="list"><div class="item"><span class="avatar grands">MH</span><div class="main"><b>Malo Hnawia</b><span>Malade · signalé par le portail 06:52</span></div><span class="chip warn">Absent</span></div></div>
+        </div>
+        <nav class="tabbar"><a><svg class="i"><use href="#home"/></svg>Accueil</a><a class="on"><svg class="i"><use href="#clipboard"/></svg>Présences</a><a><svg class="i"><use href="#users"/></svg>Enfants</a><a><svg class="i"><use href="#message"/></svg>Messages<span class="badge">3</span></a><a><svg class="i"><use href="#menu"/></svg>Plus</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">Le tableau du bureau devient une liste de cartes. Pastilles rouges de santé sur chaque ligne. « Pointer » ouvre la même feuille que le kiosque (arrivée / départ), tracée au nom de la directrice.</p>
+    </div>
+
+    <div class="screen"><span class="label">B3 · Fiche enfant</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><span class="crumb">Enfants</span></div><span class="iconbtn"><svg class="i"><use href="#menu"/></svg></span></div>
+        <div class="content scroll-hint">
+          <div class="hstack"><span class="avatar lg grands">TP</span><div><h1 style="font-size:24px">Tom Poédi</h1><p class="small muted">2 ans 10 mois · né le 12/01/2024</p><span class="chip grands" style="margin-top:4px">Grands</span> <span class="chip ok">Présent depuis 07:14</span></div></div>
+          <div class="health annot" data-n="1"><svg class="i"><use href="#heart"/></svg><div><b>PAI asthme</b> — Ventoline dans la trousse de la section, protocole affiché.<br><b>Allergie</b> : aucune · <b>Régime</b> : aucun</div></div>
+          <div class="seg"><span class="on">Résumé</span><span>Famille</span><span>Santé</span><span>Contrat</span><span>Journée</span></div>
+          <div class="card"><div class="head"><h3>Personnes autorisées</h3><a>Gérer</a></div>
+            <div class="stack small">
+              <div class="hstack"><span class="avatar sm staff">AP</span><span style="flex:1"><b>Anne Poédi</b> · mère<br><span class="muted">+687 78 12 34</span></span><span class="iconbtn boxed"><svg class="i s"><use href="#phone"/></svg></span></div>
+              <div class="hstack"><span class="avatar sm staff">MP</span><span style="flex:1"><b>Mamie Poédi</b> · grand-mère<br><span class="muted">+687 75 44 10</span></span><span class="iconbtn boxed"><svg class="i s"><use href="#phone"/></svg></span></div>
+            </div></div>
+          <div class="card"><div class="head"><h3>Aujourd’hui</h3><a>Journée</a></div>
+            <p class="small">Arrivé 07:14 avec Anne (mère). Repas : tout mangé. Sieste 12:20 → 13:55.</p></div>
+          <div class="card"><div class="head"><h3>Contrat</h3><a>Ouvrir</a></div><p class="small">Temps plein · lundi au vendredi 07:15–17:00 · 98 500 F / mois</p></div>
+        </div>
+        <nav class="tabbar"><a><svg class="i"><use href="#home"/></svg>Accueil</a><a><svg class="i"><use href="#clipboard"/></svg>Présences</a><a class="on"><svg class="i"><use href="#users"/></svg>Enfants</a><a><svg class="i"><use href="#message"/></svg>Messages<span class="badge">3</span></a><a><svg class="i"><use href="#menu"/></svg>Plus</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">1 : le bandeau santé reste en tête quel que soit l’onglet (règle non négociable). Ouvrir la fiche écrit dans le journal des consultations, comme au bureau. Les onglets du bureau deviennent un sélecteur défilant.</p>
+    </div>
+
+    <div class="screen"><span class="label">B4 · Notification sur l’écran verrouillé</span>
+      <div class="phone"><div class="lockscreen">
+          <p style="font-size:18px">Mardi 17 novembre</p><p class="display" style="font-size:78px;font-weight:500;line-height:1">9:41</p>
+          <div class="stack" style="width:100%;margin-top:40px">
+            <div class="notif"><span class="appicon"><svg class="i"><use href="#building"/></svg></span><div style="flex:1"><div class="hstack xs muted"><b style="color:var(--ink)">TI’CAGOU</b><span class="spacer"></span>maintenant</div><b class="small">Départ à valider : Lila G.</b><p class="small">Ouvrez Ti’Cagou pour valider ou refuser.</p></div></div>
+            <div class="notif"><span class="appicon"><svg class="i"><use href="#building"/></svg></span><div style="flex:1"><div class="hstack xs muted"><b style="color:var(--ink)">TI’CAGOU</b><span class="spacer"></span>il y a 6 min</div><b class="small">Encadrement insuffisant — Moyens : 1 adulte pour 9</b></div></div>
+          </div>
+          <div class="spacer"></div><p class="small" style="opacity:.8">Balayez vers le haut pour ouvrir</p></div></div>
+      <p class="caption">ADR 0026 : aucun détail de santé ni nom de l’adulte venu chercher l’enfant ; prénom + initiale seulement. Toucher la notification ouvre directement B5 (après déverrouillage).</p>
+    </div>
+
+    <div class="screen"><span class="label">B5 · Départ bloqué à valider</span>
+      <div class="phone"><div class="statusbar"><span>9:42</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><div class="title"><h1>Présences</h1></div></div>
+        <div class="content" style="opacity:.35"><div class="list"><div class="item"><span class="avatar bebes">LG</span><div class="main"><b>Lila Gope</b><span>Arrivée 07:46</span></div></div></div></div>
+        <div class="sheet-backdrop"><div class="sheet">
+          <div class="grip"></div>
+          <div class="hstack"><span class="iconbtn boxed" style="background:var(--danger-100);color:var(--danger-700)"><svg class="i"><use href="#userx"/></svg></span><div><h2 style="font-size:20px">Départ bloqué</h2><p class="small muted">Tablette Accueil · 09:38 · Sandrine W.</p></div></div>
+          <div class="hstack"><span class="avatar bebes">LG</span><div style="flex:1"><b>Lila Gope</b> · Bébés<p class="xs muted">14 mois</p></div><span class="health inline"><svg class="i s"><use href="#alert"/></svg>Arachide</span></div>
+          <div class="card tight" style="background:var(--sunken)"><p class="small"><b>Personne présente</b> : Joseph Gope, se dit oncle<br><b>Pièce d’identité</b> : vue par Sandrine (CNI)<br><b>N’est pas</b> dans les personnes autorisées.</p></div>
+          <div class="card tight"><p class="small"><b>Personnes autorisées</b> : Kevin Gope (père) · +687 79 22 10 <a style="color:var(--lagon-600);font-weight:700">Appeler</a></p></div>
+          <div class="field"><label>Motif de votre décision (obligatoire)</label><div class="input ph" style="height:64px;align-items:flex-start;padding-top:10px">Ex. : le père a confirmé par téléphone à 09:40</div></div>
+          <div class="grid2"><a class="btn danger-outline">Refuser le départ</a><a class="btn primary">Autoriser</a></div>
+          <p class="xs muted">Décision tracée à votre nom dans le journal, comme au bureau. Face ID redemandé pour autoriser.</p>
+        </div></div>
+      </div>
+      <p class="caption">Même règle et même trace que le bureau. La tablette reçoit la décision en direct. Le rappel santé reste visible dans la feuille.</p>
+    </div>
+
+    <div class="screen"><span class="label">B6 · Messages</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><div class="title"><h1>Messages</h1><small>Portail parents</small></div><span class="iconbtn boxed"><svg class="i"><use href="#plus"/></svg></span></div>
+        <div class="content scroll-hint">
+          <div class="seg"><span class="on">Familles</span><span>À tous</span><span>Actualités</span></div>
+          <div class="list">
+            <div class="item"><span class="avatar moyens">KK</span><div class="main"><b>Famille Kaloï <span class="chip info" style="margin-left:4px">2</span></b><span>Marie : Kaïna aura 20 minutes de retard demain…</span></div><span class="xs muted">09:12</span></div>
+            <div class="item"><span class="avatar grands">MH</span><div class="main"><b>Famille Hnawia <span class="chip info" style="margin-left:4px">1</span></b><span>Absence signalée : Malo, malade</span></div><span class="xs muted">06:52</span></div>
+            <div class="item"><span class="avatar bebes">TT</span><div class="main"><b>Famille Tehei</b><span>Vous : Bien reçu, merci !</span></div><span class="xs muted">Hier</span></div>
+            <div class="item"><span class="avatar moyens">JD</span><div class="main"><b>Famille Dupont</b><span>Autorisation de sortie signée</span></div><span class="xs muted">Lun.</span></div>
+          </div>
+        </div>
+        <nav class="tabbar"><a><svg class="i"><use href="#home"/></svg>Accueil</a><a><svg class="i"><use href="#clipboard"/></svg>Présences</a><a><svg class="i"><use href="#users"/></svg>Enfants</a><a class="on"><svg class="i"><use href="#message"/></svg>Messages<span class="badge">3</span></a><a><svg class="i"><use href="#menu"/></svg>Plus</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">Liste puis conversation plein écran (le bureau affiche les deux côte à côte à partir de la tablette).</p>
+    </div>
+
+    <div class="screen"><span class="label">B7 · Repas du jour</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Repas</h1><small>Mardi 17/11/2026</small></div></div>
+        <div class="content scroll-hint">
+          <div class="card"><div class="head"><h3>Déjeuner</h3><span class="chip lagon">25 repas</span></div>
+            <p class="small">Velouté de citrouille · Poisson blanc, riz et courgettes · Compote pomme-banane</p></div>
+          <div class="list-title">Régimes et allergies · 4 enfants</div>
+          <div class="list">
+            <div class="item"><span class="avatar bebes">LG</span><div class="main"><b>Lila Gope</b><span>Bébés</span></div><span class="health inline"><svg class="i s"><use href="#alert"/></svg>Arachide</span></div>
+            <div class="item"><span class="avatar bebes">LP</span><div class="main"><b>Léna Poédi</b><span>Bébés · repas mixé</span></div><span class="health inline">Sans lactose</span></div>
+            <div class="item"><span class="avatar grands">IW</span><div class="main"><b>Inaya Wenehoua</b><span>Grands</span></div><span class="health inline">Sans porc</span></div>
+            <div class="item"><span class="avatar moyens">GM</span><div class="main"><b>Gabin Martin</b><span>Moyens</span></div><span class="health inline"><svg class="i s"><use href="#alert"/></svg>Œuf</span></div>
+          </div>
+          <div class="card"><div class="head"><h3>Goûter</h3><span class="chip lagon">24</span></div><p class="small">Pain, fromage blanc, papaye</p></div>
+        </div>
+        <nav class="tabbar"><a><svg class="i"><use href="#home"/></svg>Accueil</a><a><svg class="i"><use href="#clipboard"/></svg>Présences</a><a><svg class="i"><use href="#users"/></svg>Enfants</a><a><svg class="i"><use href="#message"/></svg>Messages<span class="badge">3</span></a><a class="on"><svg class="i"><use href="#menu"/></svg>Plus</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">Rôle CUISINE : cet écran est l’onglet « Repas » de sa barre basse. La planification des menus de la semaine reste disponible, en liste par jour.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ C. Gestion -->
+<section class="group">
+  <h2>C. Gestion : menu « Plus », facturation, personnel, paramètres, crèches</h2>
+  <p class="lead">Les saisies longues restent possibles sur téléphone ; l’import de données, l’assistant d’installation et la restauration
+    des sauvegardes portent la mention « recommandé sur ordinateur ».</p>
+  <div class="row">
+
+    <div class="screen"><span class="label">C1 · Plus</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><div class="title"><h1>Plus</h1></div></div>
+        <div class="content scroll-hint">
+          <a class="card hstack" style="text-decoration:none;color:inherit"><span class="avatar staff">NK</span><div style="flex:1"><b>Nathalie Kaloï</b><p class="small muted">Direction · Les P’tits Niaoulis</p></div><span class="small strong" style="color:var(--lagon-600)">Changer de crèche</span></a>
+          <div class="list">
+            <div class="item"><svg class="i"><use href="#clipboardlist"/></svg><div class="main"><b>Inscriptions</b></div><span class="chip info">4 demandes</span></div>
+            <div class="item"><svg class="i"><use href="#receipt"/></svg><div class="main"><b>Facturation</b></div><span class="chip warn">À valider</span></div>
+            <div class="item"><svg class="i"><use href="#chart"/></svg><div class="main"><b>Statistiques</b></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><svg class="i"><use href="#utensils"/></svg><div class="main"><b>Repas</b></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><svg class="i"><use href="#id"/></svg><div class="main"><b>Personnel</b></div><span class="chip info">1 congé</span></div>
+            <div class="item"><svg class="i"><use href="#building"/></svg><div class="main"><b>Vue groupe</b></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><svg class="i"><use href="#settings"/></svg><div class="main"><b>Paramètres</b></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+          </div>
+          <div class="list">
+            <div class="item"><svg class="i"><use href="#bell"/></svg><div class="main"><b>Notifications</b></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><svg class="i"><use href="#info"/></svg><div class="main"><b>Aide</b><span>Guides et contact Ti’Cagou</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item" style="color:var(--danger-700)"><svg class="i"><use href="#logout"/></svg><div class="main"><b>Se déconnecter</b></div></div>
+          </div>
+          <p class="xs muted" style="text-align:center">Ti’Cagou Direction 1.0.0 · serveur 1.0.0</p>
+        </div>
+        <nav class="tabbar"><a><svg class="i"><use href="#home"/></svg>Accueil</a><a><svg class="i"><use href="#clipboard"/></svg>Présences</a><a><svg class="i"><use href="#users"/></svg>Enfants</a><a><svg class="i"><use href="#message"/></svg>Messages<span class="badge">3</span></a><a class="on"><svg class="i"><use href="#menu"/></svg>Plus</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">Même liste que le menu latéral, filtrée par rôle et par rubriques masquées (ADR 0022). Les badges reprennent les compteurs du tableau de bord.</p>
+    </div>
+
+    <div class="screen"><span class="label">C2 · Facturation du mois</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Facturation</h1><small>Octobre 2026</small></div><span class="iconbtn"><svg class="i"><use href="#calendar"/></svg></span></div>
+        <div class="content scroll-hint">
+          <div class="grid2"><div class="kpi"><div class="v">2 184 500 F</div><div class="l">à facturer · 27 familles</div></div><div class="kpi"><div class="v" style="color:var(--warning-700)">312 400 F</div><div class="l">impayés · 4 factures</div></div></div>
+          <div class="banner warn"><svg class="i s"><use href="#alert"/></svg><span><b>Brouillons à vérifier</b> : 2 familles ont une absence non justifiée à trancher.</span></div>
+          <div class="seg"><span class="on">Brouillons · 27</span><span>Validées</span><span>Impayées</span></div>
+          <div class="list">
+            <div class="item"><div class="main"><b>Famille Poédi</b><span>Tom, Léna · aide CAFAT déduite</span></div><div class="num"><b>142 300 F</b><br><span class="xs muted">brouillon</span></div></div>
+            <div class="item"><div class="main"><b>Famille Wahéo</b><span>Noa · temps plein</span></div><div class="num"><b>98 500 F</b><br><span class="xs muted">brouillon</span></div></div>
+            <div class="item"><div class="main"><b>Famille Wamytan <span class="chip warn">à vérifier</span></b><span>Léa · au réel · 1 absence</span></div><div class="num"><b>54 750 F</b><br><span class="xs muted">brouillon</span></div></div>
+            <div class="item"><div class="main"><b>Famille Kaloï</b><span>Kaïna · 3 jours</span></div><div class="num"><b>65 000 F</b><br><span class="xs muted">brouillon</span></div></div>
+          </div>
+        </div>
+        <div class="fab-bar"><a class="btn secondary">Aperçu PDF</a><a class="btn primary" style="flex:1">Valider 25 factures</a></div>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">Consultation et validation. Montants entiers en F CFA. La modification fine d’une facture brouillon reste possible (formulaire en pleine page).</p>
+    </div>
+
+    <div class="screen"><span class="label">C3 · Valider la facturation</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><div class="title"><h1>Facturation</h1></div></div>
+        <div class="content" style="opacity:.35"></div>
+        <div class="sheet-backdrop"><div class="sheet">
+          <div class="grip"></div>
+          <h2 style="font-size:20px">Valider 25 factures d’octobre ?</h2>
+          <div class="card tight" style="background:var(--sunken)"><div class="stack small"><div class="hstack"><span style="flex:1">Factures</span><b>25</b></div><div class="hstack"><span style="flex:1">Total</span><b>2 075 450 F</b></div><div class="hstack"><span style="flex:1">Numéros</span><b>2026-0412 à 2026-0436</b></div><div class="hstack"><span style="flex:1">Laissées en brouillon</span><b>2 (à vérifier)</b></div></div></div>
+          <div class="banner info"><svg class="i s"><use href="#lock"/></svg><span>Une facture validée ne se modifie plus : une erreur se corrige par un avoir. Les familles avec le portail la reçoivent tout de suite.</span></div>
+          <a class="btn primary block"><svg class="i"><use href="#face"/></svg>Valider avec Face ID</a>
+          <a class="btn ghost block">Annuler</a>
+        </div></div></div>
+      <p class="caption">Confirmation forte (Face ID redemandé) pour les actions irréversibles : validation de factures, avoirs, purge d’une famille.</p>
+    </div>
+
+    <div class="screen"><span class="label">C4 · Personnel</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Personnel</h1><small>Mardi 17/11/2026</small></div></div>
+        <div class="content scroll-hint">
+          <div class="seg"><span class="on">Aujourd’hui</span><span>Planning</span><span>Congés · 1</span><span>Heures</span></div>
+          <div class="list-title">Présents · 5</div>
+          <div class="list">
+            <div class="item"><span class="avatar staff">MT</span><div class="main"><b>Maëva Tiaou</b><span>Moyens · arrivée 06:58 · 07:00–15:30</span></div><span class="chip ok">Présente</span></div>
+            <div class="item"><span class="avatar staff">SW</span><div class="main"><b>Sandrine Wahnyamalla</b><span>Bébés · arrivée 07:55</span></div><span class="chip ok">Présente</span></div>
+            <div class="item"><span class="avatar staff">NK</span><div class="main"><b>Noëlla Kasarhérou</b><span>Bébés · arrivée 07:59</span></div><span class="chip ok">Présente</span></div>
+            <div class="item"><span class="avatar staff">TH</span><div class="main"><b>Tiare Hmae</b><span>Grands · arrivée 08:01</span></div><span class="chip ok">Présente</span></div>
+            <div class="item"><span class="avatar staff">LK</span><div class="main"><b>Léa Kaouma</b><span>Grands · arrivée 08:03</span></div><span class="chip ok">Présente</span></div>
+          </div>
+          <div class="list-title">Attendue</div>
+          <div class="list"><div class="item"><span class="avatar staff">MT</span><div class="main"><b>Mereana Tehei</b><span>Moyens · prévue 10:00–17:00</span></div><a class="btn sm secondary">Appeler</a></div></div>
+          <div class="banner warn"><svg class="i s"><use href="#alert"/></svg><span>Contrat de Sandrine W. (remplacement) : fin le 11/12/2026.</span></div>
+        </div>
+        <nav class="tabbar"><a><svg class="i"><use href="#home"/></svg>Accueil</a><a><svg class="i"><use href="#clipboard"/></svg>Présences</a><a><svg class="i"><use href="#users"/></svg>Enfants</a><a><svg class="i"><use href="#message"/></svg>Messages<span class="badge">3</span></a><a class="on"><svg class="i"><use href="#menu"/></svg>Plus</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">Le planning de la semaine (grille au bureau) s’affiche jour par jour en liste sur téléphone.</p>
+    </div>
+
+    <div class="screen"><span class="label">C5 · Paramètres essentiels</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Paramètres</h1></div></div>
+        <div class="content scroll-hint">
+          <div class="list-title">La crèche</div>
+          <div class="list">
+            <div class="item"><div class="main"><b>Structure et sections</b><span>Horaires, capacité, sections</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><div class="main"><b>Utilisateurs et rôles</b><span>8 personnes · codes PIN</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><div class="main"><b>Encadrement</b><span>Barème en vigueur depuis le 01/01/2026</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><div class="main"><b>Portail parents</b></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+          </div>
+          <div class="list-title">Postes et sécurité</div>
+          <div class="list">
+            <div class="item"><svg class="i"><use href="#phone"/></svg><div class="main"><b>Postes, téléphones et tablettes</b><span>2 PC / 3 · 2 téléphones · 1 tablette</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><svg class="i"><use href="#shield"/></svg><div class="main"><b>Sécurité de mon compte</b><span>Mot de passe, double authentification, Face ID</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+            <div class="item"><svg class="i"><use href="#download"/></svg><div class="main"><b>Sauvegardes</b><span>Dernière : cette nuit 02:14 · OK</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+          </div>
+          <div class="list-title">Recommandé sur ordinateur</div>
+          <div class="list">
+            <div class="item"><svg class="i"><use href="#monitor"/></svg><div class="main"><b>Import de données</b><span>Fichiers Excel, reprise d’un autre logiciel</span></div><span class="chip neutral">Ordinateur</span></div>
+            <div class="item"><svg class="i"><use href="#monitor"/></svg><div class="main"><b>Comptabilité et exports</b><span>FEC, CSV</span></div><span class="chip neutral">Ordinateur</span></div>
+          </div>
+        </div>
+        <nav class="tabbar"><a><svg class="i"><use href="#home"/></svg>Accueil</a><a><svg class="i"><use href="#clipboard"/></svg>Présences</a><a><svg class="i"><use href="#users"/></svg>Enfants</a><a><svg class="i"><use href="#message"/></svg>Messages<span class="badge">3</span></a><a class="on"><svg class="i"><use href="#menu"/></svg>Plus</a></nav>
+        <div class="homebar" style="background:var(--surface)"><i></i></div></div>
+      <p class="caption">« Recommandé sur ordinateur » reste ouvrable : un bandeau le rappelle en tête de la page, rien n’est interdit.</p>
+    </div>
+
+    <div class="screen"><span class="label">C6 · Postes, téléphones et tablettes</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Postes</h1></div></div>
+        <div class="content scroll-hint">
+          <div class="card hstack" style="background:var(--lagon-50)"><svg class="i" style="color:var(--lagon-700)"><use href="#qr"/></svg><div style="flex:1"><b>Ouvrir sur un autre téléphone</b><p class="xs muted">Code de la crèche : <b>NK7Q2M</b></p></div><a class="btn sm secondary">QR</a></div>
+          <div class="list-title">PC du bureau · 2 / 3</div>
+          <div class="list">
+            <div class="item"><svg class="i"><use href="#monitor"/></svg><div class="main"><b>Chrome sur Windows</b><span>Nathalie K. · aujourd’hui 08:12</span></div><span class="xs strong" style="color:var(--danger-700)">Retirer</span></div>
+            <div class="item"><svg class="i"><use href="#monitor"/></svg><div class="main"><b>Edge sur Windows</b><span>Compta · 14/11/2026</span></div><span class="xs strong" style="color:var(--danger-700)">Retirer</span></div>
+          </div>
+          <div class="list-title">Téléphones de la direction · 2 / 10</div>
+          <div class="list">
+            <div class="item"><svg class="i"><use href="#phone"/></svg><div class="main"><b>iPhone de Nathalie <span class="chip lagon">celui-ci</span></b><span>Ti’Cagou Direction 1.0.0 · iOS</span></div></div>
+            <div class="item"><svg class="i"><use href="#phone"/></svg><div class="main"><b>Pixel 8</b><span>Direction 1.0.0 · Android · hier</span></div><span class="xs strong" style="color:var(--danger-700)">Retirer</span></div>
+          </div>
+          <div class="list-title">Tablettes de pointage · 1 / 2</div>
+          <div class="list"><div class="item"><svg class="i"><use href="#tablet"/></svg><div class="main"><b>Accueil</b><span>Pointage 1.0.0 · en ligne</span></div><span class="xs strong" style="color:var(--danger-700)">Retirer</span></div></div>
+          <p class="xs muted">Les téléphones ne prennent pas de place de PC (ADR 0028). Retirer un appareil le déconnecte au plus tard dans 15 minutes et coupe ses notifications.</p>
+        </div>
+        <div class="homebar"><i></i></div></div>
+      <p class="caption">Téléphone perdu : la direction le retire ici (ou depuis le PC). Écran « Paramètres › Tablettes et abonnement » existant, étendu aux téléphones.</p>
+    </div>
+
+    <div class="screen"><span class="label">C7 · Notifications</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Notifications</h1><small>Sur ce téléphone · Les P’tits Niaoulis</small></div></div>
+        <div class="content">
+          <div class="list">
+            <div class="item"><div class="main"><b>Départ bloqué à valider</b><span>Dès qu’une tablette bloque un départ</span></div><span class="toggle on"></span></div>
+            <div class="item"><div class="main"><b>Encadrement insuffisant</b><span>Après 5 minutes au-dessus du barème</span></div><span class="toggle on"></span></div>
+            <div class="item"><div class="main"><b>Sauvegarde en échec</b><span>Le matin, si la nuit a échoué</span></div><span class="toggle on"></span></div>
+            <div class="item"><div class="main"><b>Tablette hors connexion</b><span>Plus de 30 minutes</span></div><span class="toggle"></span></div>
+          </div>
+          <div class="banner info"><svg class="i s"><use href="#shield"/></svg><span>Les notifications passent par Apple ou Google : elles ne contiennent jamais d’information de santé ni de message.</span></div>
+          <div class="banner warn"><svg class="i s"><use href="#bell"/></svg><span style="flex:1">Notifications désactivées dans les réglages de l’iPhone.</span><a class="small strong" style="color:var(--warning-700)">Ouvrir</a></div>
+        </div>
+        <div class="homebar"><i></i></div></div>
+      <p class="caption">ADR 0026. Seuils (5 min, 30 min) : réglages de l’instance. Le second bandeau n’apparaît que si l’autorisation système a été refusée.</p>
+    </div>
+
+    <div class="screen"><span class="label">C8 · Mes crèches</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="appbar"><span class="iconbtn"><svg class="i"><use href="#back"/></svg></span><div class="title"><h1>Mes crèches</h1></div></div>
+        <div class="content">
+          <div class="list">
+            <div class="item"><svg class="i" style="color:var(--lagon-600)"><use href="#building"/></svg><div class="main"><b>Les P’tits Niaoulis</b><span>Dumbéa · ouverte</span></div><span class="chip lagon">Actuelle</span></div>
+            <div class="item"><svg class="i"><use href="#building"/></svg><div class="main"><b>Les Bulles du Lagon</b><span>Nouméa · utilisée le 12/11/2026</span></div><svg class="i s chev"><use href="#chevron"/></svg></div>
+          </div>
+          <a class="btn secondary block"><svg class="i"><use href="#plus"/></svg>Ajouter une crèche</a>
+          <div class="spacer"></div>
+          <div class="card"><b>Oublier « Les Bulles du Lagon »</b><p class="small muted" style="margin:4px 0 10px">Ferme la session, coupe les notifications et efface de ce téléphone tout ce qui concerne cette crèche.</p><a class="btn danger-outline block"><svg class="i"><use href="#trash"/></svg>Oublier cette crèche</a></div>
+        </div>
+        <div class="homebar"><i></i></div></div>
+      <p class="caption">ADR 0025 : chaque crèche a sa session, son identifiant de poste et ses caches. Changer de crèche redemande Face ID.</p>
+    </div>
+
+    <div class="screen"><span class="label">C9 · Mise à jour requise</span>
+      <div class="phone"><div class="statusbar"><span>9:41</span><span class="notch"></span><span>5G</span></div>
+        <div class="content" style="padding-top:110px; gap:16px; align-items:center; text-align:center">
+          <span class="iconbtn" style="width:88px;height:88px;border-radius:26px;background:var(--warning-100);color:var(--warning-700)"><svg class="i l" style="width:44px;height:44px"><use href="#refresh"/></svg></span>
+          <h1 style="font-size:26px">Mettez à jour Ti’Cagou</h1>
+          <p class="muted">Votre crèche utilise une version plus récente. Cette application (1.0.0) n’est plus compatible : la version 1.2.0 ou plus est demandée.</p>
+          <div class="spacer"></div>
+          <a class="btn primary block"><svg class="i"><use href="#store"/></svg>Ouvrir l’App Store</a>
+          <a class="btn ghost block">Continuer dans le navigateur</a>
+        </div><div class="homebar"><i></i></div></div>
+      <p class="caption">ADR 0027 : écran bloquant pour Direction et Parents (jamais pour le Pointage). « Navigateur » ouvre l’adresse de l’instance.</p>
+    </div>
+  </div>
+</section>
+</div>
+<script src="icones-mobile.js"></script>
+</body>
+</html>

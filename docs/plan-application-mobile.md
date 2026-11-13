@@ -116,7 +116,7 @@ Les maquettes d'une phase sont validées par l'utilisateur avant le développeme
 | Phase | État |
 |---|---|
 | 0 ADR | fait le 14/11/2026 : ADR 0023 à 0028 ; ADR 0002, 0005, 0011, 0013, 0017, 0018, 0021 marqués |
-| 1 Maquettes | à faire |
+| 1 Maquettes | livrées le 14/11/2026, à valider : `docs/design/Ti'Cagou — Direction mobile.html`, `… Direction tablette et ordinateur.html`, `… Pointage natif.html`, `… app parents mobile, compléments.html` (charte : `charte-mobile.css`) |
 | 2 Socle | à faire |
 | 3 Direction responsive | à faire |
 | 4 Annuaire | à faire |
