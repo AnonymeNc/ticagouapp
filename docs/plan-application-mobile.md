@@ -1,6 +1,6 @@
 # Plan — Applications mobiles Ti'Cagou (Capacitor)
 
-- **Statut** : en cours (phase 6, pointage natif)
+- **Statut** : en cours (phase 7, Parents natif)
 - **Date** : 14/11/2026
 - **Source** : [étude](etude-application-mobile.md), option B retenue
 - **Exigence** : l'application de la direction est la même sur téléphone, tablette **et ordinateur** (navigateur).
@@ -28,6 +28,7 @@ notifications natives. Toutes les règles métier du CLAUDE.md s'appliquent sans
 4. Builds iOS : Mac disponible, ou CI macOS (GitHub Actions, Codemagic) ? (phase 2)
    → **Tranché le 14/11/2026 : CI macOS GitHub Actions** (suppose le dépôt GitHub, décision 6).
 5. iPad pris en charge pour le pointage, ou Android seulement ? (phase 6)
+   → **Tranché le 14/11/2026 : Android seulement** ; un iPad reste utilisable dans le navigateur (`/kiosk`).
 6. Création d'un dépôt GitHub pour `ticagouapp` (aujourd'hui local seulement). (dès que l'utilisateur le souhaite)
    → **Tranché le 14/11/2026 : dépôt privé [AnonymeNc/ticagouapp](https://github.com/AnonymeNc/ticagouapp)** (remote `origin`).
 
@@ -119,11 +120,11 @@ Les maquettes d'une phase sont validées par l'utilisateur avant le développeme
 |---|---|
 | 0 ADR | fait le 14/11/2026 : ADR 0023 à 0028 ; ADR 0002, 0005, 0011, 0013, 0017, 0018, 0021 marqués |
 | 1 Maquettes | validées le 14/11/2026 (écarts acceptés : barre basse + « Plus », rail 768–1 279 px, code e-mail parents) : `docs/design/Ti'Cagou — Direction mobile.html`, `… Direction tablette et ordinateur.html`, `… Pointage natif.html`, `… app parents mobile, compléments.html` (charte : `charte-mobile.css`) |
-| 2 Socle | fait le 14/11/2026 (branche `phase-2-socle`) : coques `mobile/*` (Android, iOS SPM, icônes), `lib/native` (crèche courante, coffre, en-tête `X-Ticagou-App`), session de 30 jours et postes mobiles (V30), `/api/v1/app/compat`, CORS Capacitor, CI Android et iOS. Non vérifié : compilation native locale (pas de SDK Android sur le poste) — faite par la CI une fois le dépôt sur GitHub (décision 6) |
+| 2 Socle | fait le 14/11/2026 (branche `phase-2-socle`) : coques `mobile/*` (Android, iOS SPM, icônes), `lib/native` (crèche courante, coffre, en-tête `X-Ticagou-App`), session de 30 jours et postes mobiles (V30), `/api/v1/app/compat`, CORS Capacitor, CI Android et iOS. Compilation Android et iOS vérifiée par la CI GitHub le 14/11/2026 (Android 8 / API 26 minimum, exigé par le scanner de QR) |
 | 3 Direction responsive | fait le 14/11/2026 (branche `phase-3-responsive`) : barre basse + « Plus » sous 768 px, rail 768–1 279 px, barre du haut compacte, dialogues en feuille, tableaux qui défilent sous 1 024 px et en cartes (Enfants, Présences, Facturation, Personnel), fiche enfant resserrée, « recommandé sur ordinateur » (import, installation, sauvegardes), téléphones dans Paramètres › Postes. Aucun débordement sur les 27 écrans contrôlés à 390, 820, 1 180 et 1 440 px (`scripts/captures/captures.mjs --debordements`). Captures avant/après : `docs/design/captures-phase-3/` |
 | 4 Annuaire | fait le 14/11/2026 (branche `phase-4-annuaire`) : `creche.sh annuaire` + site Caddy `annuaire.<domaine>` (validé et essayé avec l’image Caddy), code dans la console, QR « Ouvrir sur mon téléphone » et page `/app`, choix de la crèche (QR, code, adresse), « Mes crèches », oubli, verrouillage Face ID / code, écran « mise à jour requise ». Vérifié dans le navigateur en application simulée (config `web-app`) : choix par adresse, connexion, poste MOBILE et session de 30 jours en base. Non vérifié : scan QR et Face ID sur un vrai téléphone |
 | 5 Notifications | fait le 14/11/2026 (branche `phase-5-notifications`) : APNs (ES256) et FCM (RS256) avec le JDK seul, testés contre un faux service ; appareils de la direction (V31) et alertes encadrement, sauvegarde, tablette ; départ bloqué validé à distance (V32, bandeau et feuille B5, bouton sur la tablette) ; réglages C7 ; portail : appareils de l’application Parents (V8) et envoi natif à côté du Web Push. Non vérifié : envoi réel chez Apple et Google (comptes développeur, décision 3) |
-| 6 Pointage | à faire |
+| 6 Pointage | fait le 14/11/2026 (branche `phase-6-pointage`) : Android seulement (décision 5, projet iOS retiré), plugin local `KioskMode` (Lock Task ou épinglage, écran allumé, rétabli au démarrage, lanceur d’accueil), sortie par code de la direction vérifié par le serveur, appairage par scan du QR (adresse et code) ou adresse puis code, secret de la tablette et clé du stockage chiffré dans le Keystore. Non vérifié : comportement sur une vraie tablette (Lock Task, propriétaire d’appareil) |
 | 7 Parents | à faire |
 | 8 Publication | à faire |
 | 9 Docs, formation, commercial, captures | à faire (au fil de l'eau) |

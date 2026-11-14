@@ -10,6 +10,7 @@ import { formatLongDate, formatTime } from "@/lib/datetime";
 import { isNativeApp } from "@/lib/native/platform";
 import { cn } from "@/lib/utils";
 import { KioskProvider, useKiosk } from "./KioskContext";
+import { KioskModeControl } from "./KioskModeControl";
 import { PairingPage } from "./PairingPage";
 import { PinLogin } from "./PinLogin";
 import { adultsLabel, statusLabels } from "./ratio";
@@ -68,6 +69,7 @@ function KioskFrame() {
         </time>
         <div className="grow" />
         <ServerStatusChip size="touch" />
+        <KioskModeControl />
         {ratio && device ? (
           <div
             role="status"

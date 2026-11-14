@@ -3,6 +3,8 @@
  * jour contient des données de santé : ils ne sont écrits que chiffrés (AES-256-GCM). La clé est non extractible :
  * le navigateur s'en sert sans jamais la donner, et une copie des fichiers de la tablette ne contient pas de clé lisible.
  */
+import { hasNativePlugins } from "@/lib/native/platform";
+
 const DB_NAME = "ticagou-kiosk-keys";
 const STORE = "keys";
 const DATA = "data";
@@ -15,6 +17,22 @@ export function canSeal(): boolean {
 }
 
 let key: Promise<CryptoKey> | null = null;
+
+/**
+ * Application native (ADR 0023) : la clé vient du Keystore d’Android (coffre de l’application), importée non
+ * extractible ; une copie de la mémoire de la WebView ne la contient pas en clair sur le disque.
+ */
+async function nativeKey(): Promise<CryptoKey> {
+  const { vault } = await import("@/lib/native/vault");
+  let raw = await vault().get("kiosque.cle");
+  if (!raw) {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    raw = btoa(String.fromCharCode(...bytes));
+    await vault().set("kiosque.cle", raw);
+  }
+  const material = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+  return crypto.subtle.importKey("raw", material, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
 
 function openKeys(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -29,6 +47,7 @@ function openKeys(): Promise<IDBDatabase> {
 }
 
 function loadKey(): Promise<CryptoKey> {
+  if (!key && hasNativePlugins()) key = nativeKey();
   key ??= (async () => {
     const db = await openKeys();
     const existing = await new Promise<CryptoKey | undefined>((resolve, reject) => {
