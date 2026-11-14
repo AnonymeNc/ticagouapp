@@ -64,7 +64,7 @@ class PreMigrationBackupIT extends IntegrationTest {
     }
 
     PreMigrationBackup backup(boolean skip) {
-        var props = new TiCagouProperties(properties.zone(), properties.allowedOrigins(), properties.security(),
+        var props = new TiCagouProperties(properties.zone(), properties.allowedOrigins(), properties.appOrigins(), properties.app(), properties.security(),
                 new TiCagouProperties.Storage(storage, ""), properties.web(),
                 new TiCagouProperties.Backup(storage.getParent().resolve("backups"), properties.backup().dailyTime(), "",
                         properties.backup().pgBin(), skip), properties.setup(), properties.monitoring(),
@@ -107,7 +107,7 @@ class PreMigrationBackupIT extends IntegrationTest {
 
     @Test
     void sansPgDumpLaMigrationEstRefuseeSaufDepannage() {
-        var props = new TiCagouProperties(properties.zone(), properties.allowedOrigins(), properties.security(),
+        var props = new TiCagouProperties(properties.zone(), properties.allowedOrigins(), properties.appOrigins(), properties.app(), properties.security(),
                 new TiCagouProperties.Storage(storage, ""), properties.web(),
                 new TiCagouProperties.Backup(storage.getParent().resolve("backups"), properties.backup().dailyTime(), "",
                         storage.resolve("introuvable").toString(), false), properties.setup(), properties.monitoring(),

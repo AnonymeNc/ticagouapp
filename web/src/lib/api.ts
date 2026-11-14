@@ -1,8 +1,11 @@
 /**
- * Accès au serveur (`/api/v1`, même origine que la page). Le jeton d'accès est ajouté automatiquement ; sur un 401,
+ * Accès au serveur (`/api/v1`) : même origine que la page dans le navigateur, adresse de la crèche choisie dans
+ * l’application mobile (ADR 0025), qui s’annonce par l’en-tête X-Ticagou-App (ADR 0024). Le jeton d'accès est ajouté automatiquement ; sur un 401,
  * la session est rafraîchie une fois (un seul rafraîchissement à la fois) puis la requête rejouée.
  * Le client typé généré depuis l'OpenAPI remplacera les déclarations de types manuelles.
  */
+import { apiBase } from "./native/creches";
+import { appHeaders } from "./native/platform";
 import { workstationHeaders } from "./workstation";
 
 /** Erreur RFC 7807 renvoyée par le serveur. */
@@ -95,11 +98,11 @@ function send(
   auth: AuthMode,
 ) {
   // La tablette s'identifie par son jeton d'appareil ; les PC du bureau par leur identifiant de poste (licence).
-  const headers: Record<string, string> = { Accept: accept, ...(auth === "device" ? {} : workstationHeaders()), ...extra };
+  const headers: Record<string, string> = { Accept: accept, ...appHeaders(), ...(auth === "device" ? {} : workstationHeaders()), ...extra };
   const token = auth === "device" ? deviceHooks?.getAccessToken() : auth ? authHooks?.getAccessToken() : null;
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers["Content-Type"] = "application/json";
-  return fetch(`/api/v1${path}`, {
+  return fetch(`${apiBase()}/api/v1${path}`, {
     method,
     headers,
     body: form ?? (body === undefined ? undefined : JSON.stringify(body)),

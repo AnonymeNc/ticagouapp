@@ -8,6 +8,7 @@ import {
   getAccessToken,
   mayHaveSession,
   refreshSession,
+  sessionHeaders,
   storeSession,
 } from "./tokens";
 import type { Me, SessionResponse } from "./types";
@@ -16,9 +17,6 @@ type AuthState =
   | { status: "loading" }
   | { status: "anonymous" }
   | { status: "authenticated"; user: Me };
-
-/** Demande au serveur de garder le jeton de rafraîchissement dans un cookie HttpOnly. */
-export const SESSION_COOKIE = { "X-Ticagou-Session": "cookie" };
 
 type AuthContextValue = {
   state: AuthState;
@@ -34,7 +32,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 type Props = {
-  /** true : bureau, la session survit à la fermeture (cookie) ; false : tablette partagée. */
+  /** true : bureau et application Direction, la session survit à la fermeture ; false : tablette partagée. */
   persist: boolean;
   children: ReactNode;
 };
@@ -87,7 +85,7 @@ export function AuthProvider({ persist, children }: Props) {
       },
       login: async (login, password, code) => {
         applySession(
-          await api<SessionResponse>("/auth/login", { method: "POST", body: { login, password, code }, auth: false, headers: SESSION_COOKIE }),
+          await api<SessionResponse>("/auth/login", { method: "POST", body: { login, password, code }, auth: false, headers: sessionHeaders() }),
         );
       },
       loginWithPin: async (userId, pin) => {

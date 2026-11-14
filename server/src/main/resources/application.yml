@@ -66,6 +66,10 @@ ticagou:
   license:
     evaluation-days: ${TICAGOU_EVALUATION_DAYS:30}
     grace-days: ${TICAGOU_GRACE_DAYS:30}
+  # Applications mobiles (ADR 0027) : version minimale exigée ; 0.0.0 = aucune. Relevée pour un correctif de sécurité.
+  app:
+    min-direction: ${TICAGOU_APP_MIN_DIRECTION:0.0.0}
+    min-pointage: ${TICAGOU_APP_MIN_POINTAGE:0.0.0}
   # Jeu de démonstration (développement) : jamais activé en production.
   demo:
     enabled: ${TICAGOU_DEMO:false}

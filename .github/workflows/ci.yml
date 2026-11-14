@@ -127,3 +127,64 @@ jobs:
       - run: docker build -f deploy/Dockerfile -t ticagou-web:ci .
       - name: Scripts d'exploitation (syntaxe)
         run: sh -n deploy/creche.sh && sh -n deploy/sauvegarde-hors-site.sh && sh -n deploy/secrets.sh
+
+  # Applications mobiles (ADR 0023) : front embarqué, plugins cohérents, projets natifs compilés sans signature.
+  mobile-android:
+    name: Applications mobiles (Android)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Fronts et coques
+        run: |
+          pnpm --dir web install --frozen-lockfile
+          pnpm --dir parents-portal/web install --frozen-lockfile
+          pnpm --dir mobile install --frozen-lockfile
+          node mobile/scripts/check-versions.mjs
+          node mobile/scripts/build.mjs
+      - name: Compilation Android (debug)
+        run: |
+          for app in direction pointage parents; do
+            (cd mobile/$app/android && chmod +x gradlew && ./gradlew --no-daemon assembleDebug)
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: applications-android
+          path: mobile/*/android/app/build/outputs/apk/debug/*.apk
+
+  # Décision 4 du plan (14/11/2026) : builds iOS sur les machines macOS de GitHub Actions.
+  mobile-ios:
+    name: Applications mobiles (iOS)
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Fronts et coques
+        run: |
+          pnpm --dir web install --frozen-lockfile
+          pnpm --dir parents-portal/web install --frozen-lockfile
+          pnpm --dir mobile install --frozen-lockfile
+          node mobile/scripts/build.mjs
+      - name: Compilation iOS (simulateur, sans signature)
+        run: |
+          for app in direction pointage parents; do
+            xcodebuild -project mobile/$app/ios/App/App.xcodeproj -scheme App -configuration Debug \
+              -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+          done

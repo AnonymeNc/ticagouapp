@@ -1,0 +1,14 @@
+{
+  "name": "ticagou-mobile",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:direction": "node scripts/build.mjs direction",
+    "build:pointage": "node scripts/build.mjs pointage",
+    "build:parents": "node scripts/build.mjs parents",
+    "check": "node scripts/check-versions.mjs"
+  }
+}

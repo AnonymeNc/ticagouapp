@@ -53,9 +53,10 @@ public class AuthController {
                                  @RequestHeader(value = DesktopClientService.HEADER, required = false) String clientId,
                                  @RequestHeader(value = DesktopClientService.NAME_HEADER, required = false) String clientName,
                                  @RequestHeader(value = SessionCookies.HEADER, required = false) String cookieMode,
+                                 @RequestHeader(value = AppClient.HEADER, required = false) String app,
                                  HttpServletResponse response) {
         var session = service.login(request.login(), request.password(), request.code(), clientId,
-                DesktopClientService.decodeName(clientName));
+                DesktopClientService.decodeName(clientName), AppClient.parse(app).orElse(null));
         return cookieMode == null ? session : cookies.apply(session, response);
     }
 
@@ -79,12 +80,14 @@ public class AuthController {
                                    @CookieValue(name = SessionCookies.NAME, required = false) String cookie,
                                    @RequestHeader(value = DesktopClientService.HEADER, required = false) String clientId,
                                    @RequestHeader(value = DesktopClientService.NAME_HEADER, required = false) String clientName,
+                                   @RequestHeader(value = AppClient.HEADER, required = false) String app,
                                    HttpServletResponse response) {
         var token = request != null ? request.refreshToken() : cookie;
         if (token == null) {
             throw AuthenticationFailedException.sessionExpired();
         }
-        var session = service.refresh(token, clientId, DesktopClientService.decodeName(clientName));
+        var session = service.refresh(token, clientId, DesktopClientService.decodeName(clientName),
+                AppClient.parse(app).orElse(null));
         // Session ouverte par cookie : le nouveau jeton ne repasse jamais par le JavaScript de la page.
         return request != null ? session : cookies.apply(session, response);
     }

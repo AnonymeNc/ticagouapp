@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Modes de build des applications mobiles (ADR 0023) : sans secret, commités.
+!.env.direction
+!.env.pointage

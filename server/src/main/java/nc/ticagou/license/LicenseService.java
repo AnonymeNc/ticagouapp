@@ -28,10 +28,11 @@ public class LicenseService {
      * @param deadline       jour où la saisie sera bloquée (fin de l'évaluation ou de la grâce), nul si la licence court
      * @param daysLeft       jours avant {@code deadline}, ou avant l'échéance si la licence est à renouveler
      * @param desktops       PC du bureau qui occupent une place ; {@code desktopLimit} PC permis
+     * @param mobiles        téléphones de la direction actifs, hors du compte des PC ; {@code mobileLimit} permis (ADR 0028)
      */
     public record LicenseDto(State state, boolean readOnly, License license, LocalDate renewalFrom, LocalDate deadline,
-                             long daysLeft, int pairedTablets, int desktops, int desktopLimit, int sections,
-                             int capacity, String version, String message) {
+                             long daysLeft, int pairedTablets, int desktops, int desktopLimit, int mobiles,
+                             int mobileLimit, int sections, int capacity, String version, String message) {
     }
 
     private final JdbcTemplate jdbc;
@@ -39,6 +40,7 @@ public class LicenseService {
     private final String version;
     private final LicenseTerms terms;
     private final Duration desktopIdle;
+    private final int mobileLimit;
 
     public LicenseService(JdbcTemplate jdbc, Clock clock, ObjectProvider<BuildProperties> build,
                           TiCagouProperties properties) {
@@ -48,6 +50,7 @@ public class LicenseService {
         this.version = info != null ? info.getVersion() : "dev";
         this.terms = new LicenseTerms(properties.license().evaluationDays(), properties.license().graceDays());
         this.desktopIdle = properties.license().desktopIdle();
+        this.mobileLimit = properties.license().mobileMax();
     }
 
     @Transactional
@@ -57,11 +60,16 @@ public class LicenseService {
         int tablets = jdbc.queryForObject("SELECT count(*) FROM device WHERE token_hash IS NOT NULL AND revoked_at IS NULL", Integer.class);
         int capacity = jdbc.queryForObject("SELECT coalesce(sum(capacity), 0) FROM structure", Integer.class);
         int sections = jdbc.queryForObject("SELECT count(*) FROM section", Integer.class);
-        int desktops = jdbc.queryForObject("SELECT count(*) FROM desktop_client WHERE revoked_at IS NULL AND last_seen_at > ?",
-                Integer.class, Timestamp.from(clock.instant().minus(desktopIdle)));
+        var since = Timestamp.from(clock.instant().minus(desktopIdle));
+        int desktops = jdbc.queryForObject("""
+                SELECT count(*) FROM desktop_client WHERE kind = 'BUREAU' AND revoked_at IS NULL AND last_seen_at > ?""",
+                Integer.class, since);
+        int mobiles = jdbc.queryForObject("""
+                SELECT count(*) FROM desktop_client WHERE kind = 'MOBILE' AND revoked_at IS NULL AND last_seen_at > ?""",
+                Integer.class, since);
         var renewalFrom = license == null ? null : license.validUntil().minusDays(LicenseTerms.RENEWAL_DAYS);
         return new LicenseDto(status.state(), status.state().readOnly(), license, renewalFrom, status.deadline(),
-                status.daysLeft(), tablets, desktops, desktopLimit(license), sections, capacity, version, status.message());
+                status.daysLeft(), tablets, desktops, desktopLimit(license), mobiles, mobileLimit, sections, capacity, version, status.message());
     }
 
     /** État du jour, sans les compteurs : lu à chaque modification ({@link LicenseGuard}). */

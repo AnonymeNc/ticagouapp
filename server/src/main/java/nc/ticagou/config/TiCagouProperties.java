@@ -12,6 +12,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  *
  * @param zone           fuseau de référence de la structure (Pacific/Noumea)
  * @param allowedOrigins origines autorisées en CORS (dev Vite ; en production, tout est sur la même origine)
+ * @param appOrigins     origines des applications Capacitor (ADR 0024), ajoutées aux précédentes, sans cookie
+ * @param app            versions minimales des applications mobiles (ADR 0027)
  * @param security       jetons, verrouillage des comptes
  * @param storage        documents joints chiffrés sur disque
  * @param web            front servi par l'instance (navigateur et kiosque PWA des tablettes)
@@ -26,6 +28,9 @@ public record TiCagouProperties(
         @DefaultValue("Pacific/Noumea") ZoneId zone,
         @DefaultValue("http://localhost:1420")
         List<String> allowedOrigins,
+        @DefaultValue({"capacitor://localhost", "https://localhost"})
+        List<String> appOrigins,
+        @DefaultValue App app,
         @DefaultValue Security security,
         @DefaultValue Storage storage,
         @DefaultValue Web web,
@@ -39,6 +44,8 @@ public record TiCagouProperties(
      * @param jwtSecret           clé HMAC en Base64 (≥ 32 octets) ; vide = clé générée et conservée en base
      * @param accessTokenTtl      durée de vie du jeton d'accès
      * @param refreshTokenTtl     durée de vie du jeton de rafraîchissement (mot de passe, PC du bureau)
+     * @param appRefreshTokenTtl  durée de vie du jeton de rafraîchissement de l'application Direction, protégée par le
+     *                            verrouillage biométrique du téléphone (ADR 0024)
      * @param pinRefreshTokenTtl  durée de vie du jeton de rafraîchissement (PIN, tablette)
      * @param maxFailedAttempts   échecs consécutifs avant blocage
      * @param lockDuration        durée du blocage
@@ -48,6 +55,7 @@ public record TiCagouProperties(
             @DefaultValue("") String jwtSecret,
             @DefaultValue("15m") Duration accessTokenTtl,
             @DefaultValue("7d") Duration refreshTokenTtl,
+            @DefaultValue("30d") Duration appRefreshTokenTtl,
             @DefaultValue("12h") Duration pinRefreshTokenTtl,
             @DefaultValue("5") int maxFailedAttempts,
             @DefaultValue("15m") Duration lockDuration,
@@ -100,12 +108,25 @@ public record TiCagouProperties(
     /**
      * @param evaluationDays durée de l'évaluation sans clé, depuis l'installation
      * @param graceDays      jours après l'échéance avant le passage en lecture seule
-     * @param desktopIdle    un PC du bureau absent depuis cette durée libère sa place
+     * @param desktopIdle    un PC du bureau (ou un téléphone) absent depuis cette durée libère sa place
+     * @param mobileMax      téléphones et tablettes de la direction actifs permis, hors du compte des PC (ADR 0028)
      */
     public record License(
             @DefaultValue("30") int evaluationDays,
             @DefaultValue("30") int graceDays,
-            @DefaultValue("90d") Duration desktopIdle) {
+            @DefaultValue("90d") Duration desktopIdle,
+            @DefaultValue("10") int mobileMax) {
+    }
+
+    /**
+     * @param minDirection version minimale de l'application Direction ; en dessous, l'application demande sa mise à jour
+     *                     (0.0.0 : aucune ; relevée par la configuration de la crèche, TICAGOU_APP_MIN_DIRECTION)
+     * @param minPointage  version minimale de l'application Pointage ; en dessous, simple bandeau (le pointage n'est
+     *                     jamais bloqué)
+     */
+    public record App(
+            @DefaultValue("0.0.0") String minDirection,
+            @DefaultValue("0.0.0") String minPointage) {
     }
 
     /** @param enabled chargement d'un jeu de démonstration permis ; jamais activé en production */

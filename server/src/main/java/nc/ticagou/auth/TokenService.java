@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
@@ -41,7 +42,13 @@ public class TokenService {
     /** Nouvelle session (nouvelle famille de jetons de rafraîchissement). */
     @Transactional
     public TokenPair issue(AppUser user, AuthMethod method) {
-        return issue(user, method, UUID.randomUUID());
+        return issue(user, method, UUID.randomUUID(), defaultRefreshTtl(method));
+    }
+
+    /** Nouvelle session dont le jeton de rafraîchissement vit {@code refreshTtl} (application Direction, ADR 0024). */
+    @Transactional
+    public TokenPair issue(AppUser user, AuthMethod method, Duration refreshTtl) {
+        return issue(user, method, UUID.randomUUID(), refreshTtl);
     }
 
     /**
@@ -69,7 +76,16 @@ public class TokenService {
     /** Suite d'une session après consommation du jeton précédent. */
     @Transactional
     public TokenPair rotate(AppUser user, RefreshToken previous) {
-        return issue(user, previous.getAuthMethod(), previous.getFamilyId());
+        return rotate(user, previous, defaultRefreshTtl(previous.getAuthMethod()));
+    }
+
+    @Transactional
+    public TokenPair rotate(AppUser user, RefreshToken previous, Duration refreshTtl) {
+        return issue(user, previous.getAuthMethod(), previous.getFamilyId(), refreshTtl);
+    }
+
+    private Duration defaultRefreshTtl(AuthMethod method) {
+        return method == AuthMethod.PIN ? settings.pinRefreshTokenTtl() : settings.refreshTokenTtl();
     }
 
     /** Révoque la session du jeton ; renvoie le jeton trouvé (pour journaliser la déconnexion). */
@@ -85,7 +101,7 @@ public class TokenService {
         refreshTokens.revokeAllForUser(userId, clock.instant());
     }
 
-    private TokenPair issue(AppUser user, AuthMethod method, UUID familyId) {
+    private TokenPair issue(AppUser user, AuthMethod method, UUID familyId, Duration refreshTtl) {
         var now = clock.instant();
         var accessExpiry = now.plus(settings.accessTokenTtl());
         var claims = JwtClaimsSet.builder()
@@ -105,7 +121,6 @@ public class TokenService {
         var raw = new byte[32];
         random.nextBytes(raw);
         var refreshToken = Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
-        var refreshTtl = method == AuthMethod.PIN ? settings.pinRefreshTokenTtl() : settings.refreshTokenTtl();
         refreshTokens.save(new RefreshToken(user, hash(refreshToken), familyId, method, now, now.plus(refreshTtl)));
 
         return new TokenPair(accessToken, settings.accessTokenTtl().toSeconds(), refreshToken, familyId);

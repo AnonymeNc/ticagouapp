@@ -55,6 +55,13 @@ public class AuthService {
     // Un PC refusé par la licence (ApiException) est tout de même tracé dans le journal.
     @Transactional(noRollbackFor = {AuthenticationFailedException.class, ApiException.class})
     public SessionResponse login(String login, String password, String code, String clientId, String clientName) {
+        return login(login, password, code, clientId, clientName, null);
+    }
+
+    /** {@code app} : application mobile qui s'annonce (ADR 0024, 0028) ; null pour un navigateur. */
+    @Transactional(noRollbackFor = {AuthenticationFailedException.class, ApiException.class})
+    public SessionResponse login(String login, String password, String code, String clientId, String clientName,
+                                 AppClient app) {
         var now = clock.instant();
         var address = String.valueOf(ClientIp.current());
         if (throttle.isBlocked(address)) {
@@ -86,10 +93,15 @@ public class AuthService {
             checkTotp(user, code, address);
         }
         throttle.succeeded(address);
-        desktops.admit(user.getStructureId(), clientId, clientName, user.displayName());
+        desktops.admit(user.getStructureId(), clientId, clientName, user.displayName(), app);
         user.passwordSucceeded(now);
         audit.record(actor(user), AuditAction.LOGIN_SUCCEEDED, "user", user.getId(), Map.of());
-        return session(tokens.issue(user, AuthMethod.PASSWORD), user, AuthMethod.PASSWORD);
+        return session(tokens.issue(user, AuthMethod.PASSWORD, passwordSessionTtl(app)), user, AuthMethod.PASSWORD);
+    }
+
+    /** Application Direction : session de 30 jours, protégée par le verrouillage du téléphone (ADR 0024). */
+    private java.time.Duration passwordSessionTtl(AppClient app) {
+        return app != null && app.isDirection() ? settings.appRefreshTokenTtl() : settings.refreshTokenTtl();
     }
 
     /** Sans code : le mot de passe est bon, le navigateur demande le code. Un code faux compte comme un échec. */
@@ -141,6 +153,11 @@ public class AuthService {
 
     @Transactional(noRollbackFor = {AuthenticationFailedException.class, ApiException.class})
     public SessionResponse refresh(String refreshToken, String clientId, String clientName) {
+        return refresh(refreshToken, clientId, clientName, null);
+    }
+
+    @Transactional(noRollbackFor = {AuthenticationFailedException.class, ApiException.class})
+    public SessionResponse refresh(String refreshToken, String clientId, String clientName, AppClient app) {
         var rotation = tokens.consume(refreshToken);
         if (rotation.reused()) {
             // Jeton déjà utilisé : vol probable, toute la session est révoquée.
@@ -153,7 +170,8 @@ public class AuthService {
                 .orElseThrow(AuthenticationFailedException::sessionExpired);
         if (previous.getAuthMethod() == AuthMethod.PASSWORD) {
             // PC du bureau : un PC retiré par la direction perd sa session au prochain renouvellement.
-            desktops.admit(user.getStructureId(), clientId, clientName, user.displayName());
+            desktops.admit(user.getStructureId(), clientId, clientName, user.displayName(), app);
+            return session(tokens.rotate(user, previous, passwordSessionTtl(app)), user, previous.getAuthMethod());
         }
         return session(tokens.rotate(user, previous), user, previous.getAuthMethod());
     }

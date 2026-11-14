@@ -1,0 +1,5 @@
+# Coques Capacitor des applications Ti'Cagou (ADR 0023). Le front vient de web/ et parents-portal/web.
+packages:
+  - direction
+  - pointage
+  - parents

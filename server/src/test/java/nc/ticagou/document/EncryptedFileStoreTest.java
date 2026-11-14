@@ -36,7 +36,7 @@ class EncryptedFileStoreTest {
     void setUp() throws Exception {
         var repository = mock(StoredFileRepository.class);
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        var properties = new TiCagouProperties(ZoneId.of("Pacific/Noumea"), List.of(), null,
+        var properties = new TiCagouProperties(ZoneId.of("Pacific/Noumea"), List.of(), List.of(), null, null,
                 new TiCagouProperties.Storage(dir, KEY), null, null, null, null, null, null);
         var clock = Clock.fixed(Instant.parse("2026-10-30T22:00:00Z"), ZoneId.of("Pacific/Noumea"));
         store = new EncryptedFileStore(repository, properties, null, clock);
