@@ -1,6 +1,6 @@
 # ADR 0027 — Distribution et mises à jour des applications
 
-- **Statut** : acceptée ; le canal de distribution de Direction et Pointage attend la décision 2 du plan
+- **Statut** : acceptée
 - **Date** : 14/11/2026
 - **S'appuie sur** : [ADR 0023](0023-applications-mobiles-capacitor.md)
 
@@ -42,16 +42,15 @@ qui n'a pas été mis à jour depuis des mois, ou l'inverse le temps qu'une vers
 
 **Canal de distribution**
 - **Parents** : App Store et Google Play publics (les familles doivent la trouver).
-- **Direction et Pointage** : store public **ou** distribution privée (Apple Business Manager / applications
-  personnalisées, Managed Google Play) — **décision 2 du plan, à trancher par l'utilisateur**. Le code ne dépend pas de
-  ce choix ; seuls la fiche et le processus de publication changent.
-- Comptes développeur Apple et Google : créés et payés par l'utilisateur, au nom de l'entité qu'il choisit (décision 3).
+- **Direction et Pointage** : App Store et Google Play publics aussi (décidé le 14/11/2026) ; sans crèche abonnée,
+  elles ne servent à rien. Pointage n'existe que sur Android.
+- Comptes développeur Apple et Google : créés et payés par l'éditeur, au nom de la société éditrice (numéro D-U-N-S).
 - Pas d'achat intégré : l'abonnement est vendu hors de l'application, les factures des crèches paient un service
   physique (accueil d'enfants), hors du champ des achats intégrés.
 
 **Publication d'une version** (détail dans `docs/EXPLOITATION.md`)
 1. Serveur publié et déployé sur une crèche de démonstration.
-2. Builds Android (CI) et iOS (Mac ou CI macOS, décision 4) depuis le même commit ; tests internes (TestFlight, test
+2. Builds Android (CI) et iOS (machines macOS de GitHub Actions) depuis le même commit ; tests internes (TestFlight, test
    interne Google) avec le compte de démonstration.
 3. Publication dans les stores ; relèvement de la version minimale seulement quand la nouvelle version est
    disponible partout.

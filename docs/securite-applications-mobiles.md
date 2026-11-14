@@ -1,6 +1,6 @@
 # Revue de sécurité — applications mobiles
 
-- **Date** : 14/11/2026 (phase 8 du [plan](plan-application-mobile.md))
+- **Date** : 14/11/2026
 - **Périmètre** : Ti'Cagou Direction (iOS, Android), Ti'Cagou Pointage (Android), Ti'Cagou Parents (iOS, Android), et ce
   que le serveur, le portail et le socle ont gagné pour elles (ADR 0023 à 0028).
 - **Rappel** : données de santé d'enfants ; accès par rôle, journal des consultations, double authentification de la
@@ -68,5 +68,5 @@ seulement (ADR 0026). Les jetons refusés par Apple ou Google sont effacés. App
 | Sujet | Gravité | Proposition |
 |---|---|---|
 | Révocation de ses sessions par le parent (« Déconnecter mes autres appareils ») | faible | point d'accès du portail + bouton dans « Mon compte » |
-| Essais sur appareils réels : Keychain/Keystore, Face ID, Lock Task, notifications | à vérifier | bêta TestFlight et test interne Google (§ 8 du plan) |
+| Essais sur appareils réels : Keychain/Keystore, Face ID, Lock Task, notifications | à vérifier | bêta TestFlight et test interne Google ([PUBLIER-LES-APPLICATIONS.md](PUBLIER-LES-APPLICATIONS.md)) |
 | Épinglage de certificat | faible | non retenu : Let's Encrypt renouvelle les certificats ; l'épinglage casserait les applications |

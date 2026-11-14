@@ -1,6 +1,6 @@
 # ADR 0028 — Téléphones de la direction et abonnement
 
-- **Statut** : acceptée (décision 1 du plan, tranchée par l'utilisateur le 14/11/2026)
+- **Statut** : acceptée (14/11/2026)
 - **Date** : 14/11/2026
 - **Modifie** : [ADR 0011](0011-licence-lecture-seule-postes.md) (postes comptés), [ADR 0021](0021-formule-unique.md) (ce qui différencie deux abonnements)
 - **S'appuie sur** : [ADR 0024](0024-authentification-applications.md)

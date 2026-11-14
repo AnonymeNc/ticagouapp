@@ -1,8 +1,7 @@
 # Console de l'éditeur Ti'Cagou
 
 Tableau de bord de l'éditeur : parc des crèches, facturation des abonnements, relances préparées (envoyées d'un clic),
-ordres aux instances, reporting. Décision : [ADR 0017](../docs/adr/0017-console-editeur.md). Plan :
-[plan-console-editeur.md](../docs/plan-console-editeur.md). Maquette : `docs/design/Ti'Cagou — Console éditeur.html`.
+ordres aux instances, reporting. Décision : [ADR 0017](../docs/adr/0017-console-editeur.md). Maquette : `docs/design/Ti'Cagou — Console éditeur.html`.
 
 | Dossier | Contenu |
 |---|---|
@@ -39,7 +38,7 @@ mot de passe oublié (MOT_DE_PASSE : lien `/reinitialiser` à usage unique, 24 h
 téléphone perdu (TELEPHONE_PERDU) et code du portail parents (CODE_PORTAIL). Guide d'utilisation : [docs/CONSOLE.md](../docs/CONSOLE.md).
 
 **Formule unique** ([ADR 0021](../docs/adr/0021-formule-unique.md)) : une seule formule, « Ti'Cagou » (code `COMPLET`),
-sans module à la carte ; les anciens contrats (Essentiel, Gestion, modules) gardent leur prix jusqu'à leur avenant.
+sans module à la carte.
 
 **Livré (phase 6)** : reporting (`reporting/`) — calculs purs dans `Reporting` (balance âgée, mois, coût du support,
 départs ; testés seuls), `ReportingService` (chiffre d'affaires, TGC par taux, encaissé, revenu mensuel par formule,

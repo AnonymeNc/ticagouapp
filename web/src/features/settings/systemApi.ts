@@ -93,8 +93,6 @@ export type DesktopClient = {
   app?: string | null;
 };
 
-/** Autorité locale du HTTPS (ADR 0009) ; « enabled » faux en développement. */
-
 /** 1 288 490 189 → « 1,2 Go » */
 export function formatBytes(bytes: number): string {
   const units = ["octets", "Ko", "Mo", "Go", "To"];

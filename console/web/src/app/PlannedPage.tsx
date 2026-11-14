@@ -9,7 +9,7 @@ export function PlannedPage({ item }: { item: NavItem }) {
         <p className="mt-1 text-muted-foreground">{item.description}</p>
       </div>
       <section className="rounded-lg border border-border-subtle bg-card p-6 text-muted-foreground shadow-1">
-        Cet écran arrive avec la phase {item.phase} du plan (docs/plan-console-editeur.md). Sa maquette est dans
+        Cet écran n’est pas encore livré. Sa maquette est dans
         docs/design/Ti’Cagou — Console éditeur.html.
       </section>
     </>

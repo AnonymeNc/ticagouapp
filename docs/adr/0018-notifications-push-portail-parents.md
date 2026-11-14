@@ -6,7 +6,7 @@
 
 ## Contexte
 
-Le lot 1 de l'application parents ([plan](../plan-alignement-meeko.md)) demande que les parents soient prévenus
+L'application parents demande que les parents soient prévenus
 quand la crèche partage quelque chose : une photo, un message, une actualité, un document à signer, une facture.
 L'application parents est une PWA servie par le portail ; il n'y a pas d'application des magasins Apple ou Google.
 

@@ -1,79 +1,75 @@
-# Ce qu'il reste à faire : CI, stores, démonstrations, déploiement
+# Ce qu'il reste à faire
 
-Mis à jour le 14/11/2026. Le code des phases 0 à 9 est livré ; ce qui suit dépend de vos actions (comptes, paiements,
-secrets), que Claude ne fait pas à votre place.
+Mis à jour le 15/11/2026. Le logiciel, les trois applications et la CI sont prêts ; ce qui suit attend surtout des
+comptes, des paiements ou des décisions de l'éditeur. Liste commerciale complète :
+[checklist-commercialisation.md](commercial/checklist-commercialisation.md).
 
-## 1. Une CI complètement fonctionnelle
+## 1. Fait
 
-1. **Facturation GitHub** : github.com › Settings › Billing & plans. Réglez le moyen de paiement ou la limite de
-   dépenses : aujourd'hui aucun job ne démarre. Le dépôt est privé, donc les minutes sont décomptées (macOS compte
-   10 fois).
-2. **Premier run complet** : Actions › Tests › *Run workflow*, case « mobile » cochée. Tout doit être vert : serveur,
-   portail, console, fronts, image Docker, Android, iOS. En local, `scripts\tous-les-tests.ps1` fait la même chose
-   sans les compilations natives.
-3. **Protection de `main`** (conseillé) : Settings › Branches › règle sur `main`, tests requis avant fusion.
-4. **Dependabot** : il ouvre des PR chaque semaine (Capacitor exclu, il se met à jour à la main dans `web/`,
-   `parents-portal/web/` et `mobile/` ensemble). Une PR verte se fusionne, une PR en conflit se relance avec le
-   commentaire `@dependabot rebase`.
-5. **Secrets de publication** (après le § 2) : Settings › Secrets and variables › Actions, liste complète dans
-   [EXPLOITATION.md § 7 bis](EXPLOITATION.md).
+- **CI complète et verte** sur `main` (15/11/2026) : serveur, portail, console, bureau et tablette, image Docker,
+  compilation **Android** et **iOS**. Elle tourne à chaque envoi sur `main` et à chaque demande de fusion.
+- **Dépôt public** `AnonymeNc/ticagouapp` : minutes GitHub Actions gratuites et illimitées, analyse des secrets et
+  alertes de sécurité Dependabot activées. Les anciens dépôts `ticagou` et `ticagouweb` n'exécutent plus d'Actions.
+- **`main` protégée** : une demande de fusion doit passer les 7 contrôles et avoir ses discussions résolues ; pas de
+  force-push ni de suppression. L'administrateur du dépôt peut encore envoyer directement sur `main`.
+- **Clé Android d'importation** et ses 4 secrets GitHub générés (`scripts/secrets-mobile.ps1`) ; clé et mot de passe
+  dans `Documents\Ticagou-coffre` sur le PC de l'éditeur.
+- Dependabot : une demande de fusion par dossier et par mois (versions mineures et correctives regroupées).
 
-## 2. Publier sur les stores
+### Si le dépôt redevient privé
 
-Prérequis communs : la **société éditrice** et son **numéro D-U-N-S** (gratuit, demande sur le site de Dun & Bradstreet,
-1 à 3 semaines), une adresse e-mail et un téléphone de l'éditeur, la [politique de confidentialité](commercial/stores/politique-confidentialite.md)
-publiée à une adresse publique.
+1. GitHub › Settings › General › Danger Zone › Change visibility › Private.
+2. Supprimez la variable `MOBILE_CI` (Settings › Secrets and variables › Actions › Variables) : Android et iOS ne
+   tourneront plus qu'à la demande (Actions › Tests › Run workflow, case « mobile »).
+3. Le quota gratuit est de 2 000 minutes par mois, **tous dépôts privés confondus**, et une minute macOS en compte 10 :
+   un run complet avec iOS consomme environ 60 minutes. Au-delà, les jobs ne démarrent plus (« recent account payments
+   have failed or your spending limit needs to be increased »).
+4. La protection de `main` disparaît sur un dépôt privé avec l'offre gratuite : il faut GitHub Pro (4 $ par mois,
+   3 000 minutes) pour la garder.
+5. Serveur de production : passez le clone en SSH avec une clé de déploiement ([EXPLOITATION.md § 2.5](EXPLOITATION.md#25-récupérer-ticagou)).
 
-**Google Play** (Direction, Pointage, Parents)
-1. Compte développeur **organisation** sur play.google.com/console (25 $ une fois), vérification de l'identité.
-2. Créer les trois applications (`nc.ticagou.direction`, `nc.ticagou.pointage`, `nc.ticagou.parents`), remplir les
-   fiches ([fiches-stores.md](commercial/stores/fiches-stores.md)), la section « Sécurité des données »
-   ([declarations-confidentialite.md](commercial/stores/declarations-confidentialite.md)), les captures
-   (`docs/commercial/captures/stores`, à refaire un matin de semaine avec `scripts/captures/captures.mjs`).
-3. Clé de signature (`keytool`, EXPLOITATION.md § 7 bis), **sauvegardée en deux endroits** : perdue, plus de mise à jour.
-4. Firebase : un projet, les trois applications Android, `google-services.json` dans `mobile/<app>/android/app/`, le
-   compte de service FCM dans `socle.env` du serveur (notifications).
-5. Workflow « Publication mobile » : AAB signés en artefact, à déposer en **test interne**, puis test fermé
-   (12 testeurs pendant 14 jours exigés pour un nouveau compte), puis production.
+## 2. À faire par l'éditeur
 
-**App Store** (Direction, Parents ; Pointage est Android seulement)
-1. Apple Developer Program **organisation** (99 $ par an), avec le D-U-N-S.
-2. App Store Connect : créer les deux applications, les fiches, l'étiquette de confidentialité, un **compte de
-   démonstration** pour la revue Apple (crèche de démonstration hébergée).
-3. Clé APNs (notifications) dans `socle.env`, clé d'API App Store Connect dans les secrets GitHub.
-4. Workflow « Publication mobile » : envoi à **TestFlight**, essais sur vos iPhone, puis soumission à la revue.
+| Quoi | Guide |
+|---|---|
+| Numéro D-U-N-S de la société, puis comptes **Google Play** (25 $) et **Apple** (99 $/an) | [PUBLIER-LES-APPLICATIONS.md](PUBLIER-LES-APPLICATIONS.md) A à C |
+| Projet **Firebase**, clés APNs et FCM sur le serveur | même guide, D et E |
+| Première version : test interne, TestFlight, essais sur de vrais appareils, soumission | même guide, F |
+| Politique de confidentialité publiée sur le site | [politique-confidentialite.md](commercial/stores/politique-confidentialite.md) |
+| Captures des stores refaites un matin de semaine (crèche pleine) ; captures de l'application des parents | `node scripts/captures/captures.mjs`, [captures/README.md](commercial/captures/README.md) |
+| Avis juridique sur l'hébergement des données de santé, puis choix de l'hébergeur | [ADR 0013](adr/0013-web-heberge-instance-par-creche.md) |
+| Serveur de production, crèche témoin, crèche de démonstration `demo-stores` | [EXPLOITATION.md](EXPLOITATION.md) |
+| Logo définitif (icônes : `mobile/scripts/icones.ps1`) | — |
 
-## 3. Démonstrations et présentations sur un téléphone
+## 3. Prérequis au déploiement d'une crèche
 
-- **Sans store, tout de suite** : la crèche de démonstration hébergée s'ouvre dans le navigateur du téléphone
-  (direction et `/kiosk` sur une tablette), et l'application des parents fonctionne comme application web installable
-  (« Ajouter à l'écran d'accueil »).
-- **Sur le PC** : `scripts\tester-en-local.ps1 -Demo -Mobile`, puis F12 › mode téléphone (http://localhost:1431 pour
-  Direction, http://localhost:5180 pour Parents). Pratique pour une présentation projetée.
-- **Vraies applications Android** : APK de test produits par la CI (Run workflow, case « mobile »), installés sur un
-  téléphone ou une tablette de démonstration ; ils se connectent à la crèche de démonstration **hébergée** (https).
-- **iPhone** : par TestFlight seulement, une fois le compte Apple ouvert.
-- Déroulé : [demonstrations.md](commercial/demonstrations.md), section « Démonstration mobile » ; captures prêtes dans
-  `docs/commercial/captures/mobile`.
+- Un serveur Linux avec Docker, un nom de domaine (`DOMAINE_BASE`) et ses enregistrements DNS (crèches, portail,
+  console, annuaire), HTTPS par Caddy.
+- Un second hébergeur pour la copie hors site des sauvegardes (rclone).
+- `deploy/secrets.sh` (tous les secrets du socle d'un coup), `./creche.sh socle`, `./creche.sh creer <nom>`,
+  `./creche.sh annuaire` ; `creche.env` de chaque crèche au coffre.
+- Internet de la crèche vérifié ; une tablette Android (Android 10+, 10 pouces, appareil photo) pour l'accueil.
 
-## 4. Prérequis au déploiement d'une crèche
+## 4. Points ouverts dans le logiciel
 
-- Un serveur Linux avec Docker et un nom de domaine (`DOMAINE_BASE`) pointant dessus, HTTPS par Caddy.
-- Un second hébergeur pour la copie hors site des sauvegardes.
-- Le socle : `deploy/socle.env` rempli (mots de passe, push APNs/FCM une fois les comptes ouverts), puis
-  `./creche.sh socle`, `./creche.sh creer <nom>`, `./creche.sh annuaire` (code de la crèche pour les applications).
-- Le portail parents et la console de l'éditeur sur le même socle.
-- Pas à pas : [EXPLOITATION.md](EXPLOITATION.md) et [CONSOLE.md](CONSOLE.md).
+**Règles à faire valider** (pas des erreurs) :
+- Une aide en montant fixe est proratisée sur les jours calendaires de sa validité, le forfait sur les jours
+  d'ouverture.
+- Les jours fériés et fermetures ne sont pas retirés des jours d'ouverture (calendrier des fermetures à créer).
+- La TGC est calculée sur les frais de garde avant déduction des aides : à confirmer avec l'expert-comptable.
+- La lecture seule (abonnement échu) bloque aussi le pointage des tablettes ([ADR 0011](adr/0011-licence-lecture-seule-postes.md)).
 
-## 5. Nettoyage de la documentation (en cours)
+**Technique** :
+- Paginer `GET /billing/invoices` sans mois ; politique de conservation des journaux d'audit (environ 400 000 lignes
+  par an pour 5 crèches).
+- Ne plus journaliser en erreur la fermeture d'un flux temps réel par le navigateur (`StaffingBroadcaster.send`).
+- Révocation de ses propres sessions par le parent ([securite-applications-mobiles.md](securite-applications-mobiles.md) § 7).
+- `outils/publicite` : dépendances de Puppeteer signalées par Dependabot (`extract-zip`, `basic-ftp`), outil interne
+  non livré.
 
-Objectif : ne garder que ce qui décrit la version actuelle (web hébergé + applications mobiles), sans la V1 installée.
-Inventaire fait le 14/11/2026 ; reste à traiter :
-- ADR remplacés à supprimer : 0009 (HTTPS sur le réseau local, mDNS), 0015 (formules et modules) ; ADR 0001, 0002,
-  0005, 0007, 0011, 0012, 0013 à réécrire en intégrant leurs modifications (plus de Tauri, de clé signée, de serveur
-  local).
-- Plans terminés à retirer ou archiver : `plan-alignement-meeko.md`, `plan-console-editeur.md`, `revue-qualite.md`,
-  `etude-application-mobile.md`, puis `plan-application-mobile.md` (décisions reportées dans les ADR 0023 à 0028).
-- Mentions de la V1 à retirer : `README.md`, `CLAUDE.md`, `01-concept.md`, `02-techno.md` (schéma sans les
-  applications mobiles), `EXPLOITATION.md` (13 mentions), `TESTER-EN-LOCAL.md`, `console/README.md`,
-  `parents-portal/README.md`, `docs/wiki/README.md` (supports PowerPoint de la V1).
+**À vérifier sur de vrais appareils** : Face ID et empreinte, coffre du téléphone, mode kiosque, notifications, scan des
+QR, taille des boutons du kiosque en portrait 768 px, contraste en plein soleil.
+
+**Idées pour la console** : liste « à appeler cette semaine » (évaluations et abonnements qui finissent), temps de
+support par crèche, notes client, message aux directrices, envoi des factures et relances des familles par e-mail,
+paiement en ligne.

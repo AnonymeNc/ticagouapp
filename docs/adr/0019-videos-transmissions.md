@@ -6,7 +6,7 @@
 
 ## Contexte
 
-Le lot 1 de l'application parents ([plan](../plan-alignement-meeko.md)) prévoit de courtes vidéos en plus des
+L'application parents prévoit de courtes vidéos en plus des
 photos, comme le font les concurrents. Contraintes :
 - la synchronisation avec le portail transporte les fichiers en Base64 dans des lots de 8 Mo (ADR 0010) ;
 - l'accueil a une connexion modeste, parfois partagée avec tout le bureau ;
@@ -35,7 +35,7 @@ elle reste dans le journal de la crèche.
 
 **Conservation : 60 jours**, comme les photos.
 - Sur le portail, la tâche de rétention efface les transmissions après 60 jours (ADR 0010).
-- Sur le serveur de la crèche, la vidéo elle-même est effacée après 60 jours ; la transmission reste dans le journal
+- Dans l'instance de la crèche, la vidéo elle-même est effacée après 60 jours ; la transmission reste dans le journal
   (date, enfants, auteur) sans son fichier. Les photos ne changent pas.
 - Les parents peuvent télécharger une vidéo depuis l'album pour la garder.
 

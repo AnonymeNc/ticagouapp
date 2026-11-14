@@ -5,7 +5,7 @@
 
 ## Contexte
 
-Lot 3 du [plan](../plan-alignement-meeko.md) : les familles déposent leur demande d'inscription en ligne, depuis le
+Les familles déposent leur demande d'inscription en ligne, depuis le
 site de la crèche, sans compte. Le formulaire est public, donc exposé aux robots ; il recueille des données
 personnelles d'enfants à naître ou en bas âge.
 

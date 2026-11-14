@@ -1,7 +1,7 @@
 # Fiches des applications dans les stores
 
-[← Wiki](../../wiki/README.md) · Décisions du [plan](../../plan-application-mobile.md) : stores **publics** pour les trois
-applications (décision 2), comptes développeur au nom de la **société éditrice** (décision 3, numéro D-U-N-S requis).
+[← Wiki](../../wiki/README.md) · Stores **publics** pour les trois applications, comptes développeur au nom de la
+**société éditrice** (numéro D-U-N-S requis). Où coller ces textes : [PUBLIER-LES-APPLICATIONS.md](../../PUBLIER-LES-APPLICATIONS.md).
 Captures : `docs/commercial/captures/stores/` (formats exigés, données de démonstration). Confidentialité :
 [declarations-confidentialite.md](declarations-confidentialite.md) et
 [politique-confidentialite.md](politique-confidentialite.md).
@@ -51,7 +51,7 @@ toute votre crèche Ti'Cagou dans la poche.
 > Ti'Cagou Direction nécessite un abonnement Ti'Cagou de votre crèche (code de la crèche ou QR code fourni à la mise en
 > service). Logiciel conçu en Nouvelle-Calédonie, pour les structures d'accueil de la petite enfance.
 
-## Ti'Cagou Pointage (Google Play seulement, décision 5)
+## Ti'Cagou Pointage (Google Play seulement)
 
 | Champ | Texte |
 |---|---|

@@ -32,7 +32,7 @@ services ont une API HTTP simple, authentifiée par un JWT.
 - Pas de Firebase SDK dans l'application iOS : `@capacitor/push-notifications` donne le jeton APNs, envoyé tel quel.
   L'application Android contient le minimum Firebase Messaging que le plugin impose (`google-services.json`).
 
-**Secrets** (au niveau du socle, créés par l'utilisateur avec ses comptes développeur, décision 3 du plan)
+**Secrets** (au niveau du socle, créés par l'éditeur avec ses comptes développeur ; guide : [PUBLIER-LES-APPLICATIONS.md](../PUBLIER-LES-APPLICATIONS.md))
 - `APNS_KEY` (PKCS#8 Base64), `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRODUCTION` ; `FCM_SERVICE_ACCOUNT` (JSON Base64).
 - Dans `socle.env` et le coffre ; `instance.yml` et `socle.yml` les passent aux instances et au portail (lus à
   chaque création du conteneur). Sans ces valeurs, les notifications natives sont désactivées et le reste fonctionne.
@@ -86,7 +86,7 @@ au Web Push chiffré de bout en bout) : c'est une raison de plus de n'y mettre q
 ## Conséquences
 
 - Apple et Google deviennent sous-traitants des notifications : à déclarer dans l'information des familles et la
-  politique de confidentialité (phase 8 du plan).
+  politique de confidentialité ([commercial/stores](../commercial/stores/politique-confidentialite.md)).
 - Le navigateur de la direction n'a pas de notification (le tableau de bord est en temps réel) ; Web Push pour la
   direction pourra s'ajouter plus tard sur le même modèle.
 - La rotation de la clé APNs ou du compte de service se fait dans `socle.env` puis `creche.sh mettre-a-jour --toutes`.

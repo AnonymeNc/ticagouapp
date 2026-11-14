@@ -2,7 +2,6 @@
 
 - **Statut** : acceptée
 - **Date** : 14/11/2026
-- **Étude** : [etude-application-mobile.md](../etude-application-mobile.md) (option B) · **Plan** : [plan-application-mobile.md](../plan-application-mobile.md)
 - **Modifie** : [ADR 0005](0005-tablettes-hors-connexion.md) (la tablette peut être une application native, clé du stockage chiffré dans le Keystore)
 
 ## Contexte
@@ -12,7 +11,7 @@ et l'application parents (`parents-portal/web`). Les crèches veulent les trouve
 recevoir des alertes sur le téléphone de la direction et verrouiller la tablette d'accueil sur le pointage. Une PWA ne
 fait pas tout cela (notifications limitées sur iPhone, pas de vrai mode kiosque, pas de présence dans les stores).
 
-L'étude a comparé PWA seule, Capacitor, React Native et natif. Capacitor garde environ 95 % du code : la même interface
+Ont été comparés : PWA seule, Capacitor, React Native et natif. Capacitor garde environ 95 % du code : la même interface
 React tourne dans une vue web native, avec des plugins pour ce que le navigateur ne fait pas. C'est une dépendance
 lourde (outillage Android et iOS, projets natifs dans le dépôt) : d'où cet ADR.
 
@@ -69,7 +68,7 @@ mobile/
   versions majeures de Capacitor. S'ils étaient abandonnés, ils se remplacent par un petit plugin local (une centaine
   de lignes Swift / Kotlin chacun) sans toucher au front, qui passe par `web/src/lib/native/`.
 - **Mode kiosque** : pas de plugin tiers. Plugin local `KioskMode` dans `mobile/pointage/android` (`startLockTask`,
-  démarrage au boot, écran allumé). Sur iPad : Accès guidé, réglé à la main (décision 5 du plan).
+  démarrage au boot, écran allumé). Pas d'application Pointage sur iPad (décidé le 14/11/2026) : un iPad reste utilisable dans le navigateur, en Accès guidé.
 - **Caméra** : le kiosque garde `getUserMedia` (photos, vidéos de transmission), autorisé par la vue web native ;
   `@capacitor/camera` n'est ajouté que si un appareil le rend nécessaire.
 - **Pas de** Firebase SDK, d'Ionic Appflow, de Capgo ni de service de mise à jour à chaud (ADR 0027), de bibliothèque
@@ -78,7 +77,7 @@ mobile/
 **Plateformes minimales** : iOS 15 (Capacitor 8) et Android 8 / API 26 (exigé par le scanner de QR officiel ; Capacitor seul descendrait à l’API 24). Tablette de pointage : Android 10 ou
 plus conseillé (Lock Task en propriétaire d'appareil).
 
-**Outillage** : Android Studio / SDK et JDK 21 pour Android ; Xcode sur Mac ou CI macOS pour iOS (décision 4 du plan).
+**Outillage** : Android Studio / SDK et JDK 21 pour Android ; Xcode sur les machines macOS de GitHub Actions pour iOS (décidé le 14/11/2026).
 Les tests du front restent Vitest en jsdom : les plugins sont simulés derrière `lib/native`.
 
 ## Alternatives écartées

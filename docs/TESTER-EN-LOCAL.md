@@ -30,8 +30,8 @@ powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Portail
 Le script :
 - démarre Docker Desktop si besoin, puis les bases (serveur sur 5435, portail sur 5434) et Mailpit ;
 - ouvre une fenêtre par programme : serveur (8080), application du bureau (1420), portail (8090), application
-  des parents (5180). Le port 8080 est libéré de force : si le Ti'Cagou installé (V1) tourne sur ce PC, Windows demande
-  une autorisation pour l'arrêter. Les autres programmes déjà lancés ne sont pas relancés ;
+  des parents (5180). Le port 8080 est libéré de force (Windows peut demander une autorisation
+  pour arrêter ce qui l'occupe). Les autres programmes déjà lancés ne sont pas relancés ;
 - attend qu'ils répondent, puis affiche les adresses et un **code d'activation** du portail (§ 6).
 
 Sans `-Portail`, seuls la base, le serveur et le bureau démarrent. Le premier lancement compile : comptez quelques
@@ -361,7 +361,7 @@ Git Bash), ou DBeaver sur `localhost:5435`.
 
 ## 12. Les applications mobiles
 
-Trois applications ([plan](plan-application-mobile.md)) : **Direction** (téléphone de la direction), **Pointage**
+Trois applications ([publication](PUBLIER-LES-APPLICATIONS.md)) : **Direction** (téléphone de la direction), **Pointage**
 (tablette Android de l'accueil), **Parents**. Elles reprennent le code des fronts : presque tout s'essaie sur le PC.
 
 ### A. Sur le PC, dans le navigateur (le plus rapide)

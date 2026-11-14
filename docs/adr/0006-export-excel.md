@@ -7,7 +7,7 @@
 
 Le récapitulatif trimestriel des repas délivrés accompagne la demande d'aide : la direction l'envoie en PDF signé
 (ADR 0004), mais les financeurs et la comptabilité demandent aussi un tableur, avec le détail par enfant et par jour.
-Les états de facturation auront le même besoin. Tout doit fonctionner hors ligne, sur le serveur local.
+Les états de facturation auront le même besoin. Tout est produit par l'instance de la crèche, sans service extérieur.
 
 ## Décision
 

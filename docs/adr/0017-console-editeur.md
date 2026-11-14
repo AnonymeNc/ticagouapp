@@ -2,7 +2,7 @@
 
 - **Statut** : acceptée, complétée par l'[ADR 0025](0025-choix-de-la-creche.md) (annuaire des codes de crèche)
 - **Date** : 08/11/2026
-- **Plan** : [plan-console-editeur.md](../plan-console-editeur.md) · **Maquette** : `docs/design/Ti'Cagou — Console éditeur.html`
+- **Maquette** : `docs/design/Ti'Cagou — Console éditeur.html`
 
 ## Contexte
 

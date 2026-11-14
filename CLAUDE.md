@@ -2,22 +2,24 @@
 
 ## Produit
 Logiciel de gestion pour crèches et garderies de **Nouvelle-Calédonie** : application web hébergée, une instance par
-crèche ([ADR 0013](docs/adr/0013-web-heberge-instance-par-creche.md)). Le pointage sur tablette continue sans internet.
-La V1 (client lourd) est archivée dans `ticagou-creche-v1-client-lourd`. MVP : enfants & familles, inscriptions, contrats,
-pointage tablette, taux d'encadrement temps réel, repas, facturation mensuelle avec aides, personnel,
-sauvegardes. V2 : portail parents en ligne optionnel.
+crèche ([ADR 0013](docs/adr/0013-web-heberge-instance-par-creche.md)), et trois applications mobiles Capacitor
+([ADR 0023](docs/adr/0023-applications-mobiles-capacitor.md)) : Ti'Cagou Direction (iOS, Android ; même code React
+responsive que le bureau), Ti'Cagou Pointage (tablette Android) et Ti'Cagou Parents (iOS, Android). Le pointage sur
+tablette continue sans internet. Fonctions : enfants & familles, inscriptions, contrats, pointage, taux d'encadrement
+temps réel, repas, facturation mensuelle avec aides, personnel, portail parents, sauvegardes.
 
-**Dépôt `ticagouapp`** : repart de `ticagou-web` (remote `ticagou-web`, laissé tel quel) pour livrer les **applications
-mobiles** avec Capacitor : Ti'Cagou Direction (iOS, Android **et ordinateur**, même code React responsive),
-Ti'Cagou Pointage (tablette), Ti'Cagou Parents. Référence : [étude](docs/etude-application-mobile.md) et
-**[plan d'implémentation](docs/plan-application-mobile.md)**, à suivre phase par phase et à tenir à jour (§ Avancement).
+Dépôt GitHub `AnonymeNc/ticagouapp` (public pour l'instant). Publication des applications :
+[docs/PUBLIER-LES-APPLICATIONS.md](docs/PUBLIER-LES-APPLICATIONS.md) ; ce qui reste à faire :
+[docs/RESTE-A-FAIRE.md](docs/RESTE-A-FAIRE.md), à tenir à jour.
 
 ## Architecture (monorepo)
 - `server/` : Java 21, Spring Boot 3, Maven, PostgreSQL 17, Flyway, Spring Security. API REST `/api/v1`, SSE pour le temps réel.
 - `web/` : React 19 + TypeScript + Vite, Tailwind + shadcn/ui, TanStack Query/Table, React Hook Form + Zod.
-  Le même front expose une route `/kiosk` (pointage tablette, PWA). Servi par le serveur, même origine que l'API.
-- `parents-portal/` : portail parents et supervision, hébergés.
-- `mobile/` (à créer, ADR 0023) : coques Capacitor des applications Direction, Pointage et Parents.
+  Le même front expose une route `/kiosk` (pointage tablette, PWA). Servi par le serveur, même origine que l'API ;
+  embarqué aussi dans les applications Direction et Pointage (`web/src/lib/native/`).
+- `parents-portal/` : portail parents et supervision, hébergés ; son `web/` est aussi l'application Parents.
+- `console/` : console de l'éditeur (parc, facturation des abonnements, ordres).
+- `mobile/` : coques Capacitor des applications Direction, Pointage et Parents (`scripts/build.mjs`, `check-versions.mjs`).
 - `deploy/` : image Docker, socle (PostgreSQL, Caddy), `creche.sh` pour exploiter les crèches.
 - `docs/design/` : maquettes / handoff Claude Design (référence visuelle à respecter).
 - `docs/adr/` : décisions d'architecture.
@@ -47,6 +49,7 @@ les places, les PC, les tablettes et l'échéance. « Module Repas », « module
 - Tests : JUnit 5 + Testcontainers ; Vitest ; tout calcul (facturation, encadrement, aides) a des tests unitaires.
 
 ## Commandes
+- Tout : `scripts\tous-les-tests.ps1` (même vérification que la CI, sans Android/iOS)
 - Back : `cd server && ./mvnw verify` ; lancer : `./mvnw spring-boot:run`
 - Front : `cd web && pnpm install && pnpm dev` ; kiosque : `/kiosk`
 - Exploitation : `deploy/creche.sh`, voir docs/EXPLOITATION.md

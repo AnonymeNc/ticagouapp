@@ -9,7 +9,7 @@
 
 Le navigateur parle à son instance sur la même origine. Son jeton de rafraîchissement est dans un cookie `HttpOnly`,
 `Secure`, `SameSite=Strict` (ADR 0013), demandé par l'en-tête `X-Ticagou-Session` ; sans cet en-tête, le serveur
-renvoie déjà le jeton dans la réponse (c'était le cas du client Tauri, ADR 0002).
+renvoie déjà le jeton dans la réponse.
 
 Une application Capacitor tourne sur `capacitor://localhost` (iOS) ou `https://localhost` (Android) : l'API de
 l'instance est une **autre origine**. Un cookie `SameSite=Strict` n'y est pas envoyé, et les cookies tiers sont bloqués

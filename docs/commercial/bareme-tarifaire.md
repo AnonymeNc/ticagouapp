@@ -29,8 +29,7 @@
 | **Ti'Cagou, tout compris, support rapide compris** | **15 000 F HT** |
 
 Par an, payé d'avance : 180 000 F HT. Au-delà de 80 places ou pour plusieurs structures : sur devis, − 15 % par
-structure supplémentaire. Barème en vigueur depuis le 01/11/2026 (console : « Barème formule unique ») ; les contrats
-signés avant gardent leur prix.
+structure supplémentaire. Barème en vigueur depuis le 01/11/2026 (console : « Barème formule unique »).
 
 Tout est compris : enfants et familles (santé, PAI, autorisations, personnes autorisées), présences des enfants et du
 personnel sur tablette (départ contrôlé, hors connexion), encadrement en temps réel, inscriptions et pré-inscription en
@@ -43,13 +42,11 @@ La formule comprend **1 PC et 2 tablettes**.
 
 ## 3. Options (par mois)
 
-Équipement supplémentaire : **PC** + 1 500 F par mois ; **tablette** + 1 000 F par mois. Plus de Support Premium : le
-support rapide est compris.
+Équipement supplémentaire : **PC** + 1 500 F par mois ; **tablette** + 1 000 F par mois. Le support rapide est compris.
+Les applications mobiles sont comprises : jusqu'à 10 téléphones de la direction, sans compter dans les PC
+([ADR 0028](../adr/0028-postes-mobiles-et-abonnement.md)) ; l'application des parents est gratuite pour les familles.
 
 Engagement : 1 an, renouvelable. **− 10 %** sur l'abonnement pour un engagement de 3 ans payé annuellement.
-
-Les contrats signés avant la formule unique (Essentiel, Gestion, modules à la carte) gardent leur prix jusqu'à leur
-avenant ou leur renouvellement, qui passe à la formule unique.
 
 ## 4. Prestations ponctuelles
 

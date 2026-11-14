@@ -1,35 +1,36 @@
 # ADR 0010 — Portail parents : flux de données
 
-- **Statut** : acceptée, modifiée par l'[ADR 0014](0014-medicaments-transmis-aux-parents.md) (médicament donné transmis aux parents)
-- **Date** : 02/11/2026
+- **Statut** : acceptée, complétée par l'[ADR 0014](0014-medicaments-transmis-aux-parents.md) (médicament donné transmis aux parents)
+- **Date** : 02/11/2026, mise à jour le 15/11/2026
 
 ## Contexte
 
-Le portail parents (V2) est optionnel. Il est hébergé sur internet, alors que le serveur de la crèche reste sur le
-réseau local, souvent derrière une box sans adresse fixe, et parfois sans internet.
+Le portail parents est un service hébergé, commun à toutes les crèches, distinct de leurs instances
+([ADR 0013](0013-web-heberge-instance-par-creche.md)). Les parents l'utilisent dans le navigateur ou avec
+l'application Ti'Cagou Parents ([ADR 0023](0023-applications-mobiles-capacitor.md)).
 
 Le portail contiendra des données personnelles d'enfants. Il doit donc en recevoir le moins possible, et rien qui
-ne soit nécessaire aux parents. Les données de santé restent dans la crèche.
+ne soit nécessaire aux parents. Les données de santé restent dans l'instance de la crèche.
 
 ## Décision
 
 **Sens des connexions**
-- Le serveur local est le seul à ouvrir une connexion, en HTTPS vers le portail. Aucun port n'est ouvert dans la
-  crèche, et le portail n'appelle jamais la crèche.
-- **Envoi** : `POST /sync/v1/batch`. Le serveur local envoie sa file d'envoi (*outbox*, table `portal_outbox`)
+- L'instance de la crèche est la seule à ouvrir une connexion, en HTTPS vers le portail ; le portail n'appelle
+  jamais une instance.
+- **Envoi** : `POST /sync/v1/batch`. L'instance envoie sa file d'envoi (*outbox*, table `portal_outbox`)
   par lots d'au plus 200 éléments et 8 Mo.
   - Chaque élément porte un numéro de séquence croissant. Le portail ignore ce qu'il a déjà reçu, ce qui permet de
     renvoyer un lot sans risque après une coupure.
-- **Remontée** : `GET /sync/v1/inbox?after=<curseur>`, puis `POST /sync/v1/inbox/ack`. Le serveur local *tire* les
+- **Remontée** : `GET /sync/v1/inbox?after=<curseur>`, puis `POST /sync/v1/inbox/ack`. L'instance *tire* les
   absences signalées, les messages des parents et les signatures.
   - Le portail efface ce qui a été acquitté.
-  - Chaque élément remonté porte un identifiant ; le serveur local ne l'applique qu'une fois.
-- Le serveur local synchronise toutes les 60 s. Après un échec, il attend plus longtemps (backoff jusqu'à 30 min).
-  Sans internet, la crèche fonctionne normalement : la file attend.
+  - Chaque élément remonté porte un identifiant ; l'instance ne l'applique qu'une fois.
+- L'instance synchronise toutes les 60 s. Après un échec, il attend plus longtemps (backoff jusqu'à 30 min).
+  Portail injoignable : la crèche fonctionne normalement, la file attend.
 
 **Authentification de la structure**
-- À l'activation, le serveur local génère une paire **Ed25519**. Il garde la clé privée dans `server_secret`, comme
-  les autres secrets du serveur.
+- À l'activation, l'instance génère une paire **Ed25519**. Il garde la clé privée dans `server_secret`, comme
+  les autres secrets de l'instance.
 - Il envoie la clé publique au portail avec un **code d'activation à usage unique** remis par l'hébergeur
   (`POST /sync/v1/activate`). Le portail lui attribue alors un identifiant de structure.
 - Chaque requête est signée sur `méthode \n chemin?requête \n date \n SHA-256 du corps`, avec trois en-têtes :
@@ -67,7 +68,7 @@ au moment de l'envoi à partir de l'état courant :
   actualités, absences). Une catégorie décochée n'est plus envoyée.
 
 **Ce qui remonte**
-| Élément | Effet sur le serveur local |
+| Élément | Effet dans l'instance |
 |---|---|
 | `ABSENCE` | absence signalée, à confirmer par la direction ; elle devient alors une absence de facturation avec son motif |
 | `MESSAGE` | message dans le fil de la famille |

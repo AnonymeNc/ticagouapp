@@ -4,7 +4,7 @@ export type NavItem = {
   path: string;
   label: string;
   icon: LucideIcon;
-  /** Phase du plan (docs/plan-console-editeur.md) qui livre l'écran. */
+  /** Étape de livraison de l'écran (1 à 6 : livré ; au-delà, écran annoncé seulement). */
   phase: number;
   description: string;
 };

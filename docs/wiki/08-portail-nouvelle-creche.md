@@ -2,8 +2,8 @@
 
 [← Sommaire](README.md)
 
-Prérequis : le portail tourne ([EXPLOITATION.md](../EXPLOITATION.md)) et l'abonnement de la crèche comprend le module
-`PORTAIL_PARENTS`.
+Prérequis : le portail tourne ([EXPLOITATION.md](../EXPLOITATION.md)). Il est compris dans l'abonnement de toutes les
+crèches ([ADR 0021](../adr/0021-formule-unique.md)).
 
 ## 1. Créer le code d'activation
 

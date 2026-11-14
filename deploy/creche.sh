@@ -630,7 +630,11 @@ cmd_demo() {
         shift 2
     done
     if [ -n "$domaine" ]; then cmd_creer "$slug" --domaine "$domaine"; else cmd_creer "$slug"; fi
-    echo "DEMO=1" >>"$(dossier_de "$slug")/creche.env"
+    # Données fictives seulement : pas de double authentification, pour le chargement des données et pour les
+    # relecteurs d'Apple et de Google (docs/PUBLIER-LES-APPLICATIONS.md, A5), qui ne peuvent pas lire un code TOTP.
+    printf '%s\n' DEMO=1 TICAGOU_MFA_REQUIRED=false >>"$(dossier_de "$slug")/creche.env"
+    instance "$slug" up -d >/dev/null
+    attendre "$slug"
     jeton=$(valeur "$slug" TICAGOU_SETUP_TOKEN)
     set -- --url "http://creche-$slug:8080" --jeton "$jeton"
     if [ -n "${PORTAL_DOMAIN:-}" ] && socle ps --status running portail 2>/dev/null | grep -q portail; then

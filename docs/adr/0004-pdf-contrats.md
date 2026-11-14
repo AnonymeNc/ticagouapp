@@ -7,7 +7,7 @@
 
 Le contrat d'accueil se signe sur papier : Ti'Cagou doit produire un PDF fidèle à la maquette
 (en-tête de la structure, articles, tableau du planning, montants, signatures). Les factures et les avoirs
-auront le même besoin. Tout doit fonctionner hors ligne, sur le serveur local.
+auront le même besoin. Tout est produit par l'instance de la crèche, sans service extérieur.
 
 ## Décision
 

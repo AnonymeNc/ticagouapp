@@ -12,9 +12,10 @@ fiscaux sont des pistes à faire valider par un comptable et un juriste au fait 
 - [ ] Serveur de production préparé, copie hors site chez un second hébergeur
       ([EXPLOITATION.md](../EXPLOITATION.md)).
 - [ ] **Perte totale du serveur** répétée à blanc, avec les `creche.env` du coffre.
-- [x] **Dépôt GitHub privé** avec les tests automatiques verts (`.github/workflows/ci.yml`) : AnonymeNc/ticagouapp,
-      compilation Android et iOS comprise.
-- [ ] Tablettes essayées : un Android, un iPad, coupure d'internet comprise.
+- [x] **Dépôt GitHub** `AnonymeNc/ticagouapp` (public pour l'instant), `main` protégée, tests automatiques verts
+      (`.github/workflows/ci.yml`), compilation Android et iOS comprise (15/11/2026).
+- [ ] Tablettes essayées : une tablette Android avec Ti'Cagou Pointage, un iPad dans le navigateur, coupure d'internet
+      comprise.
 - [ ] **Applications mobiles** essayées sur de vrais appareils (iPhone, Android, tablette Android en mode kiosque) :
       Face ID, notifications, scan des QR, départ validé à distance ([revue de sécurité](../securite-applications-mobiles.md) § 7).
 - [ ] Internet mesuré dans 3 à 5 crèches ; routeur 4G de secours choisi.
@@ -36,16 +37,16 @@ fiscaux sont des pistes à faire valider par un comptable et un juriste au fait 
 
 - [ ] Disponibilité du nom « Ti'Cagou » vérifiée, marque déposée (vérifier l'effet du dépôt en Nouvelle-Calédonie).
 - [ ] Noms de domaine réservés (`ticagou.nc` et une variante `.com`/`.fr`).
-- [ ] Logo définitif (le monogramme actuel est provisoire : [installer/README.md › Logo](../../installer/README.md#logo)).
+- [ ] Logo définitif (le monogramme « T’ » actuel est provisoire).
 - [ ] Propriété du code clarifiée si d'autres personnes y ont contribué ; code sauvegardé hors de votre PC (dépôt
-      Git privé distant, sauvegarde chiffrée).
+      Git distant, sauvegarde chiffrée).
 
 ## 4. Les contrats et documents commerciaux
 
 - [ ] **Conditions générales de vente** et **contrat d'abonnement** : objet, durée et renouvellement, prix et révision,
       paiement, mises à jour, support, limites de responsabilité, suspension pour impayé, fin de contrat et
       restitution des données.
-- [ ] **Accord de niveau de service** (support Standard et Premium du [barème](bareme-tarifaire.md#5-niveaux-de-support)).
+- [ ] **Accord de niveau de service** (support rapide du [barème](bareme-tarifaire.md#5-niveaux-de-support)).
 - [ ] **Contrat de sous-traitance des données personnelles** avec chaque crèche : vous hébergez leurs données d'enfants
       et vous aidez à leur reprise.
 - [ ] Clauses de **réversibilité** : export des données et restitution à la fin du contrat.
@@ -66,7 +67,7 @@ Ti'Cagou traite des **données de santé d'enfants** : c'est le point le plus se
 
 ## 6. L'organisation
 
-- [ ] **Support** : adresse e-mail dédiée, numéro de téléphone (Premium), horaires, outil de suivi des demandes
+- [ ] **Support** : adresse e-mail dédiée, numéro de téléphone, horaires, outil de suivi des demandes
       (même un tableau au début), outil de prise en main à distance.
 - [ ] Processus de livraison des versions écrit et suivi ([EXPLOITATION.md § 4](../EXPLOITATION.md#4-mettre-à-jour)).
 - [ ] Astreinte pendant les heures d'ouverture des crèches, de 6 h à 19 h.
@@ -87,12 +88,13 @@ Ti'Cagou traite des **données de santé d'enfants** : c'est le point le plus se
 - [ ] Liste des crèches et garderies du territoire (provinces Sud, Nord, Îles : services de la petite enfance,
       annuaires), avec gestionnaires (associations, communes, entreprises).
 - [ ] Crèche de démonstration en ligne, avec des données réalistes (`scripts/demo`), et une tablette.
-- [ ] Plaquette et présentation à refaire : celles de la V1, dans le dossier d'archive, promettent « données gardées à
-      la crèche » et « fonctionne sans internet ». Nouveaux arguments à valider une fois l'hébergeur choisi.
+- [x] Présentations commerciale et de formation refaites ([docs/commercial/presentations](presentations/README.md)) ;
+      arguments sur l'hébergement à confirmer une fois l'hébergeur choisi.
 - [ ] Logo définitif reporté dans les captures et les supports, et dans les icônes des applications
       (`mobile/scripts/icones.ps1`, monogramme provisoire « T’ »).
 - [ ] **Comptes développeur** Apple et Google au nom de la société (numéro D-U-N-S), secrets de publication créés
-      ([EXPLOITATION.md § 7 bis](../EXPLOITATION.md#7-bis-les-applications-mobiles)).
+      ([PUBLIER-LES-APPLICATIONS.md](../PUBLIER-LES-APPLICATIONS.md)) ; clé Android et secrets GitHub correspondants
+      déjà générés (`scripts/secrets-mobile.ps1`).
 - [ ] **Fiches des stores** : textes ([fiches-stores.md](stores/fiches-stores.md)), captures refaites un matin de semaine,
       [déclarations de confidentialité](stores/declarations-confidentialite.md), politique de confidentialité publiée
       sur le site, compte de démonstration pour la relecture.

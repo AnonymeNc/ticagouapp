@@ -1,136 +1,66 @@
 # Ti'Cagou — logiciel de gestion pour crèches et garderies de Nouvelle-Calédonie
 
-Nom de travail : **Ti'Cagou** (« petit cagou »), à changer librement.
-
-Application web hébergée, une instance par crèche ([ADR 0013](docs/adr/0013-web-heberge-instance-par-creche.md)) : enfants
-& familles, inscriptions, contrats, pointage tablette (hors connexion compris), taux d'encadrement temps réel, repas,
-facturation XPF avec aides, personnel, sauvegardes. La V1 installée dans la crèche est archivée dans
-`ticagou-creche-v1-client-lourd`.
+Application web hébergée, une instance par crèche ([ADR 0013](docs/adr/0013-web-heberge-instance-par-creche.md)), et
+trois applications mobiles ([ADR 0023](docs/adr/0023-applications-mobiles-capacitor.md)) : **Ti'Cagou Direction**
+(iPhone, Android), **Ti'Cagou Pointage** (tablette Android) et **Ti'Cagou Parents** (iPhone, Android). Enfants et
+familles, inscriptions, contrats, pointage tablette (hors connexion compris), taux d'encadrement en temps réel, repas,
+facturation XPF avec aides, personnel, portail parents, sauvegardes. Une seule formule, tout compris
+([ADR 0021](docs/adr/0021-formule-unique.md)).
 
 ## Arborescence
 
 | Dossier / fichier | Rôle |
 |---|---|
 | `server/` | API REST Spring Boot 3 (Java 21, PostgreSQL 17, Flyway) — `/api/v1` |
-| `web/` | React 19 : bureau dans le navigateur et route `/kiosk` (tablette d'accueil) |
-| `outils/publicite/` | Captures de la démonstration, prospectus 4:3 et maquette des offres |
-| `deploy/` | Image Docker, socle et `creche.sh` : créer et exploiter les crèches — guide : [docs/EXPLOITATION.md](docs/EXPLOITATION.md) |
-| `parents-portal/` | Portail parents hébergé, optionnel : service Spring Boot (`server/`), application mobile (`web/`), contrat de synchronisation (`contract/`) — [ADR 0010](docs/adr/0010-portail-parents-flux-de-donnees.md) |
-| `scripts/tester-en-local.ps1` | Lance toute la démo locale en une commande — guide : [docs/TESTER-EN-LOCAL.md](docs/TESTER-EN-LOCAL.md) |
-| `docs/design/` | Maquettes Claude Design : **référence visuelle** |
-| `docs/adr/` | Décisions d'architecture : [0001 stack](docs/adr/0001-stack.md), [0002 authentification](docs/adr/0002-authentification.md), [0003 documents chiffrés](docs/adr/0003-documents-chiffres.md), [0004 PDF des contrats](docs/adr/0004-pdf-contrats.md), [0005 tablettes hors connexion](docs/adr/0005-tablettes-hors-connexion.md), [0006 export Excel](docs/adr/0006-export-excel.md), [0013 web hébergé](docs/adr/0013-web-heberge-instance-par-creche.md) |
+| `web/` | React 19 : bureau dans le navigateur, route `/kiosk` (tablette d'accueil), front des applications Direction et Pointage |
+| `parents-portal/` | Portail parents hébergé : service Spring Boot (`server/`), application des parents (`web/`), contrat de synchronisation (`contract/`) — [ADR 0010](docs/adr/0010-portail-parents-flux-de-donnees.md) |
+| `console/` | Console de l'éditeur : parc des crèches, facturation des abonnements, ordres — [docs/CONSOLE.md](docs/CONSOLE.md) |
+| `mobile/` | Coques Capacitor des trois applications (`direction/`, `pointage/`, `parents/`) et leurs scripts |
+| `deploy/` | Image Docker, socle et `creche.sh` : créer et exploiter les crèches |
+| `scripts/` | `tester-en-local.ps1`, `tous-les-tests.ps1`, `secrets-mobile.ps1`, données de démonstration, captures |
+| `outils/publicite/` | Prospectus et maquette des offres |
+| `docs/design/` | Maquettes : **référence visuelle** |
+| `docs/adr/` | Décisions d'architecture (0001 à 0028) |
+| `docs/wiki/` | Guides d'utilisation et supports de formation |
+| `docs/commercial/` | Barème, démonstrations, argumentaire, fiches des stores, présentations |
 | `CLAUDE.md` | Règles métier et conventions (lues par Claude Code) |
 | `01-concept.md`, `02-techno.md` | Cadrage produit et technique |
 
-## Prérequis
+## Documentation
 
-- JDK 21 (Maven est fourni par le wrapper `server/mvnw`)
-- Node 22+ et pnpm 10 (`npm i -g pnpm`)
-- Docker Desktop pour la base de dev et les tests d'intégration
+| Besoin | Document |
+|---|---|
+| Essayer Ti'Cagou sur son PC, lancer les tests | [docs/TESTER-EN-LOCAL.md](docs/TESTER-EN-LOCAL.md) |
+| Installer le serveur, créer une crèche, mettre à jour, restaurer | [docs/EXPLOITATION.md](docs/EXPLOITATION.md) |
+| Gérer ses crèches au quotidien | [docs/CONSOLE.md](docs/CONSOLE.md) |
+| Publier les applications dans les stores | [docs/PUBLIER-LES-APPLICATIONS.md](docs/PUBLIER-LES-APPLICATIONS.md) |
+| Ce qu'il reste à faire avant de vendre | [docs/RESTE-A-FAIRE.md](docs/RESTE-A-FAIRE.md) |
+| Utiliser et former | [docs/wiki/README.md](docs/wiki/README.md) |
+| Vendre, faire une démonstration | [docs/commercial/](docs/commercial/demonstrations.md) |
 
 ## Démarrer en développement
 
-> Guide pas à pas pour tester chaque fonctionnalité, lancer les tests, sauvegarder ou remettre à zéro la base :
-> [docs/TESTER-EN-LOCAL.md](docs/TESTER-EN-LOCAL.md).
-
-Commandes pour PowerShell (terminal Windows par défaut). Windows PowerShell 5.1 ne connaît pas `&&` :
-on enchaîne avec `;`. Le wrapper Maven se lance avec `.\mvnw.cmd` (`./mvnw` sous Git Bash, macOS ou Linux).
-
-```bash
-docker compose up -d postgres
-```
+Prérequis : JDK 21, Node 22+ et pnpm 10, Docker Desktop. Tout lancer, avec les données de démonstration et
+l'application Direction simulée :
 
 ```powershell
-cd server; .\mvnw.cmd spring-boot:run
+powershell -ExecutionPolicy Bypass -File scripts	ester-en-local.ps1 -Demo -Mobile
 ```
 
-L'API écoute sur http://localhost:8080 — santé : `GET /api/v1/health`, documentation : http://localhost:8080/swagger-ui.html.
-
-```powershell
-cd web; pnpm install; pnpm dev
-```
-
-Ouvrez http://localhost:1420.
-
-Kiosque tablette : http://localhost:1420/kiosk. La tablette s'appaire d'abord avec le code à 6 chiffres affiché dans
-Paramètres › Tablettes (direction). Hors connexion, les pointages restent dans la file chiffrée de la tablette et
-partent au retour du réseau ([ADR 0005](docs/adr/0005-tablettes-hors-connexion.md)).
-En dev, Vite relaie `/api` vers `http://localhost:8080` (surcharge : variable `TICAGOU_API_URL`).
-
-### Premier lancement et connexion
-
-Au premier démarrage, le navigateur ouvre l'assistant `/setup` (structure, agrément, sections, compte de direction).
-Il n'est accepté qu'une fois : en production avec le jeton du lien de démarrage, en développement depuis ce poste. Ensuite :
-
-- Bureau : identifiant + mot de passe, plus un code d'application en production (direction, comptabilité) ; la direction crée les comptes de l'équipe (`/api/v1/users`).
-- Tablette (`/kiosk`) appairée : choix de la personne puis code PIN à 4 chiffres ; le personnel pointe son arrivée
-  et son départ avec son seul code (unique dans la structure).
-
-Détails (JWT, rafraîchissement tournant, Argon2id, verrouillage, journal d'audit) : [ADR 0002](docs/adr/0002-authentification.md).
-
-Base de dev : la vérification de la phase 1 y a créé « Les P’tits Niaoulis » avec le compte de direction
-`nathalie.kaloi` / `Niaouli-2026!` et l'éducatrice Sandrine W. (PIN `4831`), puis la phase 2 trois enfants (Noa Wahéo avec allergies, PAI et documents ; Kaïna ; Léo), et la phase 3
-un barème au volume horaire, un contrat signé par enfant (avec un avenant en brouillon pour Noa) et dix demandes
-d'inscription réparties sur toutes les étapes. La phase 4 ajoute le code personnel de la directrice (PIN `2580`,
-pour valider un départ hors liste), l'équipe Maëva Tiaou (`2468`), Léa Kaouma (`1357`), Mereana Tehei (`3691`) et
-Paulo Taufana, cuisine (`7419`), une tablette de démonstration et des pointages. La phase 5 ajoute les menus des
-semaines du 26/10 et du 02/11/2026 (avec variantes végétariennes), un régime végétarien pour Léo et une texture mixée
-pour Kaïna. La phase 6 ajoute trois financeurs déduits des factures (Province Sud 20 % plafonné à 30 000 F, CAFAT
-12 000 F, employeur Lagon Services 10 000 F) et une subvention de la Ville de Dumbéa, les aides accordées aux trois
-enfants, deux absences d'octobre (dont une maladie sans certificat), un départ après la fermeture pour Kaïna et un
-départ non pointé pour Léo, puis la facture FA-2026-0001 d'octobre (Kaïna) avec un virement partiel de 20 000 F.
-La phase 7 complète les fiches du personnel (contrats, diplômes ; Sandrine en CDD de remplacement jusqu'au
-27/11/2026, rémunérée à l'heure ; Léa à temps partiel 30 h), des qualifications (SST de Maëva qui expire le
-14/11/2026 avec un recyclage prévu le 09/11, HACCP de Paulo expiré), une semaine type par personne depuis le
-01/09/2026, des congés pour Léa et les pointages d'octobre de Maëva (le 12/10 jusqu'à 17:00).
-Pour repartir de zéro et revoir
-l'assistant (supprimez aussi le dossier `server/data`, qui contient les documents chiffrés avec une clé conservée en base) :
-
-```bash
-docker compose down -v
-```
-
-```bash
-docker compose up -d postgres
-```
-
-### Variables utiles
-
-| Variable | Défaut | Rôle |
-|---|---|---|
-| `TICAGOU_DB_URL` | `jdbc:postgresql://localhost:5435/ticagou` | URL JDBC |
-| `TICAGOU_DB_USER` / `TICAGOU_DB_PASSWORD` | `ticagou` / `ticagou` | Identifiants base (dev uniquement) |
-| `TICAGOU_PORT` | `8080` | Port HTTP du serveur |
-| `TICAGOU_JWT_SECRET` | *(vide)* | Clé de signature JWT en Base64 (≥ 32 octets) ; vide = générée et conservée en base |
-| `TICAGOU_STORAGE_DIR` | `data/documents` | Documents et photos chiffrés (AES-256-GCM), relatif au dossier de lancement du serveur |
-| `TICAGOU_STORAGE_KEY` | *(vide)* | Clé des documents en Base64 (32 octets) ; vide = générée et conservée en base — [ADR 0003](docs/adr/0003-documents-chiffres.md) |
-| `TICAGOU_WEB_ROOT` | *(vide)* | Build du front ; vide = `web/dist` du dépôt |
-| `TICAGOU_BACKUP_DIR` | `data/backups` | Archives des sauvegardes |
-| `TICAGOU_BACKUP_DAILYTIME` | `02:00` | Heure de la sauvegarde de la nuit |
-| `TICAGOU_BACKUP_RECOVERYKEY` | *(vide)* | Clé de secours, gardée hors de la base ; vide = générée en base (développement) |
-| `TICAGOU_BACKUP_PGBIN` | *(vide)* | Dossier de `pg_dump` / `pg_restore` ; vide = PATH — [ADR 0007](docs/adr/0007-sauvegardes-chiffrees.md) |
-| `TICAGOU_BACKUP_SKIPPREMIGRATION` | `false` | Démarrer sans la sauvegarde avant migration (dépannage seulement) |
-| `TICAGOU_SETUP_TOKEN` | *(vide)* | Jeton de démarrage de l'assistant ; vide = depuis ce poste seulement |
-| `TICAGOU_MFA_REQUIRED` | `false` | Double authentification obligatoire ; `true` dans l'image |
-| `TICAGOU_FORWARD_HEADERS` | `none` | `native` derrière le proxy HTTPS (jamais sans proxy) |
-| `TICAGOU_API_DOCS` | `true` | Swagger UI et `/v3/api-docs` ; `false` dans l'image |
+Bureau : http://localhost:1420 (`nathalie.kaloi` / `Niaouli-2026!`), tablette : http://localhost:1420/kiosk,
+application Direction : http://localhost:1431. Lancement à la main, comptes et parcours :
+[docs/TESTER-EN-LOCAL.md](docs/TESTER-EN-LOCAL.md). Variables du serveur : `server/src/main/resources/application.yml`
+et [EXPLOITATION.md](docs/EXPLOITATION.md).
 
 ## Tests
 
 ```powershell
-cd server; .\mvnw.cmd verify
+powershell -ExecutionPolicy Bypass -File scripts	ous-les-tests.ps1
 ```
 
-`verify` exécute les tests unitaires puis les tests d'intégration `*IT` (Testcontainers, PostgreSQL 17) ;
-ces derniers sont ignorés si Docker n'est pas démarré.
-
-```powershell
-cd web; pnpm test
-```
-
-```powershell
-cd web; pnpm typecheck
-```
+Serveur, portail, console, les trois fronts et la cohérence des plugins mobiles, avec un bilan. La CI GitHub
+(`.github/workflows/ci.yml`) fait la même chose à chaque envoi sur `main` et à chaque demande de fusion, et compile
+les applications Android et iOS.
 
 ## Facturation
 
@@ -198,7 +128,7 @@ Se connecter à la console de l'éditeur et gérer ses crèches au quotidien : [
 - **Transmissions** : sur la tablette, bouton « Journée » de la grille. On choisit un ou plusieurs enfants présents,
   puis Repas (biberon compris), Sieste, Change, Médicament ([ADR 0014](docs/adr/0014-medicaments-transmis-aux-parents.md)), Activité, Photo ou Mot. Tout passe par la file hors connexion, sauf les photos (en ligne,
   réduites à 1600 px). Au bureau : fiche enfant › Journée et portail.
-- **Portail parents** (optionnel, module `PORTAIL_PARENTS`, [ADR 0010](docs/adr/0010-portail-parents-flux-de-donnees.md)) :
+- **Portail parents** (activé par la direction, [ADR 0010](docs/adr/0010-portail-parents-flux-de-donnees.md)) :
   - activation dans Paramètres › Portail parents, avec l'adresse et le code d'activation de l'hébergeur ;
   - l'instance de la crèche **envoie** chaque minute ce qui est partagé, et **lit** les absences, messages et signatures
     des parents ; aucune connexion entrante, aucune donnée de santé sauf partage explicite de la direction ;
@@ -218,7 +148,7 @@ couleurs (`lagon`, `niaouli`, `terre`, états, sections Bébés / Moyens / Grand
 Fraunces ; `text-display`, `text-title-1`… `text-touch-*`), rayons (6 / 10 / 16 px), ombres et dimensions
 (`w-sidebar`, `h-topbar`, `h-touch`…). Les composants shadcn/ui utilisent ces tokens.
 
-## Parcours produit conseillé
+## Avant la mise en service
 
-1. Valider le périmètre dans `01-concept.md`.
-2. Faire valider les règles (encadrement, aides, agrément) auprès de la DPASS Province Sud avant la mise en service.
+Faire valider les règles (encadrement, aides, agrément, TGC) auprès de la DPASS Province Sud et d'un expert-comptable
+(`01-concept.md`), puis suivre [docs/RESTE-A-FAIRE.md](docs/RESTE-A-FAIRE.md).
