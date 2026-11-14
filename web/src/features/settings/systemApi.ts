@@ -68,6 +68,9 @@ export type License = {
   /** PC du bureau qui occupent une place, et nombre permis. */
   desktops: number;
   desktopLimit: number;
+  /** Téléphones de la direction (application), hors du compte des PC (ADR 0028). Absents d’un serveur plus ancien. */
+  mobiles?: number;
+  mobileLimit?: number;
   /** Le serveur vérifie les clés avec la clé publique de développement. */
   license: {
     number: string; holder: string; plan: string; places: number;
@@ -82,7 +85,13 @@ export type License = {
 };
 
 /** PC du bureau enregistré ; « active » faux s'il n'a pas été vu depuis 90 jours (il ne compte plus). */
-export type DesktopClient = { id: string; label: string; firstSeenAt: string; lastSeenAt: string; lastUserName: string | null; active: boolean };
+export type DesktopClient = {
+  id: string; label: string; firstSeenAt: string; lastSeenAt: string; lastUserName: string | null; active: boolean;
+  /** BUREAU : navigateur, compté dans les PC ; MOBILE : application Direction (ADR 0028). */
+  kind?: "BUREAU" | "MOBILE";
+  /** « Ti’Cagou Direction 1.0.0 · iOS » pour un téléphone. */
+  app?: string | null;
+};
 
 /** Autorité locale du HTTPS (ADR 0009) ; « enabled » faux en développement. */
 

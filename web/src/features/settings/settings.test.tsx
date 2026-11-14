@@ -250,6 +250,28 @@ describe("paramètres", () => {
     await waitFor(() => expect(api.calls.some((c) => c.key === "POST /system/desktops/pc-2/revoke")).toBe(true));
   });
 
+  it("range les téléphones de la direction à part, sans place de PC (ADR 0028)", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const api = server(director, {
+      "GET /devices": { body: [] },
+      "GET /system/license": { body: { ...evaluation, desktops: 1, mobiles: 1, mobileLimit: 10 } },
+      "GET /system/desktops": { body: [
+        { id: "pc-1", label: "BUREAU-DIRECTION", firstSeenAt: "2026-09-01T08:00:00Z", lastSeenAt: "2026-11-02T08:00:00Z", lastUserName: "Nathalie Kaloï", active: true, kind: "BUREAU", app: null },
+        { id: "tel-1", label: "iPhone", firstSeenAt: "2026-11-10T08:00:00Z", lastSeenAt: "2026-11-14T08:00:00Z", lastUserName: "Nathalie Kaloï", active: true, kind: "MOBILE", app: "Ti’Cagou Direction 1.0.0 · iOS" },
+      ] },
+      "POST /system/desktops/tel-1/revoke": { status: 204 },
+    });
+    renderAt("/parametres?onglet=appareils");
+    const phones = (await screen.findByRole("heading", { name: "Téléphones de la direction" })).closest("section")!;
+    expect(await within(phones).findByText("iPhone")).toBeInTheDocument();
+    expect(within(phones).getByText(/Ti’Cagou Direction 1.0.0 · iOS/)).toBeInTheDocument();
+    expect(within(phones).queryByText("BUREAU-DIRECTION")).toBeNull();
+    expect(within(phones).getByText(/10 téléphones au plus/)).toBeInTheDocument();
+    await userEvent.setup().click(within(phones).getByRole("button", { name: "Retirer" }));
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("Ce téléphone ne pourra plus"));
+    await waitFor(() => expect(api.calls.some((c) => c.key === "POST /system/desktops/tel-1/revoke")).toBe(true));
+  });
+
   it("envoie l’identifiant du poste avec chaque requête", async () => {
     const api = server();
     renderAt("/parametres");

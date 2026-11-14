@@ -59,7 +59,8 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] max-h-[90vh] gap-4 overflow-y-auto rounded-lg border bg-card p-6 shadow-3 duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
+          // Téléphone : feuille qui monte du bas, pleine largeur ; à partir de 768 px : dialogue centré (maquette D4).
+          "fixed inset-x-0 bottom-0 z-50 mx-auto grid max-h-[92dvh] w-full gap-4 overflow-y-auto rounded-t-lg border bg-card p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-3 duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom sm:max-w-lg md:inset-x-auto md:top-[50%] md:bottom-auto md:left-[50%] md:max-h-[90vh] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-lg md:pb-6 md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=closed]:zoom-out-95 md:data-[state=open]:slide-in-from-bottom-0 md:data-[state=open]:zoom-in-95",
           className
         )}
         {...props}

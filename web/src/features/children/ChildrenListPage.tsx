@@ -136,7 +136,7 @@ export function ChildrenListPage() {
         {children.isError ? (
           <p className="m-0 p-6 text-danger-700">{errorMessage(children.error)}</p>
         ) : (
-          <table className="w-full border-collapse text-left">
+          <table className="table-cards w-full border-collapse text-left">
             <caption className="sr-only">Liste des enfants inscrits</caption>
             <thead>
               <tr className="border-b border-border-subtle bg-muted text-label text-muted-foreground">
@@ -175,7 +175,7 @@ export function ChildrenListPage() {
                     <td className="px-4 py-2 whitespace-nowrap tabular-nums">{formatAge(ageInMonths(c.birthDate, today))}</td>
                     <td className="px-4 py-2"><SectionBadge section={section} /></td>
                     <td className="px-4 py-2"><HealthBadges health={c.health} /></td>
-                    <td className="px-4 py-2 text-right">
+                    <td data-cell="action" className="px-4 py-2 text-right">
                       {canOpen && (
                         <Link to={`/enfants/${c.id}`} aria-label={`Ouvrir la fiche de ${c.firstName} ${c.lastName}`} className="inline-flex text-muted-foreground">
                           <ChevronRight aria-hidden className="size-5" />

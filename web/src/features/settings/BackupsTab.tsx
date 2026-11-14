@@ -1,3 +1,4 @@
+import { DesktopRecommended } from "@/components/DesktopRecommended";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Play, ShieldCheck } from "lucide-react";
@@ -51,6 +52,7 @@ export function BackupsTab() {
 
   return (
     <>
+      <DesktopRecommended what="La gestion des sauvegardes" />
       <section className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>

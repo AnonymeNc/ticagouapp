@@ -1,3 +1,4 @@
+import { DesktopRecommended } from "@/components/DesktopRecommended";
 import { useState } from "react";
 import { Link } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -105,6 +106,7 @@ export function DataImportTab() {
 
   return (
     <>
+      <DesktopRecommended what="La reprise de fichiers" />
       <section className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>

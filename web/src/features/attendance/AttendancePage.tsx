@@ -106,7 +106,7 @@ export function AttendancePage() {
             {data && <> · {present} présent{present > 1 ? "s" : ""} sur {data.expected} attendu{data.expected > 1 ? "s" : ""}{departed > 0 && <>, {departed} parti{departed > 1 ? "s" : ""}</>}</>}
           </p>
         </div>
-        <div className="flex items-end gap-2">
+        <div className="flex flex-wrap items-end gap-2">
           <Button variant="outline" size="icon" aria-label="Jour précédent" onClick={() => goTo(addDays(day, -1))}><ChevronLeft aria-hidden /></Button>
           <FormField label="Date">
             <DateInput
@@ -169,7 +169,7 @@ export function AttendancePage() {
           <h2 id="enfants" className="m-0 text-title-3">Enfants</h2>
           {isDirection && <Button variant="outline" onClick={() => setEditing({ kind: "add-child" })}><Plus aria-hidden />Ajouter un passage</Button>}
         </div>
-        <table className="w-full border-collapse text-left">
+        <table className="table-cards w-full border-collapse text-left">
           <caption className="sr-only">Pointages des enfants</caption>
           <thead>
             <tr className="border-b border-border-subtle text-label text-muted-foreground">
@@ -214,7 +214,7 @@ export function AttendancePage() {
                     </span>
                   ))}
                 </td>
-                <td className="py-2 text-right whitespace-nowrap">
+                <td data-cell="action" className="py-2 text-right whitespace-nowrap">
                   {canPoint && isToday && !r.departedAt && (
                     <Button variant="outline" size="sm" onClick={() => setEditing({ kind: "departure", row: r })}>Départ</Button>
                   )}
@@ -264,7 +264,7 @@ export function AttendancePage() {
           <h2 id="personnel" className="m-0 text-title-3">Personnel</h2>
           {isDirection && <Button variant="outline" onClick={() => setEditing({ kind: "add-staff" })}><Plus aria-hidden />Ajouter un pointage</Button>}
         </div>
-        <table className="w-full border-collapse text-left">
+        <table className="table-cards w-full border-collapse text-left">
           <caption className="sr-only">Pointages du personnel</caption>
           <thead>
             <tr className="border-b border-border-subtle text-label text-muted-foreground">
@@ -290,7 +290,7 @@ export function AttendancePage() {
                   {sourceLabels[r.source]}
                   {!r.pinVerified && <TonePill tone="warning">Code non vérifié</TonePill>}
                 </td>
-                <td className="py-2 text-right whitespace-nowrap">
+                <td data-cell="action" className="py-2 text-right whitespace-nowrap">
                   {isDirection && <Button variant="ghost" size="sm" onClick={() => setEditing({ kind: "staff", row: r })}>Corriger</Button>}
                   <Button variant="ghost" size="sm" aria-label={`Historique de ${r.displayName}`} onClick={() => setEditing({ kind: "history", target: "staff", id: r.id, label: r.displayName })}>
                     <History aria-hidden />

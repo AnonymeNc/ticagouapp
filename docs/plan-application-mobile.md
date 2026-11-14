@@ -1,6 +1,6 @@
 # Plan — Applications mobiles Ti'Cagou (Capacitor)
 
-- **Statut** : en cours (phase 3, Direction responsive)
+- **Statut** : en cours (phase 4, choix de la crèche)
 - **Date** : 14/11/2026
 - **Source** : [étude](etude-application-mobile.md), option B retenue
 - **Exigence** : l'application de la direction est la même sur téléphone, tablette **et ordinateur** (navigateur).
@@ -119,7 +119,7 @@ Les maquettes d'une phase sont validées par l'utilisateur avant le développeme
 | 0 ADR | fait le 14/11/2026 : ADR 0023 à 0028 ; ADR 0002, 0005, 0011, 0013, 0017, 0018, 0021 marqués |
 | 1 Maquettes | validées le 14/11/2026 (écarts acceptés : barre basse + « Plus », rail 768–1 279 px, code e-mail parents) : `docs/design/Ti'Cagou — Direction mobile.html`, `… Direction tablette et ordinateur.html`, `… Pointage natif.html`, `… app parents mobile, compléments.html` (charte : `charte-mobile.css`) |
 | 2 Socle | fait le 14/11/2026 (branche `phase-2-socle`) : coques `mobile/*` (Android, iOS SPM, icônes), `lib/native` (crèche courante, coffre, en-tête `X-Ticagou-App`), session de 30 jours et postes mobiles (V30), `/api/v1/app/compat`, CORS Capacitor, CI Android et iOS. Non vérifié : compilation native locale (pas de SDK Android sur le poste) — faite par la CI une fois le dépôt sur GitHub (décision 6) |
-| 3 Direction responsive | à faire |
+| 3 Direction responsive | fait le 14/11/2026 (branche `phase-3-responsive`) : barre basse + « Plus » sous 768 px, rail 768–1 279 px, barre du haut compacte, dialogues en feuille, tableaux qui défilent sous 1 024 px et en cartes (Enfants, Présences, Facturation, Personnel), fiche enfant resserrée, « recommandé sur ordinateur » (import, installation, sauvegardes), téléphones dans Paramètres › Postes. Aucun débordement sur les 27 écrans contrôlés à 390, 820, 1 180 et 1 440 px (`scripts/captures/captures.mjs --debordements`). Captures avant/après : `docs/design/captures-phase-3/` |
 | 4 Annuaire | à faire |
 | 5 Notifications | à faire |
 | 6 Pointage | à faire |

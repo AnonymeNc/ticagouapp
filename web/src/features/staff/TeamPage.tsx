@@ -101,7 +101,7 @@ export function TeamPage() {
             </div>
             <p className="m-0 text-small text-muted-foreground">{members.length} personne{members.length > 1 ? "s" : ""}</p>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left">
+              <table className="table-cards w-full border-collapse text-left">
                 <caption className="sr-only">Personnel de la structure</caption>
                 <thead>
                   <tr className="border-b border-border-subtle text-label text-muted-foreground">
@@ -125,7 +125,7 @@ export function TeamPage() {
                         </Link>
                       </td>
                       <td className="py-2 pr-3">{m.jobTitle ?? roleLabels[m.role]}</td>
-                      <td className="py-2 pr-3">{m.diploma ?? "—"}</td>
+                      <td data-cell="hide-phone" className="py-2 pr-3">{m.diploma ?? "—"}</td>
                       <td className="py-2 pr-3">{sectionName(m)}</td>
                       <td className="py-2 pr-3">
                         {contractLabels[m.contractType]}

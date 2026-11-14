@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Monitor } from "lucide-react";
+import { Monitor, Smartphone } from "lucide-react";
 import { Alert } from "@/components/FocusLayout";
 import { Button } from "@/components/ui/button";
 import { TonePill, type Tone } from "@/features/enrollment/components";
 import { errorMessage } from "@/lib/api";
 import { isoToDateFr } from "@/lib/datetime";
 import { useRubriques } from "@/features/structure/useRubriques";
-import { systemApi, systemKeys, type LicenseState } from "./systemApi";
+import { systemApi, systemKeys, type DesktopClient, type LicenseState } from "./systemApi";
 
 export const licenseStates: Record<LicenseState, { tone: Tone; label: string }> = {
   EVALUATION: { tone: "warning", label: "Évaluation" },
@@ -42,7 +42,7 @@ export function LicenseSection() {
               <dd className="m-0">{rubriques.labels.join(" · ")} — contactez Ti’Cagou pour les réafficher, rien n’a été effacé.</dd>
             </>}
             <dt className="text-muted-foreground">Postes</dt>
-            <dd className="m-0">{data.desktops} PC sur {data.desktopLimit} · {data.pairedTablets} tablette{data.pairedTablets > 1 ? "s" : ""} sur {l.tablets}</dd>
+            <dd className="m-0">{data.desktops} PC sur {data.desktopLimit}{data.mobileLimit !== undefined && ` · ${data.mobiles ?? 0} téléphone${(data.mobiles ?? 0) > 1 ? "s" : ""} sur ${data.mobileLimit}`} · {data.pairedTablets} tablette{data.pairedTablets > 1 ? "s" : ""} sur {l.tablets}</dd>
             <dt className="text-muted-foreground">Places</dt><dd className="m-0">{data.capacity} sur {l.places} autorisées</dd>
             <dt className="text-muted-foreground">Valide jusqu’au</dt><dd className="m-0">{isoToDateFr(l.validUntil)}</dd>
           </dl>
@@ -52,7 +52,7 @@ export function LicenseSection() {
           30 jours, puis passe en lecture seule : les données restent consultables, les sauvegardes continuent.
         </p>}
       </section>
-      <DesktopsSection limit={data.desktopLimit} />
+      <DesktopsSection limit={data.desktopLimit} mobileLimit={data.mobileLimit} />
       <section className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
         <h2 className="m-0 text-title-3">Mises à jour</h2>
         <p className="m-0">Version en service : <strong className="tabular-nums">{data.version}</strong></p>
@@ -65,16 +65,28 @@ export function LicenseSection() {
   );
 }
 
-/** Postes comptés par l'abonnement : la direction retire un poste remplacé pour libérer sa place. */
-function DesktopsSection({ limit }: { limit: number }) {
+/**
+ * Postes de la crèche : PC comptés par l’abonnement, et téléphones de la direction (application), hors du compte des PC
+ * (ADR 0028). La direction retire un poste remplacé ou perdu : il ne peut plus se connecter.
+ */
+function DesktopsSection({ limit, mobileLimit }: { limit: number; mobileLimit?: number }) {
   const queryClient = useQueryClient();
   const desktops = useQuery({ queryKey: systemKeys.desktops, queryFn: ({ signal }) => systemApi.desktops(signal) });
   const revoke = useMutation({
     mutationFn: systemApi.revokeDesktop,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: systemKeys.license }),
   });
-  const list = desktops.data ?? [];
+  const all = desktops.data ?? [];
+  const pcs = all.filter((d) => d.kind !== "MOBILE");
+  const phones = all.filter((d) => d.kind === "MOBILE");
+  const onRevoke = (d: DesktopClient) => {
+    const what = d.kind === "MOBILE" ? "Ce téléphone" : "Ce PC";
+    if (window.confirm(`Retirer « ${d.label} » ? ${what} ne pourra plus se connecter à Ti’Cagou.`)) {
+      revoke.mutate(d.id, { onSuccess: () => queryClient.invalidateQueries({ queryKey: systemKeys.desktops }) });
+    }
+  };
   return (
+    <>
     <section className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
       <h2 className="m-0 flex items-center gap-2 text-title-3"><Monitor aria-hidden className="size-5" />PC du bureau</h2>
       <p className="m-0 text-small text-muted-foreground">
@@ -82,29 +94,42 @@ function DesktopsSection({ limit }: { limit: number }) {
         sa place tout seul.
       </p>
       {revoke.isError && <Alert>{errorMessage(revoke.error)}</Alert>}
-      {list.length === 0 ? <p className="m-0 text-muted-foreground">Aucun PC enregistré.</p> : (
+      <PosteList list={pcs} empty="Aucun PC enregistré." pending={revoke.isPending} onRevoke={onRevoke} />
+    </section>
+    <section className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
+      <h2 className="m-0 flex items-center gap-2 text-title-3"><Smartphone aria-hidden className="size-5" />Téléphones de la direction</h2>
+      <p className="m-0 text-small text-muted-foreground">
+        L’application Ti’Cagou Direction est comprise dans l’abonnement : un téléphone ne prend pas de place de PC
+        {mobileLimit !== undefined && ` (${mobileLimit} téléphones au plus)`}. Téléphone perdu ou changé : retirez-le ici, il
+        est déconnecté dans les 15 minutes.
+      </p>
+      <PosteList list={phones} empty="Aucun téléphone n’a encore ouvert l’application Ti’Cagou Direction." pending={revoke.isPending} onRevoke={onRevoke} />
+    </section>
+    </>
+  );
+}
+
+function PosteList({ list, empty, pending, onRevoke }: { list: DesktopClient[]; empty: string; pending: boolean; onRevoke: (d: DesktopClient) => void }) {
+  return (
+    <>
+      {list.length === 0 ? <p className="m-0 text-muted-foreground">{empty}</p> : (
         <ul className="m-0 flex list-none flex-col divide-y divide-border-subtle p-0">
           {list.map((d) => (
             <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
               <span>
                 <strong>{d.label}</strong>
                 <span className="block text-small text-muted-foreground">
-                  Dernière connexion le {isoToDateFr(d.lastSeenAt.slice(0, 10))}{d.lastUserName && ` par ${d.lastUserName}`}
+                  {d.app && <>{d.app} · </>}Dernière connexion le {isoToDateFr(d.lastSeenAt.slice(0, 10))}{d.lastUserName && ` par ${d.lastUserName}`}
                   {!d.active && " · ne compte plus (absent depuis 90 jours)"}
                 </span>
               </span>
-              <Button variant="outline" size="sm" disabled={revoke.isPending}
-                onClick={() => {
-                  if (window.confirm(`Retirer « ${d.label} » ? Ce PC ne pourra plus se connecter à Ti’Cagou.`)) {
-                    revoke.mutate(d.id, { onSuccess: () => queryClient.invalidateQueries({ queryKey: systemKeys.desktops }) });
-                  }
-                }}>
+              <Button variant="outline" size="sm" disabled={pending} onClick={() => onRevoke(d)}>
                 Retirer
               </Button>
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </>
   );
 }

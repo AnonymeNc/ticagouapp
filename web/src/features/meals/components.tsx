@@ -17,7 +17,7 @@ export function MealsHeader({ subtitle, actions }: { subtitle?: ReactNode; actio
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
-      <nav aria-label="Vues des repas" className="flex gap-1 self-start rounded-[14px] bg-muted p-1 print:hidden">
+      <nav aria-label="Vues des repas" className="flex max-w-full gap-1 self-start overflow-x-auto rounded-[14px] bg-muted p-1 [&>*]:shrink-0 [&>*]:whitespace-nowrap print:hidden">
         <NavLink to="/repas" end className={tab}>Aujourd’hui en cuisine</NavLink>
         <NavLink to="/repas/menus" className={tab}>Menus de la semaine</NavLink>
         <NavLink to="/repas/recapitulatif" className={tab}>Récapitulatif trimestriel</NavLink>

@@ -223,6 +223,10 @@
   body {
     @apply bg-background font-sans text-body text-foreground antialiased;
   }
+  /* Un fieldset garde par défaut la largeur de son contenu : sur téléphone, il pousserait la page hors de l’écran. */
+  fieldset {
+    min-width: 0;
+  }
   :focus-visible {
     outline: 2px solid var(--tc-focus);
     outline-offset: 2px;
@@ -239,5 +243,66 @@
   body {
     background: white;
     font-size: 11pt;
+  }
+}
+
+/*
+ * Tableaux sur petit écran (maquette « Direction tablette et ordinateur », D4). Hors couche : ces règles passent
+ * avant les utilitaires Tailwind des cellules.
+ * - Sous 1 024 px, tout tableau défile dans sa propre largeur : la page ne déborde jamais.
+ * - Sous 768 px, un tableau marqué « table-cards » devient une liste de cartes : une ligne = une carte, la première
+ *   cellule en titre, les autres à la suite ; « data-cell="action" » se range à droite.
+ */
+@media (max-width: 1023px) {
+  main table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 767px) {
+  table.table-cards,
+  table.table-cards tbody,
+  table.table-cards tfoot {
+    display: block;
+    width: 100%;
+    overflow: visible;
+  }
+  table.table-cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  table.table-cards tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 12px 14px;
+  }
+  table.table-cards :is(td, th) {
+    display: block;
+    padding: 0;
+    white-space: normal;
+    text-align: left;
+  }
+  table.table-cards :is(td, th):first-child {
+    flex-basis: 100%;
+  }
+  table.table-cards td[data-label]::before {
+    content: attr(data-label) " : ";
+    color: var(--tc-ink-muted);
+    font-weight: 400;
+  }
+  table.table-cards td[data-cell="action"] {
+    margin-left: auto;
+  }
+  table.table-cards td[data-cell="hide-phone"] {
+    display: none;
   }
 }

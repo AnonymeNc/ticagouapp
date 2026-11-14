@@ -19,7 +19,7 @@ export function BillingHeader({ title, subtitle, actions }: { title: string; sub
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
-      <nav aria-label="Vues de la facturation" className="flex gap-1 self-start rounded-[14px] bg-muted p-1 print:hidden">
+      <nav aria-label="Vues de la facturation" className="flex max-w-full gap-1 self-start overflow-x-auto rounded-[14px] bg-muted p-1 [&>*]:shrink-0 [&>*]:whitespace-nowrap print:hidden">
         <NavLink to="/facturation" end className={tab}>Facturer le mois</NavLink>
         <NavLink to="/facturation/financeurs" className={tab}>Financeurs</NavLink>
         <NavLink to="/facturation/encaissements" className={tab}>Encaissements et relances</NavLink>
