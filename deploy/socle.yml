@@ -58,6 +58,12 @@ services:
       PORTAL_SMTP_STARTTLS: "true"
       PORTAL_MAIL_FROM: ${PORTAL_MAIL_FROM:-}
       PORTAL_FORWARD_HEADERS: native
+      # Notifications natives (ADR 0026) : secrets du socle, communs aux crèches et au portail ; vides = désactivées.
+      APNS_KEY: ${APNS_KEY:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_PRODUCTION: ${APNS_PRODUCTION:-true}
+      FCM_SERVICE_ACCOUNT: ${FCM_SERVICE_ACCOUNT:-}
     networks: [ticagou]
 
   # Console de l'éditeur (ADR 0017) : ./creche.sh socle --console

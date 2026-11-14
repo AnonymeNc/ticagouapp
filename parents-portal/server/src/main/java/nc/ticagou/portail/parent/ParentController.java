@@ -73,6 +73,14 @@ public class ParentController {
                               @NotBlank @Size(max = 40) String auth, @NotNull List<String> categories) {
     }
 
+    /** Application Ti’Cagou Parents (ADR 0026) : jeton APNs ou FCM de l’appareil. */
+    public record NativeDeviceRequest(@NotNull nc.ticagou.portail.push.natif.NativePush.Platform platform,
+                                      @NotBlank @Size(max = 400) String token, @NotNull java.util.List<String> categories) {
+    }
+
+    public record NativeToken(@NotBlank @Size(max = 400) String token) {
+    }
+
     public record PushEndpoint(@NotBlank @Size(max = 1000) String endpoint) {
     }
 
@@ -198,6 +206,28 @@ public class ParentController {
                           @Valid @RequestBody PushRequest request) {
         push.subscribe(email, request.endpoint(), request.p256dh(), request.auth(),
                 nc.ticagou.portail.push.PushService.parseCategories(request.categories()));
+    }
+
+    @GetMapping("/push/native")
+    public Map<String, Object> nativeState(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email, @RequestParam String token) {
+        var state = new java.util.LinkedHashMap<String, Object>();
+        state.put("categories", push.nativeCategories(email, token));
+        return state;
+    }
+
+    @PostMapping("/push/native")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void registerNative(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                               @Valid @RequestBody NativeDeviceRequest request) {
+        push.registerNative(email, request.platform(), request.token(),
+                nc.ticagou.portail.push.PushService.parseCategories(request.categories()));
+    }
+
+    @PostMapping("/push/native/unregister")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void unregisterNative(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                                 @Valid @RequestBody NativeToken request) {
+        push.unregisterNative(email, request.token());
     }
 
     @PostMapping("/push/unsubscribe")

@@ -6,6 +6,14 @@ services:
     container_name: creche-${SLUG:?SLUG manquant}
     restart: unless-stopped
     env_file: ${DOSSIER:?DOSSIER manquant}/creche.env
+    # Lus dans socle.env (chargé par creche.sh) : changer une clé = « mettre-a-jour --toutes ».
+    environment:
+      # Notifications natives (ADR 0026) : secrets du socle, communs aux crèches et au portail ; vides = désactivées.
+      APNS_KEY: ${APNS_KEY:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_PRODUCTION: ${APNS_PRODUCTION:-true}
+      FCM_SERVICE_ACCOUNT: ${FCM_SERVICE_ACCOUNT:-}
     volumes:
       - ${DOSSIER}/data:/data
     mem_limit: 768m

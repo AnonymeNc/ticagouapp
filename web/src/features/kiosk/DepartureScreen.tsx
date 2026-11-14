@@ -1,3 +1,4 @@
+import { RemoteApproval } from "./RemoteApproval";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CircleAlert, IdCard, Phone, ShieldX, UserRoundPlus } from "lucide-react";
@@ -284,6 +285,8 @@ function UnauthorizedScreen({
               <PinPad label={`Code personnel de ${director?.displayName}`} onComplete={submit} error={error} pending={pending} />
             </>
           )}
+          <RemoteApproval attendanceId={attendanceId} childFirstName={child.firstName} personName={name}
+            relationship={relationship} idChecked={idChecked} onApproved={onDone} />
         </section>
       </div>
 

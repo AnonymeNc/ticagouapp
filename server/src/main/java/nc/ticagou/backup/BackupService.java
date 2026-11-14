@@ -1,5 +1,8 @@
 package nc.ticagou.backup;
 
+import nc.ticagou.notification.NativePush;
+import nc.ticagou.notification.NotificationService;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -76,8 +79,11 @@ public class BackupService {
     });
     private final AtomicBoolean running = new AtomicBoolean();
 
+    private final NotificationService notifications;
+
     public BackupService(JdbcTemplate jdbc, PgTools pg, TiCagouProperties properties, ObjectMapper json,
-                         AuditService audit, Clock clock) {
+                         AuditService audit, Clock clock, NotificationService notifications) {
+        this.notifications = notifications;
         this.jdbc = jdbc;
         this.pg = pg;
         this.properties = properties;
@@ -261,9 +267,27 @@ public class BackupService {
             LOG.warn("Sauvegarde en échec", e);
             finish(runId, Status.ECHEC, null, null, 0, explain(e));
             audit.record(actor, AuditAction.BACKUP_FAILED, "backup_run", runId, Map.of("detail", explain(e)));
+            notifyFailure(runId);
         } finally {
             delete(work);
             running.set(false);
+        }
+    }
+
+    /** Sauvegarde de la nuit en échec : la direction est prévenue sur son téléphone (ADR 0026). */
+    private void notifyFailure(UUID runId) {
+        try {
+            var automatic = Boolean.TRUE.equals(jdbc.queryForObject("SELECT kind = 'AUTOMATIQUE' FROM backup_run WHERE id = ?",
+                    Boolean.class, runId));
+            if (!automatic) {
+                return;
+            }
+            var message = new NativePush.Message("Sauvegarde en échec", "La sauvegarde de cette nuit a échoué. Ti’Cagou est prévenu.",
+                    "/parametres?onglet=sauvegardes", NotificationService.Category.SAUVEGARDE.name(), Duration.ofHours(12), "sauvegarde");
+            jdbc.queryForList("SELECT id FROM structure", UUID.class)
+                    .forEach(structureId -> notifications.notifyDirection(structureId, NotificationService.Category.SAUVEGARDE, message));
+        } catch (RuntimeException e) {
+            LOG.warn("Alerte de sauvegarde non envoyée : {}", e.getMessage());
         }
     }
 

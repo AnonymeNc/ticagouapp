@@ -24,17 +24,20 @@ services ont une API HTTP simple, authentifiée par un JWT.
 | **APNs** | JWT **ES256** signé avec la clé `.p8` de l'équipe Apple (`kid`, `iss` = Team ID), renouvelé toutes les 50 minutes | `POST https://api.push.apple.com/3/device/<jeton>` en HTTP/2 (`java.net.http`), en-têtes `apns-topic`, `apns-push-type: alert`, `apns-expiration` |
 | **FCM HTTP v1** | JWT **RS256** signé avec la clé du compte de service, échangé contre un jeton OAuth 2 (`oauth2.googleapis.com/token`), gardé jusqu'à son échéance | `POST https://fcm.googleapis.com/v1/projects/<projet>/messages:send` |
 
-- La signature ES256 du JDK est en DER : elle est convertie au format JOSE (`r‖s`, 64 octets). Conversion et
-  signatures vérifiées par des tests avec des clés et vecteurs fixes.
+- La signature ES256 est produite directement au format JOSE (`r‖s`, 64 octets) par l’algorithme
+  `SHA256withECDSAinP1363Format` du JDK : pas de conversion depuis le DER. Les tests vérifient chaque jeton avec la clé
+  publique (`NativeSendersTest`).
 - Les tests n'appellent jamais Apple ni Google : un faux serveur HTTP vérifie requêtes, en-têtes et gestion des
   réponses.
 - Pas de Firebase SDK dans l'application iOS : `@capacitor/push-notifications` donne le jeton APNs, envoyé tel quel.
   L'application Android contient le minimum Firebase Messaging que le plugin impose (`google-services.json`).
 
 **Secrets** (au niveau du socle, créés par l'utilisateur avec ses comptes développeur, décision 3 du plan)
-- `APNS_KEY` (PKCS#8 Base64), `APNS_KEY_ID`, `APNS_TEAM_ID` ; `FCM_SERVICE_ACCOUNT` (JSON Base64).
-- Dans `socle.env` et le coffre ; `creche.sh` les transmet aux instances et au portail. Sans ces valeurs, les
-  notifications natives sont désactivées et le reste fonctionne.
+- `APNS_KEY` (PKCS#8 Base64), `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRODUCTION` ; `FCM_SERVICE_ACCOUNT` (JSON Base64).
+- Dans `socle.env` et le coffre ; `instance.yml` et `socle.yml` les passent aux instances et au portail (lus à
+  chaque création du conteneur). Sans ces valeurs, les notifications natives sont désactivées et le reste fonctionne.
+- Le portail est un projet Maven séparé : les classes d’envoi (`JwtSigner`, `ApnsSender`, `FcmSender`, `NativePush`,
+  `PushProperties`) y sont recopiées dans `portail.push.natif`, à garder identiques.
 
 **Enregistrement des appareils**
 - Instance : `POST /api/v1/notifications/devices` (`{plateforme: IOS|ANDROID, jeton, application, categories}`),
@@ -52,12 +55,19 @@ signer, factures). Un parent qui a l'application et la PWA reçoit sur chaque ap
 | Alerte | Destinataires par défaut | Texte |
 |---|---|---|
 | Encadrement insuffisant (taux dépassé plus de 5 minutes) | DIRECTION | « Encadrement insuffisant — Les Tortues : 1 adulte pour 7 » |
-| Départ bloqué à valider | DIRECTION | « Départ à valider : Maëlys D. » |
+| Départ bloqué à valider à distance | DIRECTION | « Départ à valider : Maëlys D. » |
 | Sauvegarde en échec | DIRECTION | « La sauvegarde de cette nuit a échoué » |
 | Pointage hors connexion depuis plus de 30 minutes | DIRECTION | « Tablette Accueil hors connexion depuis 30 min » |
 
-Les seuils sont des réglages de l'instance, pas des constantes. Une même alerte n'est pas renvoyée tant qu'elle reste
-ouverte.
+Les seuils sont des réglages de l'instance (`ticagou.push.ratio-delay`, `tablet-offline`), pas des constantes. Une même
+alerte n'est pas renvoyée tant qu'elle reste ouverte (`ratio_breach.notified_at`, `device.offline_notified_at`).
+
+**Départ validé à distance** (maquette B5) : jusqu'ici, seul le code PIN d'une directrice présente débloquait un départ
+avec une personne absente de la liste. La tablette peut désormais demander l'accord de la direction
+(`departure_request`) ; la direction est prévenue, autorise ou refuse avec un motif obligatoire, et l'autorisation
+enregistre le départ comme une validation de la direction au bureau (`departure_override`, journal). La tablette suit la
+réponse ; hors connexion, seul le code sur place reste possible. La règle « blocage + validation direction tracée » est
+inchangée.
 
 **Contenu : aucune donnée de santé**, aucun contenu de message, aucun nom de la personne venue chercher l'enfant.
 Prénom et initiale de l'enfant seulement, comme l'ADR 0018. Le texte passe en clair chez Apple et Google (contrairement

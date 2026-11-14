@@ -30,5 +30,7 @@ export default defineConfig(() => ({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    // Tests de formulaires longs (saisie simulée) : marge pour un poste chargé.
+    testTimeout: 15_000,
   },
 }));

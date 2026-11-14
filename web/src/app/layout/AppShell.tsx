@@ -1,5 +1,7 @@
 import { useEffect } from "react";
-import { Outlet, useLocation } from "react-router";
+import { Outlet, useLocation, useNavigate } from "react-router";
+import { useCurrentUser } from "@/features/auth/AuthProvider";
+import { enablePushNotifications } from "@/lib/native/push";
 import { LicenseBanner } from "@/features/license/LicenseBanner";
 import { StaffingLiveProvider } from "@/features/staffing/live";
 import { BottomNav } from "./BottomNav";
@@ -13,6 +15,12 @@ import { CONTENT_SCROLL_ID, scrollContentToTop } from "./scroll";
  */
 export function AppShell() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { role } = useCurrentUser();
+  // Application Direction : alertes sur le téléphone (ADR 0026). Toucher une notification ouvre son écran.
+  useEffect(() => {
+    if (role === "DIRECTION") void enablePushNotifications((link) => navigate(link)).catch(() => {});
+  }, [role, navigate]);
   // La zone qui défile reste la même d'une page à l'autre : sans cela, la nouvelle page s'ouvrait au milieu.
   useEffect(() => scrollContentToTop(), [pathname]);
   return (

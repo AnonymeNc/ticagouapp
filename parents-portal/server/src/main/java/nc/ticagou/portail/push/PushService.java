@@ -35,10 +35,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
 import nc.ticagou.portail.PortalProperties;
 import nc.ticagou.portail.common.ApiException;
+import nc.ticagou.portail.push.natif.ApnsSender;
+import nc.ticagou.portail.push.natif.FcmSender;
+import nc.ticagou.portail.push.natif.NativePush;
 
 /**
- * Notifications sur le téléphone des parents (ADR 0018) : abonnements par appareil et envoi Web Push des nouveautés
- * reçues de la crèche, sans donnée de santé ni contenu de message.
+ * Notifications sur le téléphone des parents (ADR 0018, 0026) : abonnements par appareil et envoi des nouveautés reçues
+ * de la crèche, en Web Push (PWA) et par APNs / FCM (application Ti’Cagou Parents), sans donnée de santé ni contenu
+ * de message.
  */
 @Service
 public class PushService {
@@ -62,9 +66,13 @@ public class PushService {
     private final Clock clock;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private volatile KeyPair keys;
+    private final ApnsSender apns;
+    private final FcmSender fcm;
 
     public PushService(JdbcTemplate jdbc, PushTransport transport, PortalProperties properties, ObjectMapper json,
-                       Clock clock) {
+                       Clock clock, ApnsSender apns, FcmSender fcm) {
+        this.apns = apns;
+        this.fcm = fcm;
         this.jdbc = jdbc;
         this.transport = transport;
         this.properties = properties;
@@ -110,8 +118,41 @@ public class PushService {
         jdbc.update("DELETE FROM push_subscription WHERE endpoint = ? AND lower(email) = lower(?)", endpoint, email);
     }
 
+    // --- Application native (ADR 0026) ----------------------------------------------------------
+
+    /** Catégories de cet appareil de l’application, ou {@code null} s’il n’est pas inscrit. */
+    public List<String> nativeCategories(String email, String token) {
+        return jdbc.query("SELECT categories FROM native_device WHERE token = ? AND lower(email) = lower(?)",
+                (rs, i) -> List.of(rs.getString(1).split(",")), token, email).stream().findFirst()
+                .map(l -> l.stream().filter(s -> !s.isEmpty()).toList()).orElse(null);
+    }
+
+    @Transactional
+    public void registerNative(String email, NativePush.Platform platform, String token, Set<Category> categories) {
+        var list = String.join(",", categories.stream().sorted().map(Enum::name).toList());
+        var now = Timestamp.from(clock.instant());
+        jdbc.update("INSERT INTO native_device (id, email, platform, token, categories, created_at, updated_at) "
+                        + "VALUES (?, lower(?), ?, ?, ?, ?, ?) ON CONFLICT (token) DO UPDATE SET email = excluded.email, "
+                        + "platform = excluded.platform, categories = excluded.categories, updated_at = excluded.updated_at",
+                UUID.randomUUID(), email, platform.name(), token.strip(), list, now, now);
+    }
+
+    @Transactional
+    public void unregisterNative(String email, String token) {
+        jdbc.update("DELETE FROM native_device WHERE token = ? AND lower(email) = lower(?)", token, email);
+    }
+
+    /** Suppression du compte (ADR 0024) : plus aucun appareil de cette adresse n’est prévenu. */
+    @Transactional
+    public void forgetAll(String email) {
+        jdbc.update("DELETE FROM push_subscription WHERE lower(email) = lower(?)", email);
+        jdbc.update("DELETE FROM native_device WHERE lower(email) = lower(?)", email);
+    }
+
     /** Plus aucun accès pour cette adresse : ses appareils ne sont plus prévenus. */
     public void forgetOrphan(String email) {
+        jdbc.update("DELETE FROM native_device WHERE lower(email) = lower(?) "
+                + "AND NOT EXISTS (SELECT 1 FROM guardian g WHERE lower(g.email) = lower(?))", email, email);
         jdbc.update("DELETE FROM push_subscription WHERE lower(email) = lower(?) "
                 + "AND NOT EXISTS (SELECT 1 FROM guardian g WHERE lower(g.email) = lower(?))", email, email);
     }
@@ -205,8 +246,28 @@ public class PushService {
             for (var s : subscriptions) {
                 send((UUID) s.get("id"), (String) s.get("endpoint"), (String) s.get("p256dh"), (String) s.get("auth"), bytes);
             }
+            deliverNative(structure, notice, emails);
         } catch (RuntimeException | JsonProcessingException e) {
             log.warn("Notification non envoyée : {}", e.getClass().getSimpleName());
+        }
+    }
+
+    /** Application Ti’Cagou Parents : APNs ou FCM, même texte qu’en Web Push ; un jeton refusé est effacé. */
+    private void deliverNative(String structure, Notice notice, List<String> emails) {
+        var devices = jdbc.queryForList("SELECT token, platform FROM native_device WHERE lower(email) = ANY (?) "
+                + "AND position(? in categories) > 0", emails.toArray(String[]::new), notice.category().name());
+        var message = new NativePush.Message(structure, notice.body(), notice.url(), notice.category().name(),
+                java.time.Duration.ofSeconds(TTL_SECONDS), notice.tag() + "-" + notice.familyId());
+        for (var d : devices) {
+            var platform = NativePush.Platform.valueOf((String) d.get("platform"));
+            NativePush.Sender sender = platform == NativePush.Platform.IOS ? apns : fcm;
+            if (!sender.enabled()) {
+                continue;
+            }
+            var token = (String) d.get("token");
+            if (sender.send(message, new NativePush.Target(token, platform, "nc.ticagou.parents")) == NativePush.Result.INVALID) {
+                jdbc.update("DELETE FROM native_device WHERE token = ?", token);
+            }
         }
     }
 

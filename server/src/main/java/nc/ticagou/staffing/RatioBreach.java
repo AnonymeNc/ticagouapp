@@ -43,6 +43,10 @@ public class RatioBreach {
     @Column(name = "max_required", nullable = false)
     private int maxRequired;
 
+    /** Direction prévenue sur son téléphone (ADR 0026) : une seule fois par dépassement. */
+    @Column(name = "notified_at")
+    private Instant notifiedAt;
+
     protected RatioBreach() {
     }
 
@@ -65,6 +69,15 @@ public class RatioBreach {
 
     public void end(Instant at) {
         this.endedAt = at;
+    }
+
+    /** Dépassement qui dure depuis au moins {@code delay} et pas encore signalé : on le marque signalé. */
+    public boolean dueForNotification(Instant now, java.time.Duration delay) {
+        if (notifiedAt != null || startedAt.plus(delay).isAfter(now)) {
+            return false;
+        }
+        notifiedAt = now;
+        return true;
     }
 
     public UUID getId() {

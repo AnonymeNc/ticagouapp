@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Building2, ChevronRight, LogOut } from "lucide-react";
+import { Bell, Building2, ChevronRight, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth, useCurrentUser } from "@/features/auth/AuthProvider";
 import { roleLabels } from "@/features/auth/types";
@@ -46,6 +46,13 @@ export function MorePage() {
         </ul>
       </nav>
       <div className="overflow-hidden rounded-lg border border-border-subtle bg-card">
+        {isNativeApp() && user.role === "DIRECTION" && (
+          <Link to="/notifications" className="flex min-h-14 items-center gap-3 border-b border-border-subtle px-4 font-semibold hover:bg-lagon-50">
+            <Bell aria-hidden className="size-5" />
+            <span className="flex-1">Notifications</span>
+            <ChevronRight aria-hidden className="size-4 text-muted-foreground" />
+          </Link>
+        )}
         {isNativeApp() && (
           <Link to="/creche/mes-creches" className="flex min-h-14 items-center gap-3 border-b border-border-subtle px-4 font-semibold hover:bg-lagon-50">
             <Building2 aria-hidden className="size-5" />

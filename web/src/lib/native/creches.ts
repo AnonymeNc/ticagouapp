@@ -22,7 +22,7 @@ export type Creche = {
 const LIST_KEY = "ticagou.creches";
 const CURRENT_KEY = "ticagou.creche";
 /** Secrets rangés par crèche dans le coffre, effacés quand on l'oublie. */
-export const VAULT_NAMES = ["session", "poste", "appareil"] as const;
+export const VAULT_NAMES = ["session", "poste", "appareil", "notifications"] as const;
 
 let creches: Creche[] = [];
 let currentId: string | null = null;

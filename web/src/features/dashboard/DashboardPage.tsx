@@ -1,3 +1,4 @@
+import { DepartureRequestsBanner } from "@/features/attendance/DepartureRequests";
 import { ReportedAbsencesCard } from "@/features/portal/ReportedAbsencesCard";
 import { useRubriques } from "@/features/structure/useRubriques";
 import { BookingRequestsCard } from "@/features/portal/BookingRequestsCard";
@@ -127,6 +128,7 @@ export function DashboardPage() {
 
   return (
     <>
+      <DepartureRequestsBanner />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 font-display text-display">Bonjour, {user.firstName}</h1>

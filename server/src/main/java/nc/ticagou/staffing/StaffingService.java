@@ -1,5 +1,10 @@
 package nc.ticagou.staffing;
 
+import nc.ticagou.notification.NativePush.Message;
+import nc.ticagou.notification.NotificationService;
+import nc.ticagou.notification.NotificationService.Category;
+import nc.ticagou.notification.PushProperties;
+
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -56,12 +61,16 @@ public class StaffingService {
     private final AuditService audit;
     private final ZoneId zone;
     private final Clock clock;
+    private final NotificationService notifications;
+    private final java.time.Duration ratioDelay;
 
     public StaffingService(RatioRuleRepository rules, RatioBreachRepository breaches,
                            ChildAttendanceRepository childAttendances, StaffAttendanceRepository staffAttendances,
                            ChildRepository children, AppUserRepository users, SectionRepository sections,
                            StructureRepository structures, AuditService audit, TiCagouProperties properties,
-                           Clock clock) {
+                           Clock clock, NotificationService notifications, PushProperties push) {
+        this.notifications = notifications;
+        this.ratioDelay = push.ratioDelay();
         this.rules = rules;
         this.breaches = breaches;
         this.childAttendances = childAttendances;
@@ -150,6 +159,14 @@ public class StaffingService {
                             snapshot.at()));
                 } else {
                     breach.observe(load.children(), load.adults(), load.required());
+                    if (breach.dueForNotification(snapshot.at(), ratioDelay)) {
+                        // Aucun nom d’enfant ni donnée de santé : la section et le taux seulement (ADR 0026).
+                        notifications.notifyDirection(structureId, Category.ENCADREMENT, new Message(
+                                "Encadrement insuffisant",
+                                "%s : %d adulte%s pour %d enfant%s".formatted(name, load.adults(), load.adults() > 1 ? "s" : "",
+                                        load.children(), load.children() > 1 ? "s" : ""),
+                                "/", Category.ENCADREMENT.name(), NotificationService.ALERT_TTL, "ratio-" + key));
+                    }
                 }
             } else if (breach != null) {
                 breach.end(snapshot.at());
