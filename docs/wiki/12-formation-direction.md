@@ -136,6 +136,17 @@ Seule la direction y accède.
 
 ☐ Exercice : inviter un parent de test, lui écrire un message, confirmer une absence signalée.
 
+## Module 10 — Ti’Cagou sur le téléphone (30 min)
+
+Déroulé détaillé et exercices : [19-session-formation-applications.md](19-session-formation-applications.md).
+
+- Installer **Ti’Cagou Direction**, ouvrir sa crèche par le QR « Ouvrir sur mon téléphone », se connecter, Face ID.
+- Barre du bas, encadrement en direct, fiche enfant (bandeau santé).
+- **Départ bloqué à valider à distance** : notification, motif, Autoriser / Refuser.
+- Plus › Notifications ; téléphone perdu : Paramètres › Téléphones de la direction › Retirer.
+
+☐ Exercice : valider à distance un départ demandé par la tablette, motif compris.
+
 ---
 
 ## Aide-mémoire Direction

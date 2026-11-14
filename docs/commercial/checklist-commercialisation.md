@@ -12,8 +12,11 @@ fiscaux sont des pistes à faire valider par un comptable et un juriste au fait 
 - [ ] Serveur de production préparé, copie hors site chez un second hébergeur
       ([EXPLOITATION.md](../EXPLOITATION.md)).
 - [ ] **Perte totale du serveur** répétée à blanc, avec les `creche.env` du coffre.
-- [ ] **Dépôt GitHub privé** avec les tests automatiques verts (`.github/workflows/ci.yml`).
+- [x] **Dépôt GitHub privé** avec les tests automatiques verts (`.github/workflows/ci.yml`) : AnonymeNc/ticagouapp,
+      compilation Android et iOS comprise.
 - [ ] Tablettes essayées : un Android, un iPad, coupure d'internet comprise.
+- [ ] **Applications mobiles** essayées sur de vrais appareils (iPhone, Android, tablette Android en mode kiosque) :
+      Face ID, notifications, scan des QR, départ validé à distance ([revue de sécurité](../securite-applications-mobiles.md) § 7).
 - [ ] Internet mesuré dans 3 à 5 crèches ; routeur 4G de secours choisi.
 - [ ] Une **crèche pilote** pendant au moins un mois de facturation réelle, avec ses retours corrigés.
 - [ ] Mentions légales des composants tiers (PostgreSQL, Caddy, BouncyCastle, Spring, React, polices…) dans l'application.
@@ -86,7 +89,15 @@ Ti'Cagou traite des **données de santé d'enfants** : c'est le point le plus se
 - [ ] Crèche de démonstration en ligne, avec des données réalistes (`scripts/demo`), et une tablette.
 - [ ] Plaquette et présentation à refaire : celles de la V1, dans le dossier d'archive, promettent « données gardées à
       la crèche » et « fonctionne sans internet ». Nouveaux arguments à valider une fois l'hébergeur choisi.
-- [ ] Logo définitif reporté dans les captures et les supports.
+- [ ] Logo définitif reporté dans les captures et les supports, et dans les icônes des applications
+      (`mobile/scripts/icones.ps1`, monogramme provisoire « T’ »).
+- [ ] **Comptes développeur** Apple et Google au nom de la société (numéro D-U-N-S), secrets de publication créés
+      ([EXPLOITATION.md § 7 bis](../EXPLOITATION.md#7-bis-les-applications-mobiles)).
+- [ ] **Fiches des stores** : textes ([fiches-stores.md](stores/fiches-stores.md)), captures refaites un matin de semaine,
+      [déclarations de confidentialité](stores/declarations-confidentialite.md), politique de confidentialité publiée
+      sur le site, compte de démonstration pour la relecture.
+- [ ] Note d’information des familles complétée : Apple et Google acheminent les notifications
+      ([modèle](../wiki/08-portail-nouvelle-creche.md#4-informer-les-familles-avant-toute-invitation)).
 - [ ] Site web simple : présentation, captures, formulaire de contact, mentions légales.
 - [ ] Témoignage de la crèche pilote.
 - [ ] Contacts : fédérations et réseaux de crèches, services petite enfance des provinces et communes, revendeurs
