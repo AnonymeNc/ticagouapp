@@ -5,7 +5,7 @@
   <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>fr</string>
 	<key>CFBundleDisplayName</key>
         <string>Ti'Cagou Direction</string>
 	<key>CFBundleExecutable</key>
@@ -66,5 +66,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Ti’Cagou utilise l’appareil photo pour lire le QR code de votre crèche et pour les photos de la journée.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Ti’Cagou utilise Face ID pour protéger l’accès aux informations des enfants.</string>
 </dict>
 </plist>

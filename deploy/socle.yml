@@ -28,6 +28,8 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ${TICAGOU_DONNEES}/caddy-sites:/etc/caddy/sites:ro
+      # Annuaire des applications mobiles (ADR 0025), écrit par creche.sh.
+      - ${TICAGOU_DONNEES}/annuaire:/srv/annuaire:ro
       - caddy-data:/data
       - caddy-config:/config
     networks: [ticagou]

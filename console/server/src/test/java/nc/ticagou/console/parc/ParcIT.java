@@ -196,7 +196,7 @@ class ParcIT {
     }
 
     static Map<String, Object> hostEntry(String slug, String container, String image) {
-        return Map.of("slug", slug, "container", container, "image", image, "domain", slug + ".ticagou.nc", "hiddenSections", "COMPTABILITE,REPAS",
+        return Map.of("slug", slug, "container", container, "image", image, "domain", slug + ".ticagou.nc", "hiddenSections", "COMPTABILITE,REPAS", "directoryCode", "NK7Q2M",
                 "subscription", Map.of("number", "A-12", "plan", "Ti’Cagou — jusqu’à 12 places", "places", 12, "desktops", 1,
                         "tablets", 2, "validUntil", "2026-10-31"),
                 "secret", "ne doit pas être gardé");
@@ -275,6 +275,7 @@ class ParcIT {
         assertThat(detail.at("/status/usage/attendances7d").asInt()).isEqualTo(118);
         assertThat(detail.get("domain").asText()).isEqualTo("lagon-bleu.ticagou.nc");
         assertThat(detail.get("hiddenSections").toString()).as("rubriques masquées (ADR 0022)").isEqualTo("[\"COMPTABILITE\",\"REPAS\"]");
+        assertThat(detail.get("directoryCode").asText()).as("code de l’annuaire (ADR 0025)").isEqualTo("NK7Q2M");
         assertThat(call(get("/api/v1/parc/inconnue"), null).getResponse().getStatus()).isEqualTo(404);
     }
 

@@ -107,6 +107,11 @@ public class HostReports {
         if (hidden.isTextual() && hidden.asText().matches("[A-Z_,]{0,200}")) {
             kept.put("hiddenSections", hidden.asText());
         }
+        // Code de l’annuaire des applications (ADR 0025) : six caractères, rien d’autre.
+        var code = entry.path("directoryCode");
+        if (code.isTextual() && code.asText().matches("[A-Z0-9]{6}")) {
+            kept.put("directoryCode", code.asText());
+        }
         var subscription = entry.path("subscription");
         if (subscription.isObject()) {
             var s = kept.putObject("subscription");

@@ -74,6 +74,7 @@ function Fiche({ slug }: { slug: string }) {
             {row.city && `${row.city} · `}
             <code className="rounded bg-muted px-1.5 font-mono text-small">{row.slug}</code>
             {detail.domain && ` · ${detail.domain}`}
+            {detail.directoryCode && <> · code des applications <code className="rounded bg-muted px-1.5 font-mono text-small">{detail.directoryCode}</code></>}
             {detail.clientSince && ` · client depuis le ${formatDay(detail.clientSince)}`}
           </p>
           <div className="mt-2.5 flex flex-wrap gap-2">

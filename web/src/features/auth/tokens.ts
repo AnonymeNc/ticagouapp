@@ -34,6 +34,14 @@ export function tokenMode(): TokenMode {
 /** Démarrage de l'application : relit la session de la crèche courante dans le coffre. */
 export async function loadVaultSession(): Promise<void> {
   vaultToken = isNativeApp() ? await vault().get(vaultKey("session")).catch(() => null) : null;
+  restored = vaultToken !== null;
+}
+
+let restored = false;
+
+/** La session vient du coffre (application rouverte) : elle se déverrouille avant d’être utilisée (ADR 0024). */
+export function sessionRestoredFromVault() {
+  return restored;
 }
 
 /** En-têtes de la connexion : le navigateur demande le cookie, l'application reçoit le jeton dans la réponse. */

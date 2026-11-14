@@ -84,7 +84,8 @@ public class ParcService {
         return new Detail(row, Json.text(creche.host(), "/domain"), creche.clientSince(), creche.createdAt(), creche.supervisionName(),
                 creche.hostSeenAt(), repository.client(creche.clientId()), creche.supervisionStatus(),
                 creche.host() == null ? null : creche.host().get("subscription"), history, points,
-                repository.notes(creche.id()), audit.forTarget(target(slug), 100), hiddenSections(creche.host()));
+                repository.notes(creche.id()), audit.forTarget(target(slug), 100), hiddenSections(creche.host()),
+                Json.text(creche.host(), "/directoryCode"));
     }
 
     @Transactional(readOnly = true)

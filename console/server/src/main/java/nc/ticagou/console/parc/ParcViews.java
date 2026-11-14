@@ -49,7 +49,8 @@ public final class ParcViews {
 
     public record Detail(Row row, String domain, LocalDate clientSince, Instant createdAt, String supervisionName,
                          Instant hostSeenAt, Client client, JsonNode status, JsonNode subscription, List<AlertView> history,
-                         List<Point> points, List<Note> notes, List<AuditService.Event> journal, List<String> hiddenSections) {
+                         List<Point> points, List<Note> notes, List<AuditService.Event> journal, List<String> hiddenSections,
+                         String directoryCode) {
     }
 
     public record SearchHit(String slug, String name, String city, String clientName, Health.Level level) {
