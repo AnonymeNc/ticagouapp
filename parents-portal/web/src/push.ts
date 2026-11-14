@@ -1,5 +1,9 @@
-/** Notifications sur le téléphone (ADR 0018) : abonnement Web Push de cet appareil, via le service worker. */
+/**
+ * Notifications sur le téléphone : abonnement Web Push de cet appareil, via le service worker (PWA, ADR 0018), ou jeton
+ * APNs / FCM de l’application Ti’Cagou Parents (ADR 0026).
+ */
 import { portal } from "./api";
+import { IS_APP, hasPlugins, vault } from "./native";
 
 export type PushCategory = "PHOTOS" | "MESSAGES" | "ACTUALITES" | "DOCUMENTS" | "FACTURES";
 
@@ -17,6 +21,7 @@ export const defaultCategories: PushCategory[] = ["PHOTOS", "MESSAGES", "ACTUALI
 export type PushSupport = "ok" | "unsupported" | "ios-install" | "denied";
 
 export function pushSupport(): PushSupport {
+  if (IS_APP) return hasPlugins() ? "ok" : "unsupported";
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const standalone = window.matchMedia?.("(display-mode: standalone)").matches
     || (navigator as Navigator & { standalone?: boolean }).standalone === true;
@@ -65,4 +70,64 @@ export async function disablePush() {
   if (!subscription) return;
   await portal.unsubscribePush(subscription.endpoint).catch(() => {});
   await subscription.unsubscribe().catch(() => false);
+}
+
+// --- Application native ------------------------------------------------------------------------
+
+/** Appareil abonné : identifiant (adresse Web Push ou jeton natif) et catégories choisies. */
+export type CurrentPush = { id: string; categories: PushCategory[] };
+
+export async function currentPush(): Promise<CurrentPush | null> {
+  if (IS_APP) {
+    const token = await vault.get("push").catch(() => null);
+    if (!token) return null;
+    const state = await portal.nativePushState(token);
+    return state.categories ? { id: token, categories: state.categories as PushCategory[] } : null;
+  }
+  const subscription = await currentSubscription();
+  if (!subscription) return null;
+  const state = await portal.pushState(subscription.endpoint);
+  return { id: subscription.endpoint, categories: (state.categories ?? defaultCategories) as PushCategory[] };
+}
+
+async function nativeToken(): Promise<string | null> {
+  const { PushNotifications } = await import("@capacitor/push-notifications");
+  let permission = await PushNotifications.checkPermissions();
+  if (permission.receive !== "granted") permission = await PushNotifications.requestPermissions();
+  if (permission.receive !== "granted") return null;
+  return new Promise((resolve) => {
+    void PushNotifications.addListener("registration", ({ value }) => resolve(value));
+    void PushNotifications.addListener("registrationError", () => resolve(null));
+    void PushNotifications.register();
+  });
+}
+
+/** Active les notifications sur ce téléphone, quel que soit le mode ; faux si le parent refuse. */
+export async function enableDevicePush(categories: PushCategory[]): Promise<boolean> {
+  if (!IS_APP) return enablePush(categories);
+  const token = await nativeToken();
+  if (!token) return false;
+  const { Capacitor } = await import("@capacitor/core");
+  await portal.registerNativePush({ platform: Capacitor.getPlatform() === "ios" ? "IOS" : "ANDROID", token, categories });
+  await vault.set("push", token);
+  return true;
+}
+
+export async function saveDeviceCategories(current: CurrentPush, categories: PushCategory[]): Promise<void> {
+  if (IS_APP) {
+    const { Capacitor } = await import("@capacitor/core");
+    await portal.registerNativePush({ platform: Capacitor.getPlatform() === "ios" ? "IOS" : "ANDROID", token: current.id, categories });
+    return;
+  }
+  const subscription = await currentSubscription();
+  if (subscription) await saveCategories(subscription, categories);
+}
+
+/** Ce téléphone n’est plus prévenu (désactivation, déconnexion, suppression du compte). */
+export async function disableDevicePush(): Promise<void> {
+  if (!IS_APP) return disablePush();
+  const token = await vault.get("push").catch(() => null);
+  if (!token) return;
+  await portal.unregisterNativePush(token).catch(() => {});
+  await vault.remove("push").catch(() => {});
 }

@@ -13,8 +13,11 @@ import { JourneePage } from "./screens/JourneePage";
 import { LoginPage } from "./screens/LoginPage";
 import { MessagesPage } from "./screens/MessagesPage";
 import { NotificationsPage } from "./screens/NotificationsPage";
-import { disablePush } from "./push";
+import { disableDevicePush } from "./push";
 import { SignaturePage } from "./screens/SignaturePage";
+import { ComptePage, SupprimerComptePage } from "./screens/ComptePage";
+import { AppLock } from "./AppLock";
+import { Link } from "react-router";
 import { SessionProvider, isUnauthenticated, useMe } from "./session";
 
 /** Coquille connectée : session du parent, contenu de la rubrique, barre de navigation du bas. */
@@ -32,13 +35,15 @@ function Shell() {
   const toSign = data.families.reduce((n, f) => n + f.documentsToSign, 0);
   return (
     <SessionProvider me={data}>
+      <AppLock email={data.email}>
       <div className="mx-auto flex min-h-dvh max-w-[480px] flex-col bg-bg">
         <main className="flex grow flex-col">
           <Outlet />
+          <Link to="/compte" className="mx-auto min-h-11 text-[15px] font-semibold text-lagon-700">Mon compte</Link>
           <button type="button" className="mx-auto mb-4 min-h-11 text-[15px] text-ink-muted underline"
             onClick={async () => {
               // Un téléphone partagé ne reçoit plus rien après la déconnexion.
-              await disablePush();
+              await disableDevicePush();
               await portal.logout().catch(() => {});
               queryClient.removeQueries();
               window.location.assign("/connexion");
@@ -48,6 +53,7 @@ function Shell() {
         </main>
         <BottomNav unread={unread} toSign={toSign} />
       </div>
+      </AppLock>
     </SessionProvider>
   );
 }
@@ -62,6 +68,8 @@ export const routes: RouteObject[] = [
       { path: "album", element: <AlbumPage /> },
       { path: "messages", element: <MessagesPage /> },
       { path: "notifications", element: <NotificationsPage /> },
+      { path: "compte", element: <ComptePage /> },
+      { path: "compte/supprimer", element: <SupprimerComptePage /> },
       { path: "absence", element: <AbsencePage /> },
       { path: "demandes", element: <DemandesPage /> },
       { path: "factures", element: <FacturesPage /> },

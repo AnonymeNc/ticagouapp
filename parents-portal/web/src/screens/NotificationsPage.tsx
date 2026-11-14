@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Bell, BellOff, ChevronLeft, Info } from "lucide-react";
-import { errorMessage, portal } from "../api";
+import { errorMessage } from "../api";
 import { Banner, Page, TouchButton } from "../components";
+import { IS_APP } from "../native";
 import {
-  currentSubscription, defaultCategories, disablePush, enablePush, pushCategories, pushSupport, saveCategories,
-  type PushCategory,
+  currentPush, defaultCategories, disableDevicePush, enableDevicePush, pushCategories, pushSupport, saveDeviceCategories,
+  type CurrentPush, type PushCategory,
 } from "../push";
 
 /**
@@ -14,7 +15,7 @@ import {
  */
 export function NotificationsPage() {
   const [support] = useState(pushSupport);
-  const [subscription, setSubscription] = useState<PushSubscription | null>(null);
+  const [subscription, setSubscription] = useState<CurrentPush | null>(null);
   const [categories, setCategories] = useState<PushCategory[]>(defaultCategories);
   const [loading, setLoading] = useState(support === "ok");
   const [busy, setBusy] = useState(false);
@@ -26,13 +27,10 @@ export function NotificationsPage() {
     let active = true;
     (async () => {
       try {
-        const current = await currentSubscription();
+        const current = await currentPush();
         if (!active) return;
         setSubscription(current);
-        if (current) {
-          const state = await portal.pushState(current.endpoint);
-          if (active && state.categories) setCategories(state.categories as PushCategory[]);
-        }
+        if (current) setCategories(current.categories);
       } catch (e) {
         if (active) setError(errorMessage(e));
       } finally {
@@ -49,11 +47,13 @@ export function NotificationsPage() {
     setError(null);
     setNotice(null);
     try {
-      if (!(await enablePush(categories))) {
-        setError("Les notifications ne sont pas autorisées : autorisez-les dans les réglages du navigateur pour ce site.");
+      if (!(await enableDevicePush(categories))) {
+        setError(IS_APP
+          ? "Les notifications ne sont pas autorisées : autorisez-les pour Ti’Cagou dans les réglages du téléphone."
+          : "Les notifications ne sont pas autorisées : autorisez-les dans les réglages du navigateur pour ce site.");
         return;
       }
-      setSubscription(await currentSubscription());
+      setSubscription(await currentPush());
       setNotice("Notifications activées sur ce téléphone.");
     } catch (e) {
       setError(errorMessage(e));
@@ -67,7 +67,7 @@ export function NotificationsPage() {
     setCategories(next);
     if (!subscription) return;
     try {
-      await saveCategories(subscription, next);
+      await saveDeviceCategories(subscription, next);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -75,7 +75,7 @@ export function NotificationsPage() {
 
   const deactivate = async () => {
     setBusy(true);
-    await disablePush();
+    await disableDevicePush();
     setSubscription(null);
     setBusy(false);
     setNotice("Ce téléphone ne reçoit plus de notifications.");

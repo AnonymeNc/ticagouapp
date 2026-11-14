@@ -1,6 +1,6 @@
 # Plan — Applications mobiles Ti'Cagou (Capacitor)
 
-- **Statut** : en cours (phase 7, Parents natif)
+- **Statut** : en cours (phase 8, sécurité et publication)
 - **Date** : 14/11/2026
 - **Source** : [étude](etude-application-mobile.md), option B retenue
 - **Exigence** : l'application de la direction est la même sur téléphone, tablette **et ordinateur** (navigateur).
@@ -125,6 +125,6 @@ Les maquettes d'une phase sont validées par l'utilisateur avant le développeme
 | 4 Annuaire | fait le 14/11/2026 (branche `phase-4-annuaire`) : `creche.sh annuaire` + site Caddy `annuaire.<domaine>` (validé et essayé avec l’image Caddy), code dans la console, QR « Ouvrir sur mon téléphone » et page `/app`, choix de la crèche (QR, code, adresse), « Mes crèches », oubli, verrouillage Face ID / code, écran « mise à jour requise ». Vérifié dans le navigateur en application simulée (config `web-app`) : choix par adresse, connexion, poste MOBILE et session de 30 jours en base. Non vérifié : scan QR et Face ID sur un vrai téléphone |
 | 5 Notifications | fait le 14/11/2026 (branche `phase-5-notifications`) : APNs (ES256) et FCM (RS256) avec le JDK seul, testés contre un faux service ; appareils de la direction (V31) et alertes encadrement, sauvegarde, tablette ; départ bloqué validé à distance (V32, bandeau et feuille B5, bouton sur la tablette) ; réglages C7 ; portail : appareils de l’application Parents (V8) et envoi natif à côté du Web Push. Non vérifié : envoi réel chez Apple et Google (comptes développeur, décision 3) |
 | 6 Pointage | fait le 14/11/2026 (branche `phase-6-pointage`) : Android seulement (décision 5, projet iOS retiré), plugin local `KioskMode` (Lock Task ou épinglage, écran allumé, rétabli au démarrage, lanceur d’accueil), sortie par code de la direction vérifié par le serveur, appairage par scan du QR (adresse et code) ou adresse puis code, secret de la tablette et clé du stockage chiffré dans le Keystore. Non vérifié : comportement sur une vraie tablette (Lock Task, propriétaire d’appareil) |
-| 7 Parents | à faire |
+| 7 Parents | fait le 14/11/2026 (branche `phase-7-parents`) : portail — jeton porteur pour l’application, CORS Capacitor, jeton de média pour les photos et fichiers, suppression du compte (V9, message à la crèche, connexion bloquée jusqu’à la réinvitation) ; application — adresse du portail, session dans le trousseau, connexion par code, notifications natives (même écran que la PWA), « Mon compte », verrouillage optionnel. La PWA reste. Non vérifié : sur un vrai téléphone |
 | 8 Publication | à faire |
 | 9 Docs, formation, commercial, captures | à faire (au fil de l'eau) |

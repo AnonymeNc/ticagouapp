@@ -33,6 +33,13 @@ librement.
 - Portail parents : la connexion par code reçu par e-mail renvoie le jeton de session dans le corps quand
   `X-Ticagou-App` est présent ; `ParentSessionInterceptor` accepte le cookie **ou** `Authorization: Bearer`. Le lien
   magique reste pour le navigateur.
+- Photos, vidéos et fichiers : une balise `<img>`, `<video>` ou un lien ne peut pas porter d’en-tête. Le portail délivre
+  à l’application un **jeton de média** (`/api/v1/me/media-token`, HMAC, une heure, renouvelé toutes les 30 minutes),
+  ajouté aux adresses des fichiers (`?jeton=`). Il n’ouvre que la lecture des fichiers et photos de ce parent, jamais
+  le reste de l’API ; sa clé change à chaque démarrage du portail.
+- « Supprimer mon compte » (exigence d’Apple) : confirmé par un code reçu par e-mail, efface l’accès au portail
+  (sessions, appareils, notifications), bloque la connexion de l’adresse jusqu’à ce que la crèche renvoie la fiche du
+  parent, et dépose un message à la crèche pour qu’elle traite le dossier de la famille (`PURGE_FAMILY` reste son geste).
 
 **CORS** (`ticagou.allowed-origins`, portail : idem)
 - Par défaut : `capacitor://localhost` et `https://localhost`, en plus des origines de développement.

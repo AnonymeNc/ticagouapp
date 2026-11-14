@@ -81,13 +81,23 @@ public class ParentController {
     public record NativeToken(@NotBlank @Size(max = 400) String token) {
     }
 
+    /** Code reçu par e-mail, qui confirme la suppression du compte. */
+    public record DeleteAccountRequest(@NotBlank @Size(max = 12) String code) {
+    }
+
     public record PushEndpoint(@NotBlank @Size(max = 1000) String endpoint) {
     }
 
     private final ParentService parents;
     private final PushService push;
 
-    public ParentController(ParentService parents, PushService push) {
+    private final AccountService accounts;
+    private final nc.ticagou.portail.auth.MediaTokens media;
+
+    public ParentController(ParentService parents, PushService push, AccountService accounts,
+                            nc.ticagou.portail.auth.MediaTokens media) {
+        this.accounts = accounts;
+        this.media = media;
         this.parents = parents;
         this.push = push;
     }
@@ -206,6 +216,20 @@ public class ParentController {
                           @Valid @RequestBody PushRequest request) {
         push.subscribe(email, request.endpoint(), request.p256dh(), request.auth(),
                 nc.ticagou.portail.push.PushService.parseCategories(request.categories()));
+    }
+
+    /** Application : jeton à ajouter aux adresses des photos, vidéos et fichiers (une heure, lecture seule). */
+    @GetMapping("/media-token")
+    public nc.ticagou.portail.auth.MediaTokens.Issued mediaToken(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email) {
+        return media.issue(email);
+    }
+
+    /** « Supprimer mon compte » (maquette Pa8) : le code a été demandé par /api/v1/auth/request. */
+    @PostMapping("/account/delete")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAccount(@RequestAttribute(ParentSessionInterceptor.EMAIL) String email,
+                              @Valid @RequestBody DeleteAccountRequest request, jakarta.servlet.http.HttpServletRequest http) {
+        accounts.delete(email, request.code(), http.getRemoteAddr());
     }
 
     @GetMapping("/push/native")
