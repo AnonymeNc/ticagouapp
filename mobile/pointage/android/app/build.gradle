@@ -8,7 +8,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Numéro de build croissant exigé par les stores (ADR 0027) : donné par la publication.
-        versionCode (System.getenv("TICAGOU_BUILD_NUMBER") ?: "1").toInteger()
+        versionCode Integer.parseInt(System.getenv("TICAGOU_BUILD_NUMBER") ?: "1")
         versionName "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
