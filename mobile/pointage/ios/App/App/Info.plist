@@ -5,7 +5,7 @@
   <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>fr</string>
 	<key>CFBundleDisplayName</key>
         <string>Ti'Cagou Pointage</string>
 	<key>CFBundleExecutable</key>
@@ -66,5 +66,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Ti’Cagou Pointage utilise l’appareil photo pour lire le QR code d’appairage et pour les photos et vidéos de la journée.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Ti’Cagou Pointage utilise le micro pour les vidéos de la journée partagées avec les familles.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Ti’Cagou utilise Face ID pour protéger l’accès aux informations des enfants.</string>
 </dict>
 </plist>

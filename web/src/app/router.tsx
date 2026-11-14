@@ -34,6 +34,8 @@ import { TimesheetsPage } from "@/features/staff/TimesheetsPage";
 import { MySpacePage } from "@/features/staff/MySpacePage";
 import { HaccpPage } from "@/features/meals/HaccpPage";
 import { SetupWizard } from "@/features/setup/SetupWizard";
+import { CrecheChoicePage, MesCrechesPage, NativeAppGate } from "@/features/creche/CrechePages";
+import { PhoneLandingPage } from "@/features/creche/PhoneLandingPage";
 import { AppShell } from "./layout/AppShell";
 import { MorePage } from "./layout/MorePage";
 import { PlaceholderPage } from "./layout/PlaceholderPage";
@@ -56,15 +58,22 @@ export const routes: RouteObject[] = [
   { path: "/preinscription", element: <PreinscriptionPage /> },
   // Lien de réinitialisation du mot de passe, créé par l'éditeur depuis sa console : page publique, le jeton fait foi.
   { path: "/reinitialiser", element: <ResetPasswordPage /> },
+  // QR « Ouvrir sur mon téléphone » lu par l’appareil photo, sans l’application (ADR 0025) : page publique.
+  { path: "/app", element: <PhoneLandingPage /> },
   kioskRoute,
   {
     // Bureau, dans le navigateur : session conservée par un cookie HttpOnly
     element: (
       <AuthProvider persist>
-        <Outlet />
+        <NativeAppGate>
+          <Outlet />
+        </NativeAppGate>
       </AuthProvider>
     ),
     children: [
+      // Application Direction : choix de la crèche (ADR 0025).
+      { path: "/creche", element: <CrecheChoicePage /> },
+      { path: "/creche/mes-creches", element: <MesCrechesPage /> },
       { path: "/setup", element: <SetupWizard /> },
       { path: "/login", element: <LoginPage /> },
       {

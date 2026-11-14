@@ -27,8 +27,9 @@ public class AppCompatController {
      * @param api     version majeure de l'API
      * @param minimum version minimale par application (direction, pointage)
      * @param creche  nom de la crèche, affiché pour confirmation ; null avant l'assistant d'installation
+     * @param code    code de la crèche dans l'annuaire (ADR 0025), pour « Ouvrir sur mon téléphone » ; null s'il n'y en a pas
      */
-    public record AppCompat(int api, Map<String, String> minimum, String creche) {
+    public record AppCompat(int api, Map<String, String> minimum, String creche, String code) {
     }
 
     private final TiCagouProperties.App app;
@@ -44,6 +45,6 @@ public class AppCompatController {
     public AppCompat compat() {
         var names = jdbc.queryForList("SELECT name FROM structure ORDER BY created_at LIMIT 1", String.class);
         return new AppCompat(API_VERSION, Map.of("direction", app.minDirection(), "pointage", app.minPointage()),
-                names.isEmpty() ? null : names.getFirst());
+                names.isEmpty() ? null : names.getFirst(), app.code().isBlank() ? null : app.code());
     }
 }

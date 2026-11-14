@@ -112,6 +112,8 @@ export type Detail = {
   journal: JournalEvent[];
   /** Rubriques masquées à la demande de la crèche (ADR 0022), rapportées par l’hôte. */
   hiddenSections: string[];
+  /** Code de la crèche dans l’annuaire des applications (ADR 0025), rapporté par l’hôte. */
+  directoryCode?: string | null;
 };
 
 export type SearchHit = { slug: string; name: string; city: string | null; clientName: string | null; level: Level };

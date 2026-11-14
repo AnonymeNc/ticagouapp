@@ -7,4 +7,6 @@ interface ImportMetaEnv {
   readonly VITE_TICAGOU_APP_VERSION?: string;
   /** « 1 » : le navigateur se comporte comme l'application (essais sans plugin natif). */
   readonly VITE_TICAGOU_APP_SIMULEE?: string;
+  /** Annuaire des codes de crèche (ADR 0025) ; par défaut https://annuaire.ticagou.nc. */
+  readonly VITE_TICAGOU_ANNUAIRE?: string;
 }

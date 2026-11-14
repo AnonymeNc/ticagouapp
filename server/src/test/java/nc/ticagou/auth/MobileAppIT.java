@@ -51,6 +51,7 @@ class MobileAppIT extends IntegrationTest {
         assertThat(compat.get("minimum").get("direction").asText()).isEqualTo("0.0.0");
         assertThat(compat.get("minimum").get("pointage").asText()).isEqualTo("0.0.0");
         assertThat(compat.get("creche").asText()).isNotBlank();
+        assertThat(compat.get("code").isNull()).as("pas de code hors hébergement").isTrue();
     }
 
     @Test

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router";
 import { FocusLayout } from "@/components/FocusLayout";
+import { AppLock } from "@/features/creche/AppLock";
 import { useAuth } from "./AuthProvider";
 import { MfaEnrollPage } from "./MfaEnrollPage";
 import { useSetupStatus } from "./useSetupStatus";
@@ -38,5 +39,5 @@ export function DesktopGate({ children }: { children: ReactNode }) {
   if (state.status === "loading") return <Splash />;
   if (state.status === "anonymous") return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   if (state.status === "authenticated" && state.user.mfaEnrollmentRequired) return <MfaEnrollPage />;
-  return children;
+  return <AppLock>{children}</AppLock>;
 }

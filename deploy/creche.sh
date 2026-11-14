@@ -16,6 +16,8 @@ set +a
 : "${TICAGOU_DONNEES:?Renseignez TICAGOU_DONNEES dans socle.env}"
 CRECHES="$TICAGOU_DONNEES/creches"
 SITES="$TICAGOU_DONNEES/caddy-sites"
+# Annuaire des applications mobiles (ADR 0025) : un fichier par code de crèche, servi sur annuaire.<DOMAINE_BASE>.
+ANNUAIRE="$TICAGOU_DONNEES/annuaire"
 # Exports des crèches, lus par la console (montés en lecture seule) ; gardés 7 jours.
 EXPORTS="$TICAGOU_DONNEES/console-exports"
 
@@ -66,6 +68,58 @@ ecrire_site() {
         printf '\timport securite\n\treverse_proxy creche-%s:8080 {\n\t\theader_up X-Forwarded-Port {http.request.port}\n\t}\n}\n' "$slug"
     } >"$SITES/$slug.caddy"
     socle exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+}
+
+# Code de l'annuaire : 6 caractères, sans 0, O, 1, I ni L (lus à voix haute, tapés sur un téléphone), unique.
+code_annuaire() {
+    while :; do
+        code=$(LC_ALL=C tr -dc 'A-HJKMNP-Z2-9' </dev/urandom | head -c 6)
+        [ -e "$ANNUAIRE/v1/$code.json" ] || grep -qs "^TICAGOU_INSTANCE_CODE=$code\$" "$CRECHES"/*/creche.env || break
+    done
+    echo "$code"
+}
+
+# Fiche de la crèche dans l'annuaire : nom, commune, adresse. Rien d'autre (pas de liste, pas de donnée de la crèche).
+# Une crèche créée avant l'annuaire reçoit son code ici ; son instance est relancée pour le connaître.
+ecrire_annuaire() {
+    slug=$1
+    code=$(valeur "$slug" TICAGOU_INSTANCE_CODE || true)
+    if [ -z "$code" ]; then
+        code=$(code_annuaire)
+        printf 'TICAGOU_INSTANCE_CODE=%s\n' "$code" >>"$(dossier_de "$slug")/creche.env"
+        instance "$slug" up -d >/dev/null 2>&1 || true
+    fi
+    nom=$(sql_creche "$slug" "SELECT coalesce((SELECT name FROM structure LIMIT 1), '')" 2>/dev/null || true)
+    commune=$(sql_creche "$slug" "SELECT coalesce((SELECT city FROM structure LIMIT 1), '')" 2>/dev/null || true)
+    mkdir -p "$ANNUAIRE/v1"
+    printf '{"nom":%s,"commune":%s,"adresse":%s}\n' "$(json_texte "${nom:-$slug}")" "$(json_texte "$commune")" \
+        "$(json_texte "https://$(valeur "$slug" DOMAINE)")" >"$ANNUAIRE/v1/$code.json.tmp"
+    mv "$ANNUAIRE/v1/$code.json.tmp" "$ANNUAIRE/v1/$code.json"
+    chmod 644 "$ANNUAIRE/v1/$code.json"
+}
+
+# Site de l'annuaire : seuls les fichiers « /v1/<CODE>.json » répondent ; lisible par les applications (CORS).
+ecrire_site_annuaire() {
+    mkdir -p "$ANNUAIRE/v1"
+    chmod 755 "$ANNUAIRE" "$ANNUAIRE/v1"
+    {
+        echo "annuaire.$DOMAINE_BASE {"
+        if [ "${TLS_INTERNE:-}" = 1 ]; then printf '\ttls internal\n'; fi
+        printf '\theader {\n\t\tStrict-Transport-Security "max-age=31536000"\n\t\tX-Content-Type-Options "nosniff"\n'
+        printf '\t\tAccess-Control-Allow-Origin "*"\n\t\tCache-Control "public, max-age=300"\n\t\t-Server\n\t}\n'
+        printf '\t@fiche path_regexp ^/v1/[A-Z0-9]{6}\\.json$\n'
+        printf '\thandle @fiche {\n\t\troot * /srv/annuaire\n\t\tfile_server\n\t}\n\trespond 404\n}\n'
+    } >"$SITES/annuaire.caddy"
+}
+
+# annuaire [<crèche>] : (ré)écrit la fiche d'une crèche, ou de toutes ; donne leur code (fiche de mise en service).
+cmd_annuaire() {
+    if [ $# -gt 0 ]; then liste=$1; existe "$1"; else liste=$(creches); fi
+    for slug in $liste; do
+        [ -f "$(dossier_de "$slug")/creche.env" ] || continue
+        ecrire_annuaire "$slug"
+        printf '%-24s %s\n' "$slug" "$(valeur "$slug" TICAGOU_INSTANCE_CODE)"
+    done
 }
 
 # Rôle et base d'un service du socle (portail, console), créés une seule fois.
@@ -145,6 +199,7 @@ cmd_socle() {
             *) echo "Option inconnue : $option" >&2; exit 1 ;;
         esac
     done
+    ecrire_site_annuaire
     socle up -d db caddy
     until socle exec -T db pg_isready -q -U ticagou_admin -d postgres; do sleep 2; done
     if [ -n "$profil" ]; then
@@ -205,6 +260,7 @@ TICAGOU_STORAGE_KEY=$(secret)
 TICAGOU_BACKUP_RECOVERYKEY=$(cle_de_secours)
 TICAGOU_BACKUP_DAILYTIME=$heure
 TICAGOU_SETUP_TOKEN=$jeton
+TICAGOU_INSTANCE_CODE=$(code_annuaire)
 FIN
         # Coordonnées du support, affichées dans l'aide de l'application (socle.env).
         for variable in TICAGOU_SUPPORT_PHONE TICAGOU_SUPPORT_WHATSAPP TICAGOU_SUPPORT_EMAIL TICAGOU_SUPPORT_HOURS TICAGOU_SUPPORT_DELAY; do
@@ -225,7 +281,9 @@ FIN
     instance "$slug" up -d
     attendre "$slug"
     ecrire_site "$slug" "$domaine"
+    ecrire_annuaire "$slug"
     echo
+    echo "Code de la crèche pour les applications (fiche de mise en service) : $(valeur "$slug" TICAGOU_INSTANCE_CODE)"
     echo "Évaluation de 30 jours : « abonnement $slug … » la transforme en abonnement, sans perte de données."
     echo "Crèche créée. Lien de démarrage à remettre à la directrice (une seule utilisation) :"
     echo "  https://$domaine/setup?jeton=$jeton"
@@ -308,11 +366,14 @@ cmd_etat_json() {
         [ -n "$abonnement" ] || abonnement=null
         # Rubriques masquées à la demande de la crèche (ADR 0022).
         masquees=$(sql_creche "$slug" "SELECT coalesce(hidden_sections, '') FROM structure LIMIT 1" 2>/dev/null || true)
+        # L'annuaire suit le nom et la commune saisis par la direction (ADR 0025) : rapport toutes les 5 minutes.
+        ecrire_annuaire "$slug" >/dev/null 2>&1 || true
         [ $premier = 1 ] || printf ','
         premier=0
-        printf '{"slug":%s,"container":%s,"image":%s,"domain":%s,"hiddenSections":%s,"subscription":%s}' "$(json_texte "$slug")" \
-            "$(json_texte "$(etat_conteneur "$slug")")" "$(json_texte "$(valeur "$slug" IMAGE | cut -d: -f2)")" \
-            "$(json_texte "$(valeur "$slug" DOMAINE)")" "$(json_texte "$masquees")" "$abonnement"
+        printf '{"slug":%s,"container":%s,"image":%s,"domain":%s,"hiddenSections":%s,"directoryCode":%s,"subscription":%s}' \
+            "$(json_texte "$slug")" "$(json_texte "$(etat_conteneur "$slug")")" "$(json_texte "$(valeur "$slug" IMAGE | cut -d: -f2)")" \
+            "$(json_texte "$(valeur "$slug" DOMAINE)")" "$(json_texte "$masquees")" \
+            "$(json_texte "$(valeur "$slug" TICAGOU_INSTANCE_CODE || true)")" "$abonnement"
     done
     printf ']}\n'
 }
@@ -464,6 +525,8 @@ cmd_supprimer() {
     sql_admin -d postgres -c "DROP DATABASE IF EXISTS $base WITH (FORCE)"
     sql_admin -d postgres -c "DROP ROLE IF EXISTS $base"
     rm -f "$SITES/$slug.caddy"
+    code=$(valeur "$slug" TICAGOU_INSTANCE_CODE || true)
+    [ -z "$code" ] || rm -f "$ANNUAIRE/v1/$code.json"
     socle exec -T caddy caddy reload --config /etc/caddy/Caddyfile
     rm -rf "$(dossier_de "$slug")"
     echo "$slug supprimée : base, documents, sauvegardes et site effacés."
@@ -676,6 +739,7 @@ construire [version]           construit l'image de l'application
 creer <crèche> [--domaine n]   crée une instance (évaluation de 30 jours) et donne le lien de démarrage
 abonnement <crèche> ...        --numero --places --jusqu-au [--pc --tablettes --formule "libellé"]
 etat [--json]                  liste les crèches, leur version, leur abonnement (--json : pour la console)
+annuaire [<crèche>]            fiche des applications mobiles (code → adresse) ; donne le code de chaque crèche
 mettre-a-jour <version> <crèche>|--toutes
 suspendre <crèche>             arrête l'instance (impayé, fin de contrat)
 reprendre <crèche>
@@ -705,6 +769,7 @@ case $commande in
     creer) cmd_creer "$@" ;;
     abonnement) cmd_abonnement "$@" ;;
     etat) cmd_etat "$@" ;;
+    annuaire) cmd_annuaire "$@" ;;
     mettre-a-jour) cmd_mettre_a_jour "$@" ;;
     suspendre) cmd_suspendre "${1:?crèche manquante}" ;;
     reprendre) cmd_reprendre "${1:?crèche manquante}" ;;

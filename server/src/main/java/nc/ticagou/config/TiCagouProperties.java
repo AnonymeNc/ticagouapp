@@ -13,7 +13,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param zone           fuseau de référence de la structure (Pacific/Noumea)
  * @param allowedOrigins origines autorisées en CORS (dev Vite ; en production, tout est sur la même origine)
  * @param appOrigins     origines des applications Capacitor (ADR 0024), ajoutées aux précédentes, sans cookie
- * @param app            versions minimales des applications mobiles (ADR 0027)
+ * @param app            versions minimales des applications mobiles (ADR 0027) et code de la crèche dans l’annuaire (ADR 0025)
  * @param security       jetons, verrouillage des comptes
  * @param storage        documents joints chiffrés sur disque
  * @param web            front servi par l'instance (navigateur et kiosque PWA des tablettes)
@@ -123,10 +123,13 @@ public record TiCagouProperties(
      *                     (0.0.0 : aucune ; relevée par la configuration de la crèche, TICAGOU_APP_MIN_DIRECTION)
      * @param minPointage  version minimale de l'application Pointage ; en dessous, simple bandeau (le pointage n'est
      *                     jamais bloqué)
+     * @param code         code de la crèche dans l’annuaire des applications (ADR 0025), écrit par creche.sh
+     *                     (TICAGOU_INSTANCE_CODE) ; vide en développement
      */
     public record App(
             @DefaultValue("0.0.0") String minDirection,
-            @DefaultValue("0.0.0") String minPointage) {
+            @DefaultValue("0.0.0") String minPointage,
+            @DefaultValue("") String code) {
     }
 
     /** @param enabled chargement d'un jeu de démonstration permis ; jamais activé en production */

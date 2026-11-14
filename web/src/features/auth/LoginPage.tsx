@@ -8,6 +8,7 @@ import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError, errorMessage } from "@/lib/api";
+import { CurrentCrecheCard } from "@/features/creche/CrechePages";
 import { useAuth } from "./AuthProvider";
 import { Splash } from "./DesktopGate";
 import { useSetupStatus } from "./useSetupStatus";
@@ -57,6 +58,7 @@ export function LoginPage() {
 
   return (
     <FocusLayout>
+      <CurrentCrecheCard />
       <h1 className="m-0 font-display text-title-1">Connexion</h1>
       {status.data?.structureName && <p className="mt-1 text-muted-foreground">{status.data.structureName}</p>}
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>

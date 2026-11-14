@@ -70,6 +70,7 @@ ticagou:
   app:
     min-direction: ${TICAGOU_APP_MIN_DIRECTION:0.0.0}
     min-pointage: ${TICAGOU_APP_MIN_POINTAGE:0.0.0}
+    code: ${TICAGOU_INSTANCE_CODE:}
   # Jeu de démonstration (développement) : jamais activé en production.
   demo:
     enabled: ${TICAGOU_DEMO:false}

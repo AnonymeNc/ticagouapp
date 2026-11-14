@@ -80,6 +80,7 @@ function detail(overrides: Partial<Detail> = {}): Detail {
     notes: [],
     journal: [],
     hiddenSections: ["COMPTABILITE"],
+    directoryCode: "NK7Q2M",
     ...overrides,
   };
 }
@@ -153,6 +154,7 @@ describe("parc des crèches", () => {
 
     expect(await screen.findByRole("heading", { name: /Lagon Bleu/ })).toBeInTheDocument();
     expect(screen.getByText("non prévue (un seul hébergeur)")).toBeInTheDocument();
+    expect(screen.getByText("NK7Q2M")).toBeInTheDocument();
     expect(screen.getAllByText("118").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Suspendre…" })).toBeEnabled();
 

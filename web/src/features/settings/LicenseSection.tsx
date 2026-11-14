@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Monitor, Smartphone } from "lucide-react";
+import { useState } from "react";
 import { Alert } from "@/components/FocusLayout";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { Compat } from "@/lib/native/annuaire";
+import { api } from "@/lib/api";
+import { qrDataUrl } from "./DevicesTab";
 import { TonePill, type Tone } from "@/features/enrollment/components";
 import { errorMessage } from "@/lib/api";
 import { isoToDateFr } from "@/lib/datetime";
@@ -104,6 +109,7 @@ function DesktopsSection({ limit, mobileLimit }: { limit: number; mobileLimit?: 
         est déconnecté dans les 15 minutes.
       </p>
       <PosteList list={phones} empty="Aucun téléphone n’a encore ouvert l’application Ti’Cagou Direction." pending={revoke.isPending} onRevoke={onRevoke} />
+      <OpenOnPhone />
     </section>
     </>
   );
@@ -130,6 +136,44 @@ function PosteList({ list, empty, pending, onRevoke }: { list: DesktopClient[]; 
           ))}
         </ul>
       )}
+    </>
+  );
+}
+
+/** « Ouvrir sur mon téléphone » (ADR 0025, maquette D3) : QR de l’adresse de la crèche et code de l’annuaire. */
+function OpenOnPhone() {
+  const [open, setOpen] = useState(false);
+  const compat = useQuery({
+    queryKey: ["app-compat", "instance"],
+    queryFn: ({ signal }) => api<Compat>("/app/compat", { signal, auth: false }),
+    enabled: open,
+  });
+  const link = `${window.location.origin}/app`;
+  return (
+    <>
+      <Button variant="outline" className="self-start" onClick={() => setOpen(true)}>
+        <Smartphone aria-hidden />
+        Ouvrir sur mon téléphone
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ouvrir sur mon téléphone</DialogTitle>
+            <DialogDescription>
+              1. Installez Ti’Cagou Direction (App Store ou Google Play). 2. Ouvrez-la et touchez « Scanner le QR de la crèche ».
+            </DialogDescription>
+          </DialogHeader>
+          <img src={qrDataUrl(link)} alt={`QR code de la crèche : ${link}`} className="mx-auto size-48 rounded bg-white p-2" />
+          {compat.data?.code && (
+            <p className="m-0 text-center">
+              Ou tapez le code de la crèche : <strong className="font-display text-title-2 tracking-[0.15em]">{compat.data.code}</strong>
+            </p>
+          )}
+          <p className="m-0 text-center text-small text-muted-foreground">
+            Le QR ne contient que l’adresse de la crèche, aucun accès : il faudra se connecter avec son identifiant.
+          </p>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

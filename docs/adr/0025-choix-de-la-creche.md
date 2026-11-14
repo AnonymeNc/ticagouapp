@@ -31,12 +31,16 @@ Dans les trois cas, l'application appelle `GET /api/v1/health` et `GET /api/v1/a
 affiche le nom de la crèche et demande confirmation avant la connexion.
 
 **Annuaire : codes → adresses, tenu par l'éditeur**
-- La console de l'éditeur est la source : le code est généré à la création de la crèche (ordre `CREER`) et reste
-  stable ; un changement de domaine met l'annuaire à jour.
-- L'hôte publie l'annuaire avec `creche.sh annuaire` : un **fichier statique par code**,
+- Le code est tiré par `creche.sh creer` (ordre `CREER` de la console), gardé dans `creche.env`
+  (`TICAGOU_INSTANCE_CODE`, lu par l'instance) et rapporté à la console par `etat --json` : la fiche de la crèche
+  l'affiche. Il reste stable ; une crèche créée avant l'annuaire reçoit le sien au premier `creche.sh annuaire`.
+- L'hôte publie l'annuaire (`creche.sh annuaire`, et à chaque `rapport-console`, toutes les 5 minutes, pour suivre
+  le nom et la commune saisis par la direction) : un **fichier statique par code**,
   `/srv/annuaire/v1/<CODE>.json` (`{"nom": …, "commune": …, "adresse": "https://…"}`), servi par Caddy sur
   `https://annuaire.<DOMAINE_BASE>/v1/<CODE>.json`. Pas de liste : impossible d'énumérer les crèches sans connaître
-  leurs codes (32⁶ ≈ un milliard de possibilités), et Caddy limite le débit.
+  leurs codes (31⁶ ≈ 890 millions de possibilités). Seuls les chemins `/v1/<CODE>.json` répondent ; CORS ouvert
+  (lecture par les applications). Caddy n'a pas de limitation de débit sans module : la taille de l'espace des codes
+  suffit à cette échelle.
 - L'annuaire ne dépend pas de l'accès à la console (`CONSOLE_ACCES=tunnel` reste possible) ni de son état : si la
   console est arrêtée, les fichiers restent servis.
 - Une crèche suspendue garde son fichier (l'application affichera « abonnement suspendu » depuis l'instance) ; une
@@ -68,8 +72,11 @@ déjà dans le même portail.
 
 ## Conséquences
 
-- Nouvelle colonne `code` dans la console (crèches) et nouvelle commande `creche.sh annuaire` ; le socle Caddy sert
-  `annuaire.<DOMAINE_BASE>` (certificat compris).
-- L'instance connaît son code et son adresse publique (`creche.env` : `CODE_CRECHE`, `ADRESSE_PUBLIQUE`) pour le QR et
-  Paramètres.
+- Nouvelle commande `creche.sh annuaire`, site `annuaire.<DOMAINE_BASE>` (certificat compris), dossier
+  `<TICAGOU_DONNEES>/annuaire` monté dans Caddy ; la console affiche le code rapporté par l'hôte.
+- L'instance connaît son code (`TICAGOU_INSTANCE_CODE`, rendu par `/api/v1/app/compat`) ; son adresse publique est celle
+  de la page. Paramètres › Postes › « Ouvrir sur mon téléphone » montre le QR `https://<instance>/app` et le code ;
+  `/app` est une page publique qui invite à installer l'application.
+- L'application Direction ne s'ouvre qu'une fois la crèche choisie ; elle verrouille une session rouverte depuis le
+  coffre (pas une session ouverte à l'instant par mot de passe).
 - La fiche de mise en service remise à la directrice gagne le code et le QR.
