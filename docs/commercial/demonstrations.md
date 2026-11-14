@@ -98,6 +98,30 @@ des parents en mode téléphone (F12, mode appareil).
 6. **Factures** et paiement ; **documents** à signer (autorisation de sortie signée par Sarah).
 7. **Signaler une absence**, **demander une journée**, **prévenir d'un retard** : retour au tableau de bord pour les voir.
 
+## Démonstration mobile
+
+15 minutes, avec deux téléphones (le vôtre « directrice », celui du prospect « parent ») et une tablette Android
+appairée à la démonstration. Argumentaire : [Ti’Cagou dans la poche](argumentaire-mobile.md).
+
+Préparer : démonstration chargée un jour de semaine (`--aujourdhui`), application Direction ouverte sur la
+démonstration, tablette en mode kiosque (Ti’Cagou Pointage), application Parents connectée avec une adresse de famille
+de la démonstration.
+
+1. **Sur le téléphone de la directrice** ★ : Accueil — encadrement de chaque section en direct ; Présences ; fiche d’un
+   enfant allergique (le bandeau santé reste en tête). « C’est le même Ti’Cagou que sur l’ordinateur. »
+2. **Le départ bloqué à distance** ★ : à la tablette, départ de Malo › « Une autre personne » › « Directrice absente ?
+   Demander son accord ». Le téléphone sonne : « Départ à valider : Malo H. ». Ouvrir, lire, écrire un motif,
+   **Autoriser** : la tablette affiche la réponse. Rejouer en **refusant**.
+3. **La tablette qui reste à sa place** : bouton Accueil sans effet (mode kiosque), Wi-Fi coupé, un pointage, Wi-Fi
+   rétabli : le pointage part.
+4. **Le parent** : Ti’Cagou Parents sur le téléphone du prospect — connexion par code, la journée, une photo ; publier
+   une actualité depuis le téléphone de la directrice, la notification arrive.
+5. **La sécurité** : fermer et rouvrir l’application Direction (Face ID) ; Paramètres › Téléphones de la direction ›
+   Retirer (téléphone perdu).
+
+Données à préparer pour le départ bloqué : `node scripts/captures/scenario-depart.mjs --url <démonstration>` crée une
+demande en attente si la tablette n’est pas sous la main.
+
 ## 9. Pour finir
 
 1. **Paramètres** : barème et formules, règles d'encadrement datées, financeurs, utilisateurs et droits par rôle,

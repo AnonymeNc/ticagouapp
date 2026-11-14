@@ -26,6 +26,11 @@ export const SIZES = {
   tablette: { width: 1180, height: 820, scale: 2, mobile: true },
   "tablette-portrait": { width: 820, height: 1180, scale: 2, mobile: true },
   bureau: { width: 1440, height: 900, scale: 1, mobile: false },
+  // Formats des stores (docs/commercial/stores/fiches-stores.md).
+  "store-iphone": { width: 440, height: 956, scale: 3, mobile: true },          // 1320 × 2868 (iPhone 6,9 po)
+  "store-android": { width: 360, height: 780, scale: 3, mobile: true },         // 1080 × 2340
+  "store-ipad": { width: 1032, height: 1376, scale: 2, mobile: true },          // 2064 × 2752 (iPad 13 po)
+  "store-tablette-android": { width: 1280, height: 800, scale: 2, mobile: true }, // 2560 × 1600 (10 po)
 };
 
 /** Pages capturées : chemin, et éventuellement un sélecteur à attendre avant la capture. */
@@ -39,7 +44,18 @@ export const PAGES = {
   repas: { path: "/repas", wait: "main h1" },
   messages: { path: "/messages", wait: "main h1" },
   parametres: { path: "/parametres", wait: "main h1" },
-  plus: { path: "/plus", wait: "main h1", only: ["telephone"] },
+  plus: { path: "/plus", wait: "main h1", only: ["telephone", "store-iphone", "store-android"] },
+  // Fiche d’un enfant allergique : le bandeau santé en tête.
+  "fiche-sante": { path: "/enfants", wait: "main h1",
+    run: "[...document.querySelectorAll(\"main tbody tr\")].find((tr) => /Allerg|PAI/.test(tr.textContent))?.querySelector(\"a\")?.click()" },
+  // Départ bloqué à valider (préparé par scenario-depart.mjs).
+  "depart-a-valider": { path: "/presences", wait: "main h1",
+    run: "[...document.querySelectorAll(\"main button\")].find((b) => b.textContent.includes(\"Départ à valider\"))?.click()" },
+  notifications: { path: "/notifications", wait: "main h1" },
+  // Application Direction simulée (config « web-app ») : écrans d’avant la connexion.
+  "app-bienvenue": { path: "/creche", wait: "main h1" },
+  "app-code": { path: "/creche", wait: "main h1",
+    run: "[...document.querySelectorAll(\"button\")].find((b) => b.textContent.includes(\"Taper le code\"))?.click()" },
 };
 
 const BROWSERS = [
@@ -155,7 +171,7 @@ async function capture(cdp, file, size) {
 
 async function main() {
   // --chemins /a,/b : pages supplémentaires sans réglage (contrôle des débordements).
-  const pageName = (path) => path.split("/").filter(Boolean).join("-") || "accueil";
+  const pageName = (path) => path.split("?")[0].split("/").filter(Boolean).join("-") || "accueil";
   const extra = (option("--chemins") ?? "").split(",").filter(Boolean);
   for (const path of extra) PAGES[pageName(path)] = { path, wait: "main h1" };
   const pages = (option("--pages") ?? Object.keys(PAGES).join(",")).split(",")
@@ -174,13 +190,19 @@ async function main() {
       await cdp.send("Emulation.setDeviceMetricsOverride", { width: size.width, height: size.height,
         deviceScaleFactor: size.scale, mobile: size.mobile });
       await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: size.mobile });
-      await login(cdp);
+      // --sans-connexion : écrans d’avant la connexion (choix de la crèche de l’application, connexion).
+      if (!args.includes("--sans-connexion")) await login(cdp);
       for (const name of pages) {
         const page = PAGES[name];
         if (!page) throw new Error(`Page inconnue : ${name}`);
         if (page.only && !page.only.includes(sizeName)) continue;
         await navigate(cdp, `${BASE}${page.path}`);
         await waitFor(cdp, page.wait);
+        if (page.run) {
+          await sleep(1200);
+          await evaluate(cdp, page.run);
+          await sleep(900);
+        }
         if (page.click) {
           await evaluate(cdp, `document.querySelector(${JSON.stringify(page.click)})?.click()`);
           await sleep(600);

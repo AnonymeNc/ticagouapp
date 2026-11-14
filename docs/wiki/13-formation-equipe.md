@@ -48,7 +48,9 @@ chaque geste par la personne formée.
 - **Personne qui n'est pas dans la liste** : « Une autre personne » › écran **rouge** « Personne NON autorisée ».
   L'enfant **ne part pas** sans la validation de la direction :
   1. remplir prénom, nom, lien (et cocher la pièce vérifiée) ;
-  2. la directrice tape **son** code sur la tablette.
+  2. la directrice tape **son** code sur la tablette ;
+  3. **directrice absente** : « Demander son accord à distance » — elle répond depuis son téléphone (motif obligatoire).
+     On garde l’enfant jusqu’à la réponse ; sans réseau, cette demande n’est pas possible.
   Sans la direction : l'enfant reste, on appelle les parents.
 
 ☐ Exercice : un départ normal, puis un départ refusé.

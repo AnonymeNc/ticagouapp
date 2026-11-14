@@ -32,6 +32,9 @@ const xpf = (n) => `${n.toLocaleString("fr-FR").replace(/\s/g, "\u202f")}\u00a0F
 
 const font = (file) => pathToFileURL(join(root, "web/node_modules/@fontsource-variable", file)).href;
 const capture = (name) => pathToFileURL(join(root, "docs/commercial/captures", `${name}.jpg`)).href;
+/** Captures réelles de l’application Direction (scripts/captures/captures.mjs). */
+const mobile = (name) => pathToFileURL(join(root, "docs/commercial/captures/mobile", `${name}.png`)).href;
+const appli = (name, style) => `<div class="cadre" style="border-radius:46px;border:12px solid #122;${style}"><img src="${mobile(name)}" alt=""></div>`;
 
 const base = `
 @font-face { font-family: Fraunces; src: url("${font("fraunces/files/fraunces-latin-full-normal.woff2")}") format("woff2"); font-weight: 100 900; }
@@ -86,18 +89,24 @@ const PROSPECTUS = {
     ${ecran("facturation", "left:72px;right:72px;top:396px;height:540px")}
     <div style="position:absolute;left:0;right:0;bottom:0;height:150px;background:#fff7f1"></div>
     ${pied("var(--terre)", "#7c3517")}</body>`,
+  // Une seule formule, tout compris (ADR 0021, barème : docs/commercial/bareme-tarifaire.md).
   "05-offres": `<body style="background:var(--sable)">
-    <div style="padding:60px 72px 0"><h1 style="font-size:78px;color:var(--nuit)">Ne payez que ce dont votre crèche a besoin.</h1></div>
-    <div style="position:absolute;left:72px;right:72px;top:262px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
-    ${OFFRES.map((o) => `<section style="border-radius:22px;padding:32px 30px 34px;height:620px;background:${o.accent ? "var(--nuit)" : "#fff"};color:${o.accent ? "#fff" : "var(--encre)"};box-shadow:0 10px 30px rgb(8 40 42 / 0.1)">
-      <h2 style="font-family:Fraunces,serif;font-weight:600;font-size:48px">${o.nom}</h2>
-      <p style="font-size:25px;margin-top:6px;min-height:66px;opacity:.85">${o.phrase}</p>
-      <p style="font-size:23px;margin-top:18px;opacity:.8">à partir de</p>
-      <p style="font-family:Fraunces,serif;font-weight:600;font-size:60px;line-height:1.05">${xpf(o.prix[0])}</p>
-      <p style="font-size:22px;opacity:.8">par mois, hors TGC</p>
-      <ul style="list-style:none;padding:0;margin-top:22px;display:flex;flex-direction:column;gap:9px;font-size:24px;font-weight:500">
-      ${o.liste.map((l) => `<li>${l}</li>`).join("")}</ul></section>`).join("")}
+    <div style="padding:64px 72px 0"><h1 style="font-size:80px;color:var(--nuit)">Une seule formule. Tout est compris.</h1></div>
+    <div style="position:absolute;left:72px;right:72px;top:300px;display:grid;grid-template-columns:1fr 1.2fr;gap:40px;align-items:start">
+      <section style="border-radius:24px;padding:40px;background:var(--nuit);color:#fff">
+        <p style="font-size:28px;opacity:.85">Pour toute la crèche</p>
+        <p style="font-family:Fraunces,serif;font-weight:600;font-size:96px;line-height:1.05">${xpf(15000)}</p>
+        <p style="font-size:26px;opacity:.85">par mois, hors TGC · support compris</p>
+        <p style="font-size:24px;margin-top:26px;opacity:.85">Applications Direction, Pointage et Parents comprises</p></section>
+      <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:14px;font-size:30px;font-weight:600;color:var(--encre)">
+        ${["Enfants, familles, santé, PAI", "Présences et encadrement en direct", "Inscriptions, contrats, facturation avec aides", "Portail et application des parents", "Personnel, repas, comptabilité", "Sauvegardes chiffrées, mises à jour"].map((l) => `<li>✓ ${l}</li>`).join("")}</ul>
     </div>
+    ${pied("var(--lagon)", "var(--nuit)")}</body>`,
+  "06-dans-la-poche": `<body style="background:var(--pale)">
+    <div style="position:absolute;left:72px;top:90px;width:700px"><h1 style="color:var(--nuit)">Toute la crèche, dans la poche.</h1>
+    ${puces(["Encadrement et présences en direct", "Départ bloqué : vous autorisez à distance", "Alertes, jamais de donnée de santé dedans", "Face ID, téléphone perdu retiré en 2 clics"], "var(--lagon)")}</div>
+    ${appli("tableau-de-bord-telephone", "left:820px;top:150px;width:300px;height:650px;transform:rotate(-4deg)")}
+    ${appli("depart-a-valider-telephone", "left:1080px;top:70px;width:310px;height:672px;transform:rotate(3deg)")}
     ${pied("var(--lagon)", "var(--nuit)")}</body>`,
 };
 

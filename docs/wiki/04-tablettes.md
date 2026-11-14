@@ -2,7 +2,11 @@
 
 [← Sommaire](README.md)
 
-Il n'y a rien à installer : la tablette ouvre l'adresse de la crèche, en HTTPS.
+Deux façons, au choix :
+
+- **Tablette Android : l’application Ti’Cagou Pointage** (Google Play), avec le mode kiosque et le scan du QR :
+  voir [16-application-pointage.md](16-application-pointage.md). C’est la façon conseillée.
+- **Sans application** (iPad, ou Android) : la tablette ouvre l’adresse de la crèche, en HTTPS. Ci-dessous.
 
 **Il faut** une tablette Android 10 ou iPadOS 16 au moins, avec Chrome ou Safari, reliée à internet par le Wi-Fi de la crèche.
 Un écran de 10 pouces, un support et un chargeur à demeure sont conseillés.

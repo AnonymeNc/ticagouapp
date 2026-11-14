@@ -52,6 +52,9 @@ valider par la crèche) :
 > celles que la direction choisit de vous montrer. Les transmissions et photos sont effacées au bout de 60 jours, les
 > factures et documents au bout de 24 mois. Le service est hébergé par Ti'Cagou pour le compte de la crèche. Vous
 > pouvez demander à ne pas y avoir accès, ou à ce que votre accès soit retiré, à tout moment auprès de la direction.
+> Dans l’application Ti’Cagou Parents, vous pouvez aussi supprimer votre compte vous-même. Les notifications passent
+> par les services d’Apple (iPhone) ou de Google (Android) : elles ne contiennent jamais d’information de santé ni le
+> texte des messages.
 
 Pensez aussi à recueillir l'**autorisation de photographier** (fiche enfant › Autorisations, ou proposée à la
 signature sur le portail).
@@ -63,6 +66,11 @@ ligne de chaque responsable. Il faut une adresse e-mail dans la fiche (onglet Fa
 stade : c'est lui qui se connecte (§ 6). Remettez-lui l'adresse du portail (QR code imprimé, affiche à l'accueil).
 
 ## 6. Première connexion d'un parent (à montrer)
+
+**Avec l’application** (conseillé, surtout sur iPhone) : Ti’Cagou Parents › adresse e-mail › code à 6 chiffres reçu.
+Voir [17-application-parents.md](17-application-parents.md) et la fiche à imprimer [18-guide-parents.md](18-guide-parents.md).
+
+**Avec le navigateur** :
 
 1. Sur son téléphone : `https://parents.ticagou.nc` › son adresse e-mail › **Recevoir mon lien de connexion**.
 2. Il ouvre l'e-mail « Votre connexion à Ti'Cagou » : il touche le lien, **ou** recopie le code à 6 chiffres.
