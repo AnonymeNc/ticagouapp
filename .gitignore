@@ -40,3 +40,12 @@ data-demo/
 
 # --- Documents de prospection : jamais dans le dépôt ---
 Claude outputs/
+
+# --- Applications mobiles : clés et fichiers de configuration des comptes (dépôt public) ---
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist

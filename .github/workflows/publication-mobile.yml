@@ -3,6 +3,8 @@
 # Secrets à créer par l'éditeur une fois ses comptes développeur ouverts (décision 3 du plan) :
 #   Android : ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
 #   iOS     : APPLE_TEAM_ID, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_BASE64 (.p8)
+#   Firebase (notifications Android) : GOOGLE_SERVICES_DIRECTION, GOOGLE_SERVICES_POINTAGE, GOOGLE_SERVICES_PARENTS
+#   (google-services.json en Base64). scripts/secrets-mobile.ps1 les crée ; guide : docs/PUBLIER-LES-APPLICATIONS.md.
 # Le dépôt des AAB sur Google Play se fait à la main la première fois (création des fiches), puis depuis la console Play.
 name: Publication mobile
 
@@ -12,10 +14,16 @@ on:
       build:
         description: "Numéro de build (croissant, unique par store)"
         required: true
+      plateformes:
+        description: "Plateformes à construire"
+        type: choice
+        options: [android et ios, android, ios]
+        default: android et ios
 
 jobs:
   android:
     name: Android (AAB signés)
+    if: inputs.plateformes != 'ios'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -42,6 +50,20 @@ jobs:
         run: |
           test -n "$KEYSTORE" || { echo "Secret ANDROID_KEYSTORE_BASE64 absent : voir docs/EXPLOITATION.md."; exit 1; }
           echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/ticagou.jks"
+      - name: Firebase (notifications)
+        env:
+          DIRECTION: ${{ secrets.GOOGLE_SERVICES_DIRECTION }}
+          POINTAGE: ${{ secrets.GOOGLE_SERVICES_POINTAGE }}
+          PARENTS: ${{ secrets.GOOGLE_SERVICES_PARENTS }}
+        run: |
+          for app in direction pointage parents; do
+            value=$(printenv "$(echo $app | tr a-z A-Z)" || true)
+            if [ -n "$value" ]; then
+              echo "$value" | base64 -d > mobile/$app/android/app/google-services.json
+            else
+              echo "::warning::google-services.json absent pour $app : pas de notifications sur Android."
+            fi
+          done
       - name: AAB signés
         env:
           TICAGOU_ANDROID_KEYSTORE: ${{ runner.temp }}/ticagou.jks
@@ -60,6 +82,7 @@ jobs:
 
   ios:
     name: iOS (TestFlight)
+    if: inputs.plateformes != 'android'
     runs-on: macos-15
     timeout-minutes: 60
     steps:
