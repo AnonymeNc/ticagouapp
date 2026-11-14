@@ -75,7 +75,7 @@ mobile/
 - **Pas de** Firebase SDK, d'Ionic Appflow, de Capgo ni de service de mise à jour à chaud (ADR 0027), de bibliothèque
   d'interface mobile (Ionic) : l'interface reste Tailwind + shadcn.
 
-**Plateformes minimales** : celles de Capacitor 8 (iOS 15, Android 7 / API 24). Tablette de pointage : Android 10 ou
+**Plateformes minimales** : iOS 15 (Capacitor 8) et Android 8 / API 26 (exigé par le scanner de QR officiel ; Capacitor seul descendrait à l’API 24). Tablette de pointage : Android 10 ou
 plus conseillé (Lock Task en propriétaire d'appareil).
 
 **Outillage** : Android Studio / SDK et JDK 21 pour Android ; Xcode sur Mac ou CI macOS pour iOS (décision 4 du plan).
