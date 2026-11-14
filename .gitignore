@@ -49,3 +49,6 @@ Claude outputs/
 *.mobileprovision
 google-services.json
 GoogleService-Info.plist
+
+# --- Outils : fichier intermédiaire des images des stores ---
+outils/presentations/visuels-stores.pptx

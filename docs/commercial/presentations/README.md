@@ -32,3 +32,16 @@ pnpm generer
 
 Une modification faite à la main dans PowerPoint est perdue à la génération suivante : changez plutôt
 `outils/presentations/generer.mjs`.
+
+## Images de présentation Google Play (1024 × 500)
+
+`docs/commercial/captures/stores/<app>/presentation-1024x500.png`, produites par le même outil (PowerPoint requis pour
+l'export en PNG) :
+
+```bash
+node visuels-stores.mjs
+```
+
+```bash
+powershell -ExecutionPolicy Bypass -File exporter-png.ps1
+```
