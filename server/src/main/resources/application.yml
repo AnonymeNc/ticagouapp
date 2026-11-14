@@ -71,6 +71,13 @@ ticagou:
     min-direction: ${TICAGOU_APP_MIN_DIRECTION:0.0.0}
     min-pointage: ${TICAGOU_APP_MIN_POINTAGE:0.0.0}
     code: ${TICAGOU_INSTANCE_CODE:}
+  # Notifications natives (ADR 0026) : secrets du socle ; vides = désactivées.
+  push:
+    apns-key: ${APNS_KEY:}
+    apns-key-id: ${APNS_KEY_ID:}
+    apns-team-id: ${APNS_TEAM_ID:}
+    apns-production: ${APNS_PRODUCTION:true}
+    fcm-service-account: ${FCM_SERVICE_ACCOUNT:}
   # Jeu de démonstration (développement) : jamais activé en production.
   demo:
     enabled: ${TICAGOU_DEMO:false}

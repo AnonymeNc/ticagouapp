@@ -38,6 +38,7 @@ import { CrecheChoicePage, MesCrechesPage, NativeAppGate } from "@/features/crec
 import { PhoneLandingPage } from "@/features/creche/PhoneLandingPage";
 import { AppShell } from "./layout/AppShell";
 import { MorePage } from "./layout/MorePage";
+import { NotificationsPage } from "@/features/notifications/NotificationsPage";
 import { PlaceholderPage } from "./layout/PlaceholderPage";
 import { navItems } from "./navigation";
 import { AccountingExportPage } from "@/features/accounting/AccountingExportPage";
@@ -116,6 +117,7 @@ export const routes: RouteObject[] = [
           { path: "groupe", element: <GroupPage /> },
           { path: "messages/actualites", element: <NewsPage /> },
           { path: "plus", element: <MorePage /> },
+          { path: "notifications", element: <NotificationsPage /> },
           ...navItems
             .filter(({ path }) => !["/", "/presences", "/enfants", "/inscriptions", "/repas", "/facturation", "/personnel", "/parametres", "/messages", "/statistiques", "/groupe"].includes(path))
             .map(({ path, label }) => ({ path: path.slice(1), element: <PlaceholderPage title={label} /> })),

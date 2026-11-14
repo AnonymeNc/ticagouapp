@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,10 @@ public class DesktopClientService {
     /** BUREAU : navigateur, compté dans les PC de l'abonnement ; MOBILE : application Direction (ADR 0028). */
     public enum Kind { BUREAU, MOBILE }
 
+    /** Poste retiré par la direction : ses notifications s’arrêtent (ADR 0024, 0026). */
+    public record PosteRevoked(UUID structureId, String hash) {
+    }
+
     public record DesktopClient(UUID id, String label, Instant firstSeenAt, Instant lastSeenAt, String lastUserName,
                                 boolean active, Kind kind, String app) {
     }
@@ -52,9 +57,11 @@ public class DesktopClientService {
     private final AuditService audit;
     private final Clock clock;
     private final TiCagouProperties.License settings;
+    private final ApplicationEventPublisher events;
 
     public DesktopClientService(JdbcTemplate jdbc, LicenseService licenses, AuditService audit, Clock clock,
-                                TiCagouProperties properties) {
+                                TiCagouProperties properties, ApplicationEventPublisher events) {
+        this.events = events;
         this.jdbc = jdbc;
         this.licenses = licenses;
         this.audit = audit;
@@ -157,6 +164,8 @@ public class DesktopClientService {
         if (updated == 0) {
             throw ApiException.notFound("PC introuvable.");
         }
+        jdbc.queryForList("SELECT client_hash FROM desktop_client WHERE id = ?", String.class, id)
+                .forEach(hash -> events.publishEvent(new PosteRevoked(user.structureId(), hash)));
         audit.record(AuditAction.DESKTOP_REVOKED, "desktop_client", id, Map.of());
     }
 
@@ -180,7 +189,7 @@ public class DesktopClientService {
         return clean.length() > 120 ? clean.substring(0, 120) : clean;
     }
 
-    static String hash(String raw) {
+    public static String hash(String raw) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(raw.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {

@@ -13,6 +13,9 @@ import { CrecheLookupError, checkInstance, normalizeCode, parseQr, resolveCode, 
 import { loadCurrentCreche } from "@/lib/native/bootstrap";
 import { chooseCreche, currentCreche, forgetCreche, listCreches, normalizeAddress, subscribeCreches, switchCreche } from "@/lib/native/creches";
 import { scanQr } from "@/lib/native/device";
+import { disablePushNotifications } from "@/lib/native/push";
+import { api } from "@/lib/api";
+import { configureTokenStorage, currentRefreshToken, refreshSession } from "@/features/auth/tokens";
 import { restartApp } from "@/lib/native/restart";
 import { APP_VERSION, CIBLE, compareVersions, hasNativePlugins, isNativeApp } from "@/lib/native/platform";
 import { cn } from "@/lib/utils";
@@ -280,9 +283,9 @@ export function MesCrechesPage() {
               variant="destructive"
               onClick={async () => {
                 const wasCurrent = forgetting === current?.id;
-                await forgetCreche(forgetting);
+                await forgetWithCleanup(forgetting, current?.id ?? null);
                 setForgetting(null);
-                if (wasCurrent) restartApp("/creche");
+                restartApp(wasCurrent ? "/creche" : "/creche/mes-creches");
               }}
             >
               <Trash2 aria-hidden />Oublier cette crèche
@@ -292,6 +295,31 @@ export function MesCrechesPage() {
       )}
     </FocusLayout>
   );
+}
+
+/**
+ * Oublier une crèche (ADR 0025) : son serveur oublie d’abord ce téléphone (notifications, session), puis tout ce qui la
+ * concerne est effacé du téléphone. Pour une autre crèche que la courante, sa session est rouverte le temps du ménage.
+ */
+async function forgetWithCleanup(id: string, currentId: string | null) {
+  try {
+    if (id !== currentId) {
+      await switchCreche(id);
+      await loadCurrentCreche();
+      configureTokenStorage({ persist: true });
+      await refreshSession();
+    }
+    await disablePushNotifications();
+    const token = currentRefreshToken();
+    if (token) await api("/auth/logout", { method: "POST", body: { refreshToken: token }, auth: false }).catch(() => {});
+  } catch {
+    // Crèche injoignable : on efface quand même ce téléphone.
+  }
+  await forgetCreche(id);
+  if (currentId && currentId !== id) {
+    await switchCreche(currentId);
+    await loadCurrentCreche();
+  }
 }
 
 /** A4 : rappel de la crèche au-dessus de la connexion, avec « Changer ». */

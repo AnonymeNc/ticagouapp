@@ -11,6 +11,7 @@ import {
   sessionHeaders,
   storeSession,
 } from "./tokens";
+import { disablePushNotifications } from "@/lib/native/push";
 import type { Me, SessionResponse } from "./types";
 
 type AuthState =
@@ -92,6 +93,8 @@ export function AuthProvider({ persist, children }: Props) {
         applySession(await api<SessionResponse>("/auth/pin", { method: "POST", body: { userId, pin }, auth: false }));
       },
       logout: async () => {
+        // Application : ce téléphone ne reçoit plus les alertes de la crèche (ADR 0026).
+        await disablePushNotifications();
         const token = currentRefreshToken();
         endSession();
         await api("/auth/logout", { method: "POST", body: token ? { refreshToken: token } : undefined, auth: false }).catch(() => {});

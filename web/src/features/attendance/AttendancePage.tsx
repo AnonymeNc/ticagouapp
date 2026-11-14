@@ -1,3 +1,4 @@
+import { DepartureRequestsBanner } from "./DepartureRequests";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -98,6 +99,7 @@ export function AttendancePage() {
 
   return (
     <>
+      <DepartureRequestsBanner />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 font-display text-display">Présences</h1>

@@ -53,6 +53,13 @@ management:
         enabled: true
 
 portal:
+  # Notifications de l’application Ti’Cagou Parents (ADR 0026) : secrets du socle ; vides = désactivées.
+  push:
+    apns-key: ${APNS_KEY:}
+    apns-key-id: ${APNS_KEY_ID:}
+    apns-team-id: ${APNS_TEAM_ID:}
+    apns-production: ${APNS_PRODUCTION:true}
+    fcm-service-account: ${FCM_SERVICE_ACCOUNT:}
   # Adresse publique de la PWA (liens magiques des e-mails).
   public-url: ${PORTAL_PUBLIC_URL:http://localhost:8090}
   mail-from: ${PORTAL_MAIL_FROM:Ti'Cagou <portail@ticagou.nc>}
