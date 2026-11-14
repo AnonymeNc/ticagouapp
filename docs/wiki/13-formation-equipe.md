@@ -36,7 +36,7 @@ chaque geste par la personne formée.
   fois fait.
 - Enfant pointé par erreur : sur l’écran d’arrivée qui suit, **Annuler cette arrivée**.
 - Enfant non prévu ce jour-là : **Accueillir un enfant hors planning**.
-- Absence signalée par les parents (si portail) : un bandeau bleu l'indique en haut de la grille.
+- Absence signalée par les parents : un bandeau bleu l'indique en haut de la grille.
 
 ☐ Exercice : arrivée avec une consigne médicament.
 
@@ -57,7 +57,7 @@ chaque geste par la personne formée.
 
 ## Module 4 — La journée des enfants (15 min)
 
-Bouton **Journée** de la grille (avec le module Portail parents) :
+Bouton **Journée** de la grille :
 1. **Pour qui ?** : touchez un ou plusieurs enfants présents (un repas pour toute une table, par exemple).
 2. **Quoi ?** :
    - **Repas** : collation, déjeuner, goûter ou biberon, puis tout mangé, bien mangé, un peu, rien. Pour un biberon,
@@ -69,13 +69,13 @@ Bouton **Journée** de la grille (avec le module Portail parents) :
    - **Activité** : ce qu'on a fait ;
    - **Photo** : prise avec la tablette ;
    - **Mot pour les parents**.
-3. **Partager avec les familles** : coché, les parents le voient sur leur téléphone (si la crèche a le portail).
+3. **Partager avec les familles** : coché, les parents le voient sur leur téléphone.
    - Une **photo** n'est partageable que si **chaque** enfant photographié a l'autorisation de photographier ; sinon
      la tablette l'indique et la photo reste à la crèche.
    - Pas d'information médicale dans les textes : elles ne se partagent pas ainsi.
 4. **Enregistrer**. La liste « Aujourd'hui » montre tout ce qui a été noté.
 
-Sans réseau : tout est gardé sur la tablette et part au retour du serveur, **sauf les photos** (bouton grisé).
+Sans réseau : tout est gardé sur la tablette et part au retour d'internet, **sauf les photos** (bouton grisé).
 
 ☐ Exercice : un repas pour deux enfants, une sieste, une photo de groupe.
 
@@ -91,13 +91,14 @@ L'encadrement affiché en haut de la tablette (vert, orange, rouge) dépend de c
 
 ☐ Chacun pointe son arrivée et son départ.
 
-## Module 6 — Quand le serveur ne répond pas (5 min)
+## Module 6 — Quand internet est coupé (5 min)
 
 - Bandeau orange **« Hors connexion »** : on continue à pointer normalement, les pointages restent sur la tablette
   et partent seuls au retour (« N pointages en attente d'envoi »).
-- Connexion hors ligne : touchez votre nom puis votre code ; il sera vérifié au retour du serveur.
-- **Relancer** essaie de se reconnecter. Si cela dure : prévenez la direction (Wi-Fi ou internet coupé ?).
-- Un pointage refusé par le serveur s'affiche en rouge avec la raison : prévenez la direction.
+- Connexion hors ligne : touchez votre nom puis votre code ; il sera vérifié au retour d'internet.
+- **Relancer** essaie de se reconnecter. Si cela dure : prévenez la direction (Wi-Fi ou internet coupé ?). Au-delà de 30 minutes pendant
+  l'ouverture, la direction en est prévenue sur son téléphone.
+- Un pointage refusé par Ti'Cagou s'affiche en rouge avec la raison : prévenez la direction.
 
 ## Module 7 — Cuisine (20 min)
 

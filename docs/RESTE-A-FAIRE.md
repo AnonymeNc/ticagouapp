@@ -36,7 +36,7 @@ comptes, des paiements ou des décisions de l'éditeur. Liste commerciale compl�
 | Projet **Firebase**, clés APNs et FCM sur le serveur | même guide, D et E |
 | Première version : test interne, TestFlight, essais sur de vrais appareils, soumission | même guide, F |
 | Politique de confidentialité publiée sur le site | [politique-confidentialite.md](commercial/stores/politique-confidentialite.md) |
-| Captures des stores refaites un matin de semaine (crèche pleine) ; captures de l'application des parents | `node scripts/captures/captures.mjs`, [captures/README.md](commercial/captures/README.md) |
+| Captures des stores refaites un matin de semaine (crèche pleine) ; captures de l'application des parents ; `facturation-bureau.png` (prise pendant le calcul) et `fiche-sante-bureau.png` (liste au lieu de la fiche) à refaire, puis `pnpm generer` dans `outils/presentations` | `node scripts/captures/captures.mjs`, [captures/README.md](commercial/captures/README.md) |
 | Avis juridique sur l'hébergement des données de santé, puis choix de l'hébergeur | [ADR 0013](adr/0013-web-heberge-instance-par-creche.md) |
 | Serveur de production, crèche témoin, crèche de démonstration `demo-stores` | [EXPLOITATION.md](EXPLOITATION.md) |
 | Logo définitif (icônes : `mobile/scripts/icones.ps1`) | — |

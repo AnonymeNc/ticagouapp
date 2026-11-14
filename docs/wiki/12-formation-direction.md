@@ -13,7 +13,8 @@ module.
 
 ## Module 1 — Se repérer (15 min)
 
-- Ouvrir Ti'Cagou (icône du Bureau), se connecter avec **son** identifiant et **son** mot de passe. Après plusieurs
+- Ouvrir l'adresse de la crèche dans le navigateur (favori « Ti'Cagou »), se connecter avec **son** identifiant, **son**
+  mot de passe et le code de son téléphone. Après plusieurs
   erreurs, le compte se bloque un moment : c'est voulu.
 - Le menu de gauche : Tableau de bord, Présences, Enfants, Inscriptions, Facturation, Statistiques, Repas,
   Personnel, Messages, Paramètres. Tout est compris dans l’abonnement ; un menu absent relève de votre rôle.
@@ -115,7 +116,7 @@ Seule la direction y accède.
   (Paramètres › Utilisateurs › Téléphone perdu) ; pour elle-même, elle appelle Ti'Cagou.
 - **Sauvegardes** : rien à faire. Elles sont faites chaque nuit, chiffrées et copiées hors site. L'écran montre la
   dernière sauvegarde et permet d'en lancer une avant une opération importante.
-- **Abonnement** : état, modules, postes et date de fin sont dans Paramètres › Tablettes et abonnement. Le renouvellement
+- **Abonnement** : état, places, postes et date de fin sont dans Paramètres › Tablettes et abonnement. Le renouvellement
   se fait avec Ti'Cagou, sans rien saisir.
 - **PC du bureau** : l'abonnement en fixe le nombre. Un PC remplacé se **retire** ; un PC absent depuis 90 jours libère sa
   place seul.
@@ -123,7 +124,7 @@ Seule la direction y accède.
 
 ☐ La directrice se connecte avec son code, puis lance une sauvegarde manuelle.
 
-## Module 9 — Le portail parents (si la crèche l'a pris) (20 min)
+## Module 9 — Le portail parents (20 min)
 
 - Paramètres › Portail parents : ce qui est partagé, coordonnées de paiement, heure limite repas.
 - Fiche enfant › **Journée et portail** : inviter les responsables, **santé partagée** (seul le texte écrit là est

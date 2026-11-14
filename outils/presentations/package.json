@@ -1,0 +1,11 @@
+{
+  "name": "ticagou-presentations",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generer": "node generer.mjs"
+  },
+  "devDependencies": {
+    "pptxgenjs": "3.12.0"
+  }
+}

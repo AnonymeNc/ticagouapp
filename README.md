@@ -18,7 +18,7 @@ facturation XPF avec aides, personnel, portail parents, sauvegardes. Une seule f
 | `mobile/` | Coques Capacitor des trois applications (`direction/`, `pointage/`, `parents/`) et leurs scripts |
 | `deploy/` | Image Docker, socle et `creche.sh` : créer et exploiter les crèches |
 | `scripts/` | `tester-en-local.ps1`, `tous-les-tests.ps1`, `secrets-mobile.ps1`, données de démonstration, captures |
-| `outils/publicite/` | Prospectus et maquette des offres |
+| `outils/publicite/`, `outils/presentations/` | Prospectus, maquette des offres, présentations PowerPoint ([docs/commercial/presentations](docs/commercial/presentations/README.md)) |
 | `docs/design/` | Maquettes : **référence visuelle** |
 | `docs/adr/` | Décisions d'architecture (0001 à 0028) |
 | `docs/wiki/` | Guides d'utilisation et supports de formation |
