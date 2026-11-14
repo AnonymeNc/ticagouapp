@@ -182,9 +182,10 @@ jobs:
           pnpm --dir parents-portal/web install --frozen-lockfile
           pnpm --dir mobile install --frozen-lockfile
           node mobile/scripts/build.mjs
+      # Pointage : Android seulement (décision 5 du plan, 14/11/2026).
       - name: Compilation iOS (simulateur, sans signature)
         run: |
-          for app in direction pointage parents; do
+          for app in direction parents; do
             xcodebuild -project mobile/$app/ios/App/App.xcodeproj -scheme App -configuration Debug \
               -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
           done

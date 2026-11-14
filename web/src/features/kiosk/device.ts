@@ -3,6 +3,8 @@
  * de courte durée. Le jeton sert à la file d'attente, à la connexion par PIN et au flux temps réel.
  */
 import { api, ApiError, registerDeviceHooks } from "@/lib/api";
+import { hasNativePlugins } from "@/lib/native/platform";
+import { vault } from "@/lib/native/vault";
 
 const STORAGE_KEY = "ticagou.device";
 
@@ -23,7 +25,31 @@ let accessToken: string | null = null;
 let inFlight: Promise<boolean> | null = null;
 const listeners = new Set<Listener>();
 
-function storage(): Storage | null {
+/**
+ * Application Ti’Cagou Pointage : le secret de l’appareil est dans le Keystore d’Android (ADR 0023, 0024), recopié en
+ * mémoire au démarrage ({@link loadNativeDevice}) pour être lu sans attendre.
+ */
+const NATIVE_KEY = "kiosque.appareil";
+let nativeRaw: string | null = null;
+
+export async function loadNativeDevice(): Promise<void> {
+  if (hasNativePlugins()) nativeRaw = await vault().get(NATIVE_KEY).catch(() => null);
+}
+
+const nativeStorage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = {
+  getItem: (key) => (key === STORAGE_KEY ? nativeRaw : null),
+  setItem: (_key, value) => {
+    nativeRaw = value;
+    void vault().set(NATIVE_KEY, value).catch(() => {});
+  },
+  removeItem: () => {
+    nativeRaw = null;
+    void vault().remove(NATIVE_KEY).catch(() => {});
+  },
+};
+
+function storage(): Pick<Storage, "getItem" | "setItem" | "removeItem"> | null {
+  if (hasNativePlugins()) return nativeStorage;
   try {
     return window.localStorage;
   } catch {

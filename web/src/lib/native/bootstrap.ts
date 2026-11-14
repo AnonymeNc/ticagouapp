@@ -4,6 +4,7 @@
  */
 import { loadVaultSession } from "@/features/auth/tokens";
 import { loadNativeWorkstation } from "@/lib/workstation";
+import { loadNativeDevice } from "@/features/kiosk/device";
 import { loadCreches } from "./creches";
 import { enablePrivacyScreen } from "./device";
 import { isNativeApp } from "./platform";
@@ -18,5 +19,5 @@ export async function bootstrapNative(): Promise<void> {
   // Aperçu masqué dans le sélecteur d’applications : des données de santé d’enfants sont à l’écran (ADR 0024).
   void enablePrivacyScreen();
   await loadCreches();
-  await loadCurrentCreche();
+  await Promise.all([loadCurrentCreche(), loadNativeDevice()]);
 }
