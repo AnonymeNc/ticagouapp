@@ -2,7 +2,7 @@
  * Fonctions de l'appareil, par les plugins Capacitor (ADR 0023) : scan de QR, verrouillage biométrique (ADR 0024),
  * aperçu masqué dans le sélecteur d'applications. Les plugins ne sont chargés que dans l'application native.
  */
-import { hasNativePlugins } from "./platform";
+import { hasNativePlugins, isNativeApp } from "./platform";
 
 /** Scanne un QR code avec la caméra ; null si la personne annule ou si l'appareil ne sait pas le faire. */
 export async function scanQr(instructions: string): Promise<string | null> {
@@ -52,6 +52,14 @@ export async function unlockWithDevice(reason: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Action irréversible depuis l’application (validation de factures, avoir, purge d’une famille, maquette C3) : Face ID
+ * ou code du téléphone redemandé. Dans le navigateur, la confirmation de l’écran suffit.
+ */
+export async function confirmIrreversible(reason: string): Promise<boolean> {
+  return isNativeApp() ? unlockWithDevice(reason) : true;
 }
 
 /** Contenu masqué dans le sélecteur d'applications, captures d'écran bloquées sur Android (ADR 0024). */

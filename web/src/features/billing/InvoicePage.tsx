@@ -1,3 +1,4 @@
+import { confirmIrreversible } from "@/lib/native/device";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -278,6 +279,7 @@ function CreditNoteDialog({ invoice, onClose, onDone }: { invoice: Invoice; onCl
                 return setError("Indiquez le libellé et le montant de l’avoir, en francs.");
               }
               try {
+                if (!(await confirmIrreversible("Établir l’avoir"))) return;
                 const note = await billingApi.creditNote(s.id, {
                   reason: reason.trim(), full, lines: full ? [] : [{ label: label.trim(), amount }],
                 });

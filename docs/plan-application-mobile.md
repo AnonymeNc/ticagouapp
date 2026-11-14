@@ -1,6 +1,6 @@
 # Plan — Applications mobiles Ti'Cagou (Capacitor)
 
-- **Statut** : en cours (phase 8, sécurité et publication)
+- **Statut** : phases 0 à 8 livrées ; publication en attente des comptes développeur (action de l’utilisateur) ; phase 9 en cours
 - **Date** : 14/11/2026
 - **Source** : [étude](etude-application-mobile.md), option B retenue
 - **Exigence** : l'application de la direction est la même sur téléphone, tablette **et ordinateur** (navigateur).
@@ -23,8 +23,11 @@ notifications natives. Toutes les règles métier du CLAUDE.md s'appliquent sans
    → **Tranché le 14/11/2026 : non**, compté à part, plafond de 10 téléphones ([ADR 0028](adr/0028-postes-mobiles-et-abonnement.md)).
 2. Distribution de Direction et Pointage : store public ou distribution privée (Apple Business Manager, Managed Google
    Play) ? (phase 8)
+   → **Tranché le 14/11/2026 : stores publics** pour les trois applications.
 3. Compte développeur Apple / Google : au nom de quelle entité ? Créés **par l'utilisateur** (Claude ne crée pas de
    compte ni ne paie). (phase 8)
+   → **Tranché le 14/11/2026 : société éditrice** (compte Organisation, numéro D-U-N-S). **Action de l’utilisateur en
+   attente** : ouvrir les comptes, puis créer les secrets décrits dans EXPLOITATION.md § 7 bis.
 4. Builds iOS : Mac disponible, ou CI macOS (GitHub Actions, Codemagic) ? (phase 2)
    → **Tranché le 14/11/2026 : CI macOS GitHub Actions** (suppose le dépôt GitHub, décision 6).
 5. iPad pris en charge pour le pointage, ou Android seulement ? (phase 6)
@@ -126,5 +129,5 @@ Les maquettes d'une phase sont validées par l'utilisateur avant le développeme
 | 5 Notifications | fait le 14/11/2026 (branche `phase-5-notifications`) : APNs (ES256) et FCM (RS256) avec le JDK seul, testés contre un faux service ; appareils de la direction (V31) et alertes encadrement, sauvegarde, tablette ; départ bloqué validé à distance (V32, bandeau et feuille B5, bouton sur la tablette) ; réglages C7 ; portail : appareils de l’application Parents (V8) et envoi natif à côté du Web Push. Non vérifié : envoi réel chez Apple et Google (comptes développeur, décision 3) |
 | 6 Pointage | fait le 14/11/2026 (branche `phase-6-pointage`) : Android seulement (décision 5, projet iOS retiré), plugin local `KioskMode` (Lock Task ou épinglage, écran allumé, rétabli au démarrage, lanceur d’accueil), sortie par code de la direction vérifié par le serveur, appairage par scan du QR (adresse et code) ou adresse puis code, secret de la tablette et clé du stockage chiffré dans le Keystore. Non vérifié : comportement sur une vraie tablette (Lock Task, propriétaire d’appareil) |
 | 7 Parents | fait le 14/11/2026 (branche `phase-7-parents`) : portail — jeton porteur pour l’application, CORS Capacitor, jeton de média pour les photos et fichiers, suppression du compte (V9, message à la crèche, connexion bloquée jusqu’à la réinvitation) ; application — adresse du portail, session dans le trousseau, connexion par code, notifications natives (même écran que la PWA), « Mon compte », verrouillage optionnel. La PWA reste. Non vérifié : sur un vrai téléphone |
-| 8 Publication | à faire |
+| 8 Publication | préparé le 14/11/2026 (branche `phase-8-publication`) : [revue de sécurité](securite-applications-mobiles.md) (sauvegardes Android désactivées, Face ID avant les actions irréversibles), signature et numéro de build par la CI, workflow « Publication mobile » (AAB signés, TestFlight), fiches des stores, déclarations Apple / Google, politique de confidentialité, procédure dans EXPLOITATION.md § 7 bis. **Bloqué par l’utilisateur** : comptes Apple et Google à ouvrir (décision 3), secrets à créer, puis bêta et publication |
 | 9 Docs, formation, commercial, captures | à faire (au fil de l'eau) |
