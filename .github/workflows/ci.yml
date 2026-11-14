@@ -6,6 +6,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      mobile:
+        description: "Compiler aussi les applications mobiles (Android et iOS : minutes coûteuses, macOS compte 10 fois)"
+        type: boolean
+        default: true
 
 concurrency:
   group: tests-${{ github.ref }}
@@ -129,8 +134,10 @@ jobs:
         run: sh -n deploy/creche.sh && sh -n deploy/sauvegarde-hors-site.sh && sh -n deploy/secrets.sh
 
   # Applications mobiles (ADR 0023) : front embarqué, plugins cohérents, projets natifs compilés sans signature.
+  # À la demande seulement (Actions › Tests › Run workflow, case « mobile ») : ces compilations coûtent cher en minutes.
   mobile-android:
     name: Applications mobiles (Android)
+    if: github.event_name == 'workflow_dispatch' && inputs.mobile
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -166,6 +173,7 @@ jobs:
   # Décision 4 du plan (14/11/2026) : builds iOS sur les machines macOS de GitHub Actions.
   mobile-ios:
     name: Applications mobiles (iOS)
+    if: github.event_name == 'workflow_dispatch' && inputs.mobile
     runs-on: macos-15
     timeout-minutes: 60
     steps:

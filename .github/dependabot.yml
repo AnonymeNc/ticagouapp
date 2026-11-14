@@ -24,6 +24,9 @@ updates:
     ignore:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # Capacitor et ses plugins : montés à la main, ensemble, dans le front et dans mobile/ (check-versions.mjs).
+      - dependency-name: "@capacitor/*"
+      - dependency-name: "@aparajita/*"
   - package-ecosystem: npm
     directory: /parents-portal/web
     schedule: { interval: monthly }
@@ -31,6 +34,9 @@ updates:
     ignore:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # Capacitor et ses plugins : montés à la main, ensemble, dans le front et dans mobile/ (check-versions.mjs).
+      - dependency-name: "@capacitor/*"
+      - dependency-name: "@aparajita/*"
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
