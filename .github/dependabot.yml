@@ -1,42 +1,64 @@
 # Mises à jour des dépendances proposées une fois par mois (demandes de fusion à relire, jamais fusionnées seules).
+# Une seule demande par dossier : les mises à jour mineures et correctives y sont regroupées.
 # Pas de version majeure côté Java (Spring Boot 4, springdoc 3…) ni pour TypeScript : ces migrations se décident et
-# se font à la main.
+# se font à la main. Capacitor et ses plugins se montent à la main, ensemble, dans les fronts et dans mobile/
+# (mobile/scripts/check-versions.mjs).
 version: 2
 updates:
   - package-ecosystem: maven
     directory: /server
     schedule: { interval: monthly }
-    open-pull-requests-limit: 5
+    groups:
+      serveur: { update-types: [minor, patch] }
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: maven
     directory: /parents-portal/server
     schedule: { interval: monthly }
-    open-pull-requests-limit: 5
+    groups:
+      portail-serveur: { update-types: [minor, patch] }
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: maven
+    directory: /console/server
+    schedule: { interval: monthly }
+    groups:
+      console-serveur: { update-types: [minor, patch] }
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /web
     schedule: { interval: monthly }
-    open-pull-requests-limit: 5
+    groups:
+      web: { update-types: [minor, patch] }
     ignore:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
-      # Capacitor et ses plugins : montés à la main, ensemble, dans le front et dans mobile/ (check-versions.mjs).
       - dependency-name: "@capacitor/*"
       - dependency-name: "@aparajita/*"
   - package-ecosystem: npm
     directory: /parents-portal/web
     schedule: { interval: monthly }
-    open-pull-requests-limit: 5
+    groups:
+      application-parents: { update-types: [minor, patch] }
     ignore:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
-      # Capacitor et ses plugins : montés à la main, ensemble, dans le front et dans mobile/ (check-versions.mjs).
       - dependency-name: "@capacitor/*"
       - dependency-name: "@aparajita/*"
+  - package-ecosystem: npm
+    directory: /console/web
+    schedule: { interval: monthly }
+    groups:
+      console-web: { update-types: [minor, patch] }
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
+    groups:
+      actions: { patterns: ["*"] }

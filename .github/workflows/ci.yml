@@ -3,7 +3,9 @@
 name: Tests
 
 on:
+  # main seulement : une branche de PR est testée par l'événement pull_request, pas deux fois.
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -134,10 +136,11 @@ jobs:
         run: sh -n deploy/creche.sh && sh -n deploy/sauvegarde-hors-site.sh && sh -n deploy/secrets.sh
 
   # Applications mobiles (ADR 0023) : front embarqué, plugins cohérents, projets natifs compilés sans signature.
-  # À la demande seulement (Actions › Tests › Run workflow, case « mobile ») : ces compilations coûtent cher en minutes.
+  # Dépôt public (minutes gratuites) : à chaque envoi tant que la variable du dépôt MOBILE_CI vaut « toujours ».
+  # Dépôt redevenu privé : supprimer la variable ; elles ne tournent plus qu'à la demande (Run workflow, case « mobile »).
   mobile-android:
     name: Applications mobiles (Android)
-    if: github.event_name == 'workflow_dispatch' && inputs.mobile
+    if: (github.event_name == 'workflow_dispatch' && inputs.mobile) || (github.event_name != 'workflow_dispatch' && vars.MOBILE_CI == 'toujours')
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -173,7 +176,7 @@ jobs:
   # Décision 4 du plan (14/11/2026) : builds iOS sur les machines macOS de GitHub Actions.
   mobile-ios:
     name: Applications mobiles (iOS)
-    if: github.event_name == 'workflow_dispatch' && inputs.mobile
+    if: (github.event_name == 'workflow_dispatch' && inputs.mobile) || (github.event_name != 'workflow_dispatch' && vars.MOBILE_CI == 'toujours')
     runs-on: macos-15
     timeout-minutes: 60
     steps:
