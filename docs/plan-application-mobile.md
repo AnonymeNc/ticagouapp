@@ -1,6 +1,6 @@
 # Plan — Applications mobiles Ti'Cagou (Capacitor)
 
-- **Statut** : en cours (phase 1, maquettes)
+- **Statut** : en cours (phase 2, socle)
 - **Date** : 14/11/2026
 - **Source** : [étude](etude-application-mobile.md), option B retenue
 - **Exigence** : l'application de la direction est la même sur téléphone, tablette **et ordinateur** (navigateur).
@@ -88,8 +88,9 @@ Les maquettes d'une phase sont validées par l'utilisateur avant le développeme
   d'attente durable, caméra et vidéo natives. iPad : Accès guidé documenté (selon décision 5).
 
 ### Phase 7 — Parents natif
-- Coque Capacitor de `parents-portal/web`, notifications natives, suppression du compte dans l'application (branchée sur
-  `PURGE_FAMILY`), verrouillage optionnel. La PWA reste.
+- Coque Capacitor de `parents-portal/web`, notifications natives, suppression du compte dans l'application (efface
+  l'accès au portail et prévient la crèche, qui purge son dossier par `PURGE_FAMILY` selon ses obligations ; tranché le
+  14/11/2026), verrouillage optionnel. La PWA reste.
 
 ### Phase 8 — Sécurité, conformité, publication
 - Revue sécurité (`/security-review`) : stockage local, captures d'écran, téléphone perdu (révocation des appareils par
@@ -116,7 +117,7 @@ Les maquettes d'une phase sont validées par l'utilisateur avant le développeme
 | Phase | État |
 |---|---|
 | 0 ADR | fait le 14/11/2026 : ADR 0023 à 0028 ; ADR 0002, 0005, 0011, 0013, 0017, 0018, 0021 marqués |
-| 1 Maquettes | livrées le 14/11/2026, à valider : `docs/design/Ti'Cagou — Direction mobile.html`, `… Direction tablette et ordinateur.html`, `… Pointage natif.html`, `… app parents mobile, compléments.html` (charte : `charte-mobile.css`) |
+| 1 Maquettes | validées le 14/11/2026 (écarts acceptés : barre basse + « Plus », rail 768–1 279 px, code e-mail parents) : `docs/design/Ti'Cagou — Direction mobile.html`, `… Direction tablette et ordinateur.html`, `… Pointage natif.html`, `… app parents mobile, compléments.html` (charte : `charte-mobile.css`) |
 | 2 Socle | à faire |
 | 3 Direction responsive | à faire |
 | 4 Annuaire | à faire |
