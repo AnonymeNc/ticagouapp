@@ -35,6 +35,7 @@ import { MySpacePage } from "@/features/staff/MySpacePage";
 import { HaccpPage } from "@/features/meals/HaccpPage";
 import { SetupWizard } from "@/features/setup/SetupWizard";
 import { AppShell } from "./layout/AppShell";
+import { MorePage } from "./layout/MorePage";
 import { PlaceholderPage } from "./layout/PlaceholderPage";
 import { navItems } from "./navigation";
 import { AccountingExportPage } from "@/features/accounting/AccountingExportPage";
@@ -105,6 +106,7 @@ export const routes: RouteObject[] = [
           { path: "messages", element: <MessagesPage /> },
           { path: "groupe", element: <GroupPage /> },
           { path: "messages/actualites", element: <NewsPage /> },
+          { path: "plus", element: <MorePage /> },
           ...navItems
             .filter(({ path }) => !["/", "/presences", "/enfants", "/inscriptions", "/repas", "/facturation", "/personnel", "/parametres", "/messages", "/statistiques", "/groupe"].includes(path))
             .map(({ path, label }) => ({ path: path.slice(1), element: <PlaceholderPage title={label} /> })),

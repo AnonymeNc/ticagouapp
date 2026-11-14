@@ -154,7 +154,7 @@ function FamiliesTable({ preview, onOpen }: { preview: MonthPreview; onOpen: (ro
         <p className="m-0 text-muted-foreground">Aucun enfant sous contrat ce mois-ci.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left tabular-nums">
+          <table className="table-cards w-full border-collapse text-left tabular-nums">
             <caption className="sr-only">Montants par famille, avant génération des factures</caption>
             <thead>
               <tr className="border-b border-border-subtle text-label text-muted-foreground">
@@ -180,25 +180,25 @@ function FamiliesTable({ preview, onOpen }: { preview: MonthPreview; onOpen: (ro
                     )}
                     <div className="text-small text-muted-foreground">{f.children.join(", ")}{f.invoiceNumber && ` · ${f.invoiceNumber}`}</div>
                   </th>
-                  <td className="py-2 pr-3 text-right">{amount(f.forfait)}</td>
-                  <td className="py-2 pr-3 text-right">{amount(f.extraHours)}</td>
-                  <td className="py-2 pr-3 text-right">{amount(f.overtime)}</td>
-                  <td className="py-2 pr-3 text-right">{f.absences === 0 ? "—" : formatXpf(-f.absences)}</td>
-                  {preview.funders.map((x) => <td key={x.id} className="py-2 pr-3 text-right">{amount(f.aids[x.id] ?? 0)}</td>)}
-                  <td className="py-2 pr-3 text-right font-semibold">{formatXpf(f.familyTotal)}</td>
-                  <td className="py-2 pr-3 text-right">{amount(f.aidTotal)}</td>
+                  <td data-cell="hide-phone" className="py-2 pr-3 text-right">{amount(f.forfait)}</td>
+                  <td data-cell="hide-phone" className="py-2 pr-3 text-right">{amount(f.extraHours)}</td>
+                  <td data-cell="hide-phone" className="py-2 pr-3 text-right">{amount(f.overtime)}</td>
+                  <td data-cell="hide-phone" className="py-2 pr-3 text-right">{f.absences === 0 ? "—" : formatXpf(-f.absences)}</td>
+                  {preview.funders.map((x) => <td key={x.id} data-cell="hide-phone" className="py-2 pr-3 text-right">{amount(f.aids[x.id] ?? 0)}</td>)}
+                  <td data-label="Famille" className="py-2 pr-3 text-right font-semibold">{formatXpf(f.familyTotal)}</td>
+                  <td data-label="Financeurs" className="py-2 pr-3 text-right">{amount(f.aidTotal)}</td>
                   <td className="py-2">{states[f.status]}</td>
                 </tr>
               ))}
               <tr className="border-t-2 border-border font-semibold">
                 <th scope="row" className="py-2 pr-3 text-left">Total · {preview.families.length} famille{preview.families.length > 1 ? "s" : ""}</th>
-                <td className="py-2 pr-3 text-right">{formatXpf(sum((f) => f.forfait))}</td>
-                <td className="py-2 pr-3 text-right">{formatXpf(sum((f) => f.extraHours))}</td>
-                <td className="py-2 pr-3 text-right">{formatXpf(sum((f) => f.overtime))}</td>
-                <td className="py-2 pr-3 text-right">{formatXpf(-sum((f) => f.absences))}</td>
-                {preview.funders.map((x) => <td key={x.id} className="py-2 pr-3 text-right">{formatXpf(preview.totals.aidByFunder[x.id] ?? 0)}</td>)}
-                <td className="py-2 pr-3 text-right">{formatXpf(preview.totals.familyTotal)}</td>
-                <td className="py-2 pr-3 text-right">{formatXpf(preview.totals.aidTotal)}</td>
+                <td data-cell="hide-phone" className="py-2 pr-3 text-right">{formatXpf(sum((f) => f.forfait))}</td>
+                <td data-cell="hide-phone" className="py-2 pr-3 text-right">{formatXpf(sum((f) => f.extraHours))}</td>
+                <td data-cell="hide-phone" className="py-2 pr-3 text-right">{formatXpf(sum((f) => f.overtime))}</td>
+                <td data-cell="hide-phone" className="py-2 pr-3 text-right">{formatXpf(-sum((f) => f.absences))}</td>
+                {preview.funders.map((x) => <td key={x.id} data-cell="hide-phone" className="py-2 pr-3 text-right">{formatXpf(preview.totals.aidByFunder[x.id] ?? 0)}</td>)}
+                <td data-label="Familles" className="py-2 pr-3 text-right">{formatXpf(preview.totals.familyTotal)}</td>
+                <td data-label="Financeurs" className="py-2 pr-3 text-right">{formatXpf(preview.totals.aidTotal)}</td>
                 <td />
               </tr>
             </tbody>

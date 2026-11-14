@@ -1,3 +1,4 @@
+import { DesktopRecommended } from "@/components/DesktopRecommended";
 import { useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -197,6 +198,9 @@ export function SetupWizard() {
 
   return (
     <FocusLayout>
+      <div className="mb-4">
+        <DesktopRecommended what="L’installation de la crèche" />
+      </div>
       {progress >= 0 && (
         <div className="mb-6">
           <p className="m-0 mb-2 text-caption text-muted-foreground uppercase">

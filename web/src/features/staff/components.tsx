@@ -27,7 +27,7 @@ export function StaffHeader({ subtitle, actions }: { subtitle?: ReactNode; actio
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
-      <nav aria-label="Vues du personnel" className="flex gap-1 self-start rounded-[14px] bg-muted p-1 print:hidden">
+      <nav aria-label="Vues du personnel" className="flex max-w-full gap-1 self-start overflow-x-auto rounded-[14px] bg-muted p-1 [&>*]:shrink-0 [&>*]:whitespace-nowrap print:hidden">
         {team && <NavLink to="/personnel" end className={tab}>Équipe</NavLink>}
         <NavLink to="/personnel/planning" className={tab}>{team ? "Planning de la semaine" : "Mon planning"}</NavLink>
         <NavLink to="/personnel/heures" className={tab}>{team ? "Feuilles d’heures" : "Mes heures"}</NavLink>

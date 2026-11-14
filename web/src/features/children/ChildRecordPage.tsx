@@ -90,9 +90,12 @@ export function ChildRecordPage() {
   return (
     <>
       <BackLink />
-      <section aria-label="Résumé de la fiche" className="flex flex-wrap items-center gap-5 rounded-lg border border-border-subtle bg-card p-5 shadow-1">
-        <ChildAvatar child={child} section={section} size="lg" photoVersion={child.version} />
-        <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-2">
+      <section aria-label="Résumé de la fiche" className="flex flex-wrap items-center gap-4 rounded-lg border border-border-subtle bg-card p-4 shadow-1 md:gap-5 md:p-5">
+        {/* Téléphone : avatar réduit à côté du nom (maquette B3). */}
+        <span className="contents max-md:[&>*]:size-16 max-md:[&>*]:text-[22px]">
+          <ChildAvatar child={child} section={section} size="lg" photoVersion={child.version} />
+        </span>
+        <div className="flex min-w-0 flex-[1_1_200px] flex-col gap-2">
           <h1 className="m-0 font-display text-title-1">
             {child.firstName} <span className="font-normal">{child.lastName}</span>
           </h1>
@@ -179,7 +182,7 @@ function Tabs<K extends string>({
     refs.current[next.key]?.focus();
   };
   return (
-    <div role="tablist" aria-label="Rubriques de la fiche" className="flex flex-wrap gap-1 rounded-[14px] bg-muted p-1 print:hidden">
+    <div role="tablist" aria-label="Rubriques de la fiche" className="flex gap-1 overflow-x-auto rounded-[14px] bg-muted p-1 md:flex-wrap print:hidden">
       {tabs.map((t, index) => {
         const selected = t.key === current;
         return (
@@ -197,7 +200,7 @@ function Tabs<K extends string>({
             onClick={() => onChange(t.key)}
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
-              "inline-flex h-control items-center gap-1.5 rounded-full px-3.5 text-label",
+              "inline-flex h-control shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-label",
               selected ? "bg-card text-lagon-700 shadow-1" : "text-foreground",
             )}
           >

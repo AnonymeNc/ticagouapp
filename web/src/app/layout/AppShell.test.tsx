@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { healthUp, installed, mockApi, renderAt, session, structure } from "@/test/render";
 import { navItems } from "../navigation";
@@ -25,7 +25,7 @@ describe("coquille du poste bureau", () => {
     for (const item of navItems) {
       expect(nav).toHaveTextContent(item.label);
     }
-    expect(screen.getByRole("link", { name: "Enfants" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Enfants" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("heading", { level: 1, name: "Enfants" })).toBeInTheDocument();
     expect(screen.getByText("Nathalie Kaloï")).toBeInTheDocument();
     expect(screen.getByText("Direction")).toBeInTheDocument();

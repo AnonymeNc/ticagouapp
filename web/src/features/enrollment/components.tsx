@@ -142,7 +142,7 @@ export function EnrollmentHeader({ subtitle, actions }: { subtitle: string; acti
         </div>
         {actions}
       </div>
-      <nav aria-label="Vues des inscriptions" className="flex gap-1 self-start rounded-[14px] bg-muted p-1">
+      <nav aria-label="Vues des inscriptions" className="flex max-w-full gap-1 self-start overflow-x-auto rounded-[14px] bg-muted p-1 [&>*]:shrink-0 [&>*]:whitespace-nowrap">
         <NavLink to="/inscriptions" end className={tab}>Demandes</NavLink>
         <NavLink to="/inscriptions/capacite" className={tab}>Capacité</NavLink>
       </nav>
