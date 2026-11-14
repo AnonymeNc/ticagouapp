@@ -10,6 +10,10 @@ fonctionnent **telles quelles dans Windows PowerShell 5.1 et dans Git Bash** (on
 | Comptabilité | PC du bureau | identifiant et mot de passe |
 | Éducatrice, cuisine | tablette, http://localhost:1420/kiosk | code PIN à 4 chiffres |
 | Parent | application des parents, http://localhost:5180 | e-mail, puis lien ou code à 6 chiffres reçu dans Mailpit |
+| Directrice sur son téléphone | application Direction simulée, http://localhost:1431 (`-Mobile`) | adresse de la crèche, puis identifiant et mot de passe (§ 12) |
+
+**En bref** : `scripts\tester-en-local.ps1 -Demo -Mobile` pour tout essayer à la main (§ 2 et § 12),
+`scripts\tous-les-tests.ps1` pour tous les tests automatiques (§ 9).
 
 ## 1. Prérequis (une seule fois)
 
@@ -68,6 +72,8 @@ Authenticator, Microsoft Authenticator…) ; ensuite, connexion par identifiant,
 qui protège ces codes est gardée dans `%APPDATA%\ticagou\console-cle-dev.txt` : si vous aviez lancé la console à la main
 avec une autre clé, votre ancien compte ne s'ouvrira plus ; repartez d'une base vide avec
 `docker compose -f console\docker-compose.yml down -v`. Où cliquer pour chaque besoin : [CONSOLE.md](CONSOLE.md).
+
+**Application Direction du téléphone**, simulée dans le navigateur : ajoutez `-Mobile` (§ 12).
 
 L'**évaluation dure 30 jours**, comme en production (ADR 0011). Pour qu'une base de développement ou de démonstration
 installée depuis plus longtemps ne passe pas en lecture seule, le script lui donne un abonnement d'un an (« Ti'Cagou
@@ -266,6 +272,15 @@ Parents (base de démonstration, avec le portail) : toutes les familles, par exe
 
 Docker Desktop doit tourner : les tests d'intégration utilisent leur propre base, **pas** celle de développement.
 
+**Tout d'un coup** (15 à 25 minutes) : serveur, portail, console, les trois fronts et la cohérence des plugins mobiles,
+avec un bilan à la fin qui dit quelle suite relancer. `-Rapide` saute les suites Maven (2 à 3 minutes) :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\tous-les-tests.ps1
+```
+
+C'est ce que la CI GitHub vérifie à chaque envoi, sauf la compilation Android et iOS (§ 12 D). Suite par suite :
+
 ```bash
 cd server; ./mvnw verify
 ```
@@ -280,6 +295,14 @@ cd web; pnpm test; pnpm typecheck
 
 ```bash
 cd parents-portal/web; pnpm test; pnpm typecheck
+```
+
+```bash
+cd console/server; ./mvnw verify
+```
+
+```bash
+cd console/web; pnpm test; pnpm typecheck
 ```
 
 Un seul test, guillemets compris pour PowerShell : `./mvnw verify "-Dtest=InvoiceCalculatorTest"` (unitaire) ou
@@ -335,3 +358,80 @@ Git Bash), ou DBeaver sur `localhost:5435`.
   d'un responsable **invité** (fiche enfant › Journée et portail › Inviter), sur une crèche dont le portail est activé et
   synchronisé ; sinon le portail ne dit rien, volontairement (il ne révèle pas quelles adresses il connaît).
 - *« Synchronisation : portail injoignable »* : le portail (fenêtre « Portail ») est-il lancé sur 8090 ?
+
+## 12. Les applications mobiles
+
+Trois applications ([plan](plan-application-mobile.md)) : **Direction** (téléphone de la direction), **Pointage**
+(tablette Android de l'accueil), **Parents**. Elles reprennent le code des fronts : presque tout s'essaie sur le PC.
+
+### A. Sur le PC, dans le navigateur (le plus rapide)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Demo -Mobile
+```
+
+| Application | Où | Ce qu'on y essaie |
+|---|---|---|
+| Direction (simulée) | http://localhost:1431 | choix de la crèche, connexion gardée 30 jours, barre du bas, fiches, présences, départs à valider |
+| Pointage | http://localhost:1420/kiosk | le même écran que l'application ; appairage par code à 6 chiffres (§ 5 B) |
+| Parents | http://localhost:5180 | la même application que sur le téléphone (avec `-Demo` ou `-Portail`) |
+
+Ouvrez chaque adresse en **mode téléphone** : F12, puis Ctrl+Maj+M, et choisissez un iPhone ou une tablette.
+
+**Direction, pas à pas** :
+1. « Bienvenue » › **Autre adresse** › `http://localhost:8080` › Continuer (le code de la crèche n'existe qu'en
+   production, avec l'annuaire).
+2. Connexion `nathalie.kaloi` / `Niaouli-2026!` (§ 8). Rechargez la page : la session est gardée.
+3. Sur le PC du bureau (http://localhost:1420) : Paramètres › Tablettes et abonnement › **Téléphones de la direction**
+   liste ce téléphone ; **Retirer** le déconnecte aussitôt.
+4. **Départ à valider à distance** : créez une demande comme le ferait la tablette, puis décidez-la sur le téléphone
+   (Accueil ou Présences) :
+
+   ```bash
+   node scripts/captures/scenario-depart.mjs --url http://localhost:8080
+   ```
+
+5. Plus › **Notifications** : choix des alertes (les envois réels demandent un vrai téléphone, § B).
+
+**Ce que le navigateur ne fait pas** : Face ID et empreinte, notifications, scan des QR par l'appareil photo, mode
+kiosque, coffre du téléphone (Keychain, Keystore). Pour cela, un vrai appareil.
+
+### B. Sur un téléphone ou une tablette Android
+
+Les applications compilées n'acceptent qu'une adresse **https** : elles ne peuvent pas joindre le serveur de votre PC.
+Il leur faut une crèche d'essai sur l'hébergement (`./creche.sh creer essai`, [EXPLOITATION.md](EXPLOITATION.md)) ; pour
+l'application Parents, le portail hébergé (`https://parents.ticagou.nc` par défaut, autre adresse avec la variable
+`VITE_PORTAIL_URL` avant la construction).
+
+1. Installez **Android Studio** (il apporte le SDK Android et un émulateur).
+2. Construisez l'application voulue (`direction`, `pointage` ou `parents`) :
+
+   ```bash
+   pnpm --dir mobile install
+   ```
+
+   ```bash
+   node mobile/scripts/build.mjs pointage
+   ```
+
+3. Android Studio › **Open** › `mobile/pointage/android` › bouton **Run** : l'émulateur, ou votre appareil branché en USB
+   (Paramètres › À propos › appuyez 7 fois sur « Numéro de build », puis Options pour les développeurs › Débogage USB).
+
+Sans Android Studio : GitHub › Actions › Tests › **Run workflow**, case « mobile ». Les APK de test sont dans les
+artefacts du run ; installez-les sur l'appareil (autoriser l'installation d'applications inconnues). Il faut que la
+facturation GitHub soit réglée.
+
+**Notifications** : elles demandent le projet Firebase et les secrets du serveur (EXPLOITATION.md § 7 bis), donc le
+compte Google Play. Avant cela, tout le reste s'essaie, alertes exceptées.
+
+### C. Sur un iPhone
+
+Impossible depuis Windows : il faut Xcode, donc un Mac. La CI compile l'application iOS sur un Mac de GitHub (§ D).
+Les essais sur un vrai iPhone passent par **TestFlight**, une fois le compte Apple ouvert (workflow « Publication
+mobile »).
+
+### D. Compilation Android et iOS
+
+Elle ne tourne pas à chaque envoi (minutes coûteuses) : GitHub › Actions › Tests › **Run workflow**, case « mobile ».
+À faire avant une version, ou après une mise à jour de Capacitor. `scripts\tous-les-tests.ps1` vérifie déjà que les
+plugins des fronts et des applications concordent.

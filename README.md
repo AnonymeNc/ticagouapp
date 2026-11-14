@@ -125,11 +125,11 @@ cd server; .\mvnw.cmd verify
 ces derniers sont ignorés si Docker n'est pas démarré.
 
 ```powershell
-cd desktop; pnpm test
+cd web; pnpm test
 ```
 
 ```powershell
-cd desktop; pnpm typecheck
+cd web; pnpm typecheck
 ```
 
 ## Facturation

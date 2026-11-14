@@ -24,6 +24,11 @@
   facturation, ordres) : base sur 5436, service sur 8095, interface sur http://localhost:1421. Premier compte :
   http://localhost:1421/premier-compte?jeton=dev, puis connexion avec une application d'authentification.
 
+.PARAMETER Mobile
+  Démarre aussi l'application Ti'Cagou Direction simulée dans le navigateur (http://localhost:1431) : choix de la
+  crèche, session de 30 jours, barre du bas du téléphone. Sans plugin natif (ni Face ID, ni notifications) : pour
+  cela, un téléphone ou un émulateur Android (docs/TESTER-EN-LOCAL.md, § 12).
+
 .PARAMETER RemiseAZero
   Efface la base de développement et les documents chiffrés pour rejouer l'installation (assistant /setup).
   Avec -Demo, efface seulement la base de démonstration, qui est rechargée aussitôt.
@@ -40,8 +45,11 @@
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Demo -Console
+
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File scripts\tester-en-local.ps1 -Demo -Mobile
 #>
-param([switch]$Portail, [switch]$Demo, [switch]$Console, [switch]$RemiseAZero, [switch]$Arreter)
+param([switch]$Portail, [switch]$Demo, [switch]$Console, [switch]$Mobile, [switch]$RemiseAZero, [switch]$Arreter)
 
 # La démonstration montre les familles sur le portail.
 if ($Demo) { $Portail = $true }
@@ -301,6 +309,7 @@ Start-Containers $root 'postgres' 'La base de données'
 # Évaluation de 30 jours, comme en production (ADR 0011). Une base installée depuis plus longtemps reçoit un abonnement
 # de développement (Set-DevAbonnement) plutôt qu'une évaluation allongée.
 $serverEnv = ''
+if ($Mobile) { $serverEnv += "`$env:TICAGOU_ALLOWED_ORIGINS = 'http://localhost:1431'; " }
 if ($Demo) {
     Write-Step 'Base de démonstration « ticagou_demo »'
     $exists = cmd /c 'docker exec ticagou-web-postgres psql -U ticagou -d ticagou -tAc "SELECT 1 FROM pg_database WHERE datname = ''ticagou_demo''" 2>nul'
@@ -316,6 +325,12 @@ Write-Step 'Serveur (port 8080) et application du bureau (port 1420)'
 Install-Packages (Join-Path $root 'web')
 $pids += Start-Window 'Serveur' (Join-Path $root 'server') "$serverEnv.\mvnw.cmd spring-boot:run" 8080
 $pids += Start-Window 'Bureau' $root 'pnpm --dir web dev' 1420
+
+if ($Mobile) {
+    # L'application simulée appelle directement http://localhost:8080 (adresse de la crèche choisie), d'où le CORS.
+    Write-Step 'Application Direction simulée (port 1431)'
+    $pids += Start-Window 'Application Direction' $root "`$env:VITE_TICAGOU_APP_SIMULEE = '1'; pnpm --dir web exec vite --mode direction --port 1431 --strictPort" 1431
+}
 
 if ($Portail) {
     Write-Step 'Portail parents : base (5434) et Mailpit (8025)'
@@ -345,6 +360,7 @@ $pids | Where-Object { $_ } | ConvertTo-Json | Set-Content $state
 Write-Step 'Attente des serveurs (le premier démarrage compile : quelques minutes)'
 $serverUp = Wait-Url 'http://localhost:8080/api/v1/health' 300 'Serveur' 'Serveur'
 $null = Wait-Url 'http://localhost:1420' 120 'Application du bureau' 'Bureau'
+if ($Mobile) { $null = Wait-Url 'http://localhost:1431' 120 'Application Direction' 'Application Direction' }
 $code = $null
 if ($Portail) {
     if (Wait-Url 'http://localhost:8090/actuator/health' 300 'Portail parents' 'Portail') {
@@ -386,6 +402,10 @@ if ($Portail) {
         Write-Host '  Adresse du portail : http://localhost:8090'
         Write-Host "  Code d'activation  : $code"
     }
+}
+if ($Mobile) {
+    Write-Host 'Application Direction (simulée)    : http://localhost:1431  (F12, mode téléphone ;'
+    Write-Host '                                     adresse de la crèche : http://localhost:8080)'
 }
 if ($Console) {
     Write-Host 'Console de l''éditeur (admin)       : http://localhost:1421'

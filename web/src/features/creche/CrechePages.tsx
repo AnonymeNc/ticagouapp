@@ -223,7 +223,7 @@ export function CrecheChoicePage() {
       <p className="mt-2 mb-5 text-muted-foreground">Pour commencer, indiquez la crèche dans laquelle vous travaillez.</p>
       <div className="flex flex-col gap-3">
         {hasNativePlugins() &&
-          choice(<QrCode aria-hidden className="size-5" />, "Scanner le QR de la crèche", "Sur l’ordinateur : Paramètres › Postes › Ouvrir sur mon téléphone", () => void onScan(), true)}
+          choice(<QrCode aria-hidden className="size-5" />, "Scanner le QR de la crèche", "Sur l’ordinateur : Paramètres › Tablettes et abonnement › Ouvrir sur mon téléphone", () => void onScan(), true)}
         {choice(<Keyboard aria-hidden className="size-5" />, "Taper le code de la crèche", "6 caractères, sur la fiche de mise en service", () => { setError(null); setValue(""); setStep({ kind: "code" }); }, !hasNativePlugins())}
         {choice(<Globe aria-hidden className="size-5" />, "Autre adresse", "https://… donnée par Ti’Cagou", () => { setError(null); setValue(""); setStep({ kind: "adresse" }); })}
       </div>

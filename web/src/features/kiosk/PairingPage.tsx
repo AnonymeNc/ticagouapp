@@ -72,7 +72,7 @@ export function PairingPage() {
     if (!text) return;
     const qr = parsePairingQr(text);
     if (!qr) {
-      setError("Ce QR code n’est pas un QR d’appairage Ti’Cagou (Paramètres › Postes › Ajouter une tablette).");
+      setError("Ce QR code n’est pas un QR d’appairage Ti’Cagou (Paramètres › Tablettes et abonnement › Appairer une tablette).");
       return;
     }
     await submit(qr.code, qr.adresse);
