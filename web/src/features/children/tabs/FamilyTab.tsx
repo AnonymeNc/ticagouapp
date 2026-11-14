@@ -1,3 +1,4 @@
+import { confirmIrreversible } from "@/lib/native/device";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
@@ -323,6 +324,10 @@ function FamilyDataPanel({ child }: { child: ChildTabProps["child"] }) {
     setPending(true);
     setError(null);
     try {
+      if (!(await confirmIrreversible("Effacer les données de la famille"))) {
+        setPending(false);
+        return;
+      }
       await familiesApi.purge(family.id, confirmation);
       queryClient.removeQueries({ queryKey: ["child"] });
       await queryClient.invalidateQueries({ queryKey: ["children"] });

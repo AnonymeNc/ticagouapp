@@ -7,7 +7,8 @@ android {
         applicationId "nc.ticagou.direction"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        // Numéro de build croissant exigé par les stores (ADR 0027) : donné par la publication.
+        versionCode (System.getenv("TICAGOU_BUILD_NUMBER") ?: "1").toInteger()
         versionName "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -16,8 +17,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Signature des versions publiées (ADR 0027) : clé de l’éditeur hors du dépôt, fournie par la CI ou le poste
+    // de publication (TICAGOU_ANDROID_KEYSTORE, …). Sans elle, la version release n’est pas signée.
+    signingConfigs {
+        release {
+            if (System.getenv("TICAGOU_ANDROID_KEYSTORE")) {
+                storeFile file(System.getenv("TICAGOU_ANDROID_KEYSTORE"))
+                storePassword System.getenv("TICAGOU_ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("TICAGOU_ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("TICAGOU_ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
+            if (System.getenv("TICAGOU_ANDROID_KEYSTORE")) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

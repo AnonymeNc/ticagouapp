@@ -1,3 +1,4 @@
+import { confirmIrreversible } from "@/lib/native/device";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -325,6 +326,10 @@ function GenerateDialog({ preview, onClose, onDone }: { preview: MonthPreview; o
               setBusy(true);
               setError(null);
               try {
+                if (!(await confirmIrreversible("Valider les factures du mois"))) {
+                  setBusy(false);
+                  return;
+                }
                 onDone(await billingApi.generate(preview.month));
               } catch (e) {
                 setError(errorMessage(e));
