@@ -5,7 +5,8 @@ import { CircleCheck, Receipt, ShieldCheck, Tablet } from "lucide-react";
 import { Alert, FocusLayout } from "@/components/FocusLayout";
 import { Button } from "@/components/ui/button";
 import { api, ApiError, errorMessage } from "@/lib/api";
-import { SESSION_COOKIE, useAuth } from "@/features/auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { sessionHeaders } from "@/features/auth/tokens";
 import { Splash } from "@/features/auth/DesktopGate";
 import { setupStatusKey, useSetupStatus } from "@/features/auth/useSetupStatus";
 import type { SessionResponse } from "@/features/auth/types";
@@ -62,7 +63,7 @@ export function SetupWizard() {
         method: "POST",
         body: toSetupRequest(data),
         auth: false,
-        headers: { ...SESSION_COOKIE, ...(token ? { "X-Ticagou-Setup": token } : {}) },
+        headers: { ...sessionHeaders(), ...(token ? { "X-Ticagou-Setup": token } : {}) },
       });
       applySession(session);
       setStep("done");

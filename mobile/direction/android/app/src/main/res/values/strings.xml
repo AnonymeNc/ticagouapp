@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ti\'Cagou Direction</string>
+    <string name="title_activity_main">Ti\'Cagou Direction</string>
+    <string name="package_name">nc.ticagou.direction</string>
+    <string name="custom_url_scheme">nc.ticagou.direction</string>
+</resources>

@@ -7,6 +7,7 @@ import { systemApi, systemKeys } from "@/features/settings/systemApi";
 import { ServerStatusChip } from "@/features/health/ServerStatusChip";
 import { useNow } from "@/hooks/useNow";
 import { formatLongDate, formatTime } from "@/lib/datetime";
+import { isNativeApp } from "@/lib/native/platform";
 import { cn } from "@/lib/utils";
 import { KioskProvider, useKiosk } from "./KioskContext";
 import { PairingPage } from "./PairingPage";
@@ -25,7 +26,7 @@ export function KioskShell() {
     link.rel = "manifest";
     link.href = "/manifest.webmanifest";
     document.head.appendChild(link);
-    if (import.meta.env.PROD && window.isSecureContext && location.protocol.startsWith("http") && "serviceWorker" in navigator) {
+    if (import.meta.env.PROD && !isNativeApp() && window.isSecureContext && location.protocol.startsWith("http") && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js", { scope: "/kiosk" }).catch(() => {});
     }
     return () => link.remove();

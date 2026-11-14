@@ -1,0 +1,19 @@
+/**
+ * Démarrage de l'application mobile, avant le premier rendu : crèche courante (Preferences), session et identifiant
+ * de poste de cette crèche (coffre). Dans le navigateur, il n'y a rien à faire.
+ */
+import { loadVaultSession } from "@/features/auth/tokens";
+import { loadNativeWorkstation } from "@/lib/workstation";
+import { loadCreches } from "./creches";
+import { isNativeApp } from "./platform";
+
+/** Relit tout ce qui dépend de la crèche courante (démarrage, changement de crèche). */
+export async function loadCurrentCreche(): Promise<void> {
+  await Promise.all([loadVaultSession(), loadNativeWorkstation()]);
+}
+
+export async function bootstrapNative(): Promise<void> {
+  if (!isNativeApp()) return;
+  await loadCreches();
+  await loadCurrentCreche();
+}

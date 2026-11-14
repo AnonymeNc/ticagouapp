@@ -13,6 +13,10 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "8.0.1",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.2",
+    "@capacitor/preferences": "8.0.1",
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/source-sans-3": "^5.3.1",
     "@hookform/resolvers": "^6.0.2",

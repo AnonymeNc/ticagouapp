@@ -33,10 +33,11 @@ deux fois. Le web reste servi par chaque instance ; les applications n'enlèvent
 
 ```
 mobile/
-  direction/   package.json, capacitor.config.ts, android/, ios/, www/ (généré)
+  pnpm-workspace.yaml
+  direction/   package.json, capacitor.config.json, android/, ios/, www/ (généré)
   pointage/    idem, plus le plugin local KioskMode (Android)
   parents/     idem
-  scripts/     build.mjs (build du front + cap sync), check-versions.mjs
+  scripts/     build.mjs (build du front + cap sync + versions), check-versions.mjs, icones.ps1
 ```
 
 - Chaque coque a son `package.json` : `cap sync` y lit les plugins à compiler dans le projet natif.
@@ -45,6 +46,10 @@ mobile/
 - Les plugins sont chargés par `import()` dynamique derrière `Capacitor.isNativePlatform()` : le navigateur ne les
   télécharge pas.
 - `www/` est généré, jamais commité. `android/` et `ios/` sont commités (icônes, permissions, code natif propre).
+- Configuration en JSON (`capacitor.config.json`) : pas de TypeScript à installer dans les coques.
+- iOS par Swift Package Manager (`ios/App/CapApp-SPM`), sans CocoaPods ni Ruby.
+- Icônes et écrans de démarrage dessinés par `icones.ps1` (System.Drawing de Windows), une couleur par application :
+  Direction lagon, Pointage niaouli, Parents terre.
 
 **Version et plugins retenus** (épinglés, sans `^`)
 

@@ -1,4 +1,4 @@
-import { Outlet, type RouteObject } from "react-router";
+import { Navigate, Outlet, type RouteObject } from "react-router";
 import { AttendancePage } from "@/features/attendance/AttendancePage";
 import { BillingMonthPage } from "@/features/billing/BillingMonthPage";
 import { CollectionsPage } from "@/features/billing/CollectionsPage";
@@ -40,17 +40,22 @@ import { navItems } from "./navigation";
 import { AccountingExportPage } from "@/features/accounting/AccountingExportPage";
 import { ReportingPage } from "@/features/reporting/ReportingPage";
 
+/** Tablette appairée : session par PIN, jamais conservée ; file d’attente hors connexion (ADR 0005). */
+const kioskRoute: RouteObject = {
+  path: "/kiosk",
+  element: <KioskShell />,
+  children: [{ index: true, element: <KioskHomePage /> }],
+};
+
+/** Application Ti’Cagou Pointage (ADR 0023) : le kiosque seul. */
+export const pointageRoutes: RouteObject[] = [kioskRoute, { path: "*", element: <Navigate to="/kiosk" replace /> }];
+
 export const routes: RouteObject[] = [
   // Pré-inscription en ligne (ADR 0020) : page publique, sans session, intégrable au site de la crèche.
   { path: "/preinscription", element: <PreinscriptionPage /> },
   // Lien de réinitialisation du mot de passe, créé par l'éditeur depuis sa console : page publique, le jeton fait foi.
   { path: "/reinitialiser", element: <ResetPasswordPage /> },
-  {
-    // Tablette appairée : session par PIN, jamais conservée ; file d'attente hors connexion (ADR 0005)
-    path: "/kiosk",
-    element: <KioskShell />,
-    children: [{ index: true, element: <KioskHomePage /> }],
-  },
+  kioskRoute,
   {
     // Bureau, dans le navigateur : session conservée par un cookie HttpOnly
     element: (

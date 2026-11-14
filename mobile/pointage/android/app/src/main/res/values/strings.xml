@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ti\'Cagou Pointage</string>
+    <string name="title_activity_main">Ti\'Cagou Pointage</string>
+    <string name="package_name">nc.ticagou.pointage</string>
+    <string name="custom_url_scheme">nc.ticagou.pointage</string>
+</resources>

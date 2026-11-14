@@ -1,0 +1,11 @@
+{
+  "appId": "nc.ticagou.direction",
+  "appName": "Ti'Cagou Direction",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false, "captureInput": true },
+  "ios": { "contentInset": "never", "scheme": "Ti'Cagou Direction" },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 0, "backgroundColor": "#fbf8f3" }
+  }
+}

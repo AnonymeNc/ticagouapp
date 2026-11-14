@@ -48,7 +48,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Flux SSE : la requête initiale est authentifiée, les reprises asynchrones aussi.
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/health", "/api/v1/setup/status").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/health", "/api/v1/setup/status", "/api/v1/app/compat").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/setup", "/api/v1/auth/login",
                                 "/api/v1/auth/refresh", "/api/v1/auth/logout",
                                 "/api/v1/devices/pair", "/api/v1/devices/session",
@@ -93,10 +93,19 @@ public class SecurityConfig {
         objectMapper.writeValue(response.getOutputStream(), problem);
     }
 
+    /**
+     * Origines du développement (Vite) et des applications Capacitor (ADR 0024). Aucun cookie ne traverse
+     * ({@code allowCredentials} reste faux) : les applications s'authentifient par jeton porteur.
+     */
     @Bean
     CorsConfigurationSource corsConfigurationSource(TiCagouProperties properties) {
         var config = new CorsConfiguration();
-        config.setAllowedOrigins(properties.allowedOrigins());
+        var origins = new java.util.ArrayList<>(properties.allowedOrigins());
+        if (properties.appOrigins() != null) {
+            properties.appOrigins().stream().filter(o -> !origins.contains(o)).forEach(origins::add);
+        }
+        config.setAllowedOrigins(origins);
+        config.setAllowCredentials(false);
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
         var source = new UrlBasedCorsConfigurationSource();

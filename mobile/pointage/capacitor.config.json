@@ -1,0 +1,11 @@
+{
+  "appId": "nc.ticagou.pointage",
+  "appName": "Ti'Cagou Pointage",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false, "captureInput": true },
+  "ios": { "contentInset": "never", "scheme": "Ti'Cagou Pointage" },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 0, "backgroundColor": "#fbf8f3" }
+  }
+}
