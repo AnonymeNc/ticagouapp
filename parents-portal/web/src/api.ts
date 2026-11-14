@@ -1,4 +1,8 @@
-/** Appels au portail (même origine, cookie de session HttpOnly) et types des réponses. */
+/**
+ * Appels au portail et types des réponses. Navigateur : même origine, cookie de session HttpOnly. Application
+ * Ti’Cagou Parents : adresse du portail, jeton porteur du trousseau (ADR 0024).
+ */
+import { appHeaders, getMediaToken, getSessionToken, IS_APP, PORTAL_URL, setMediaToken, storeAppSession } from "./native";
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string | null, message: string) {
@@ -7,17 +11,19 @@ export class ApiError extends Error {
 }
 
 async function call<T>(path: string, init: { method?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = { Accept: "application/json", ...appHeaders() };
+  const bearer = getSessionToken();
+  if (IS_APP && bearer) headers.Authorization = `Bearer ${bearer}`;
   // Toute écriture porte cet en-tête : un formulaire d'un autre site ne peut pas l'ajouter (CSRF).
   if (init.method && init.method !== "GET") headers["X-Ticagou-Portail"] = "1";
   if (init.body !== undefined) headers["Content-Type"] = "application/json";
   let response: Response;
   try {
-    response = await fetch(`/api/v1${path}`, {
+    response = await fetch(`${PORTAL_URL}/api/v1${path}`, {
       method: init.method ?? "GET",
       headers,
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
-      credentials: "same-origin",
+      credentials: IS_APP ? "omit" : "same-origin",
       signal: init.signal,
     });
   } catch (error) {
@@ -110,9 +116,18 @@ export type AbsenceData = { childId: string; fromDay: string; toDay: string; rea
 
 export const portal = {
   requestLink: (email: string) => call<{ message: string }>("/auth/request", { method: "POST", body: { email } }),
-  verifyToken: (token: string) => call<{ email: string }>("/auth/verify", { method: "POST", body: { token } }),
-  verifyCode: (email: string, code: string) => call<{ email: string }>("/auth/verify", { method: "POST", body: { email, code } }),
-  logout: () => call<void>("/auth/logout", { method: "POST" }),
+  verifyToken: (token: string) => openSession(call<Verified>("/auth/verify", { method: "POST", body: { token } })),
+  verifyCode: (email: string, code: string) => openSession(call<Verified>("/auth/verify", { method: "POST", body: { email, code } })),
+  logout: () => call<void>("/auth/logout", { method: "POST" }).finally(() => storeAppSession(null)),
+  /** Application : jeton à ajouter aux adresses des photos et fichiers. */
+  refreshMediaToken: async () => setMediaToken((await call<{ token: string }>("/me/media-token")).token),
+  /** Suppression du compte (maquette Pa8) : le code a été demandé par requestLink. */
+  deleteAccount: (code: string) => call<void>("/me/account/delete", { method: "POST", body: { code } }).then(() => storeAppSession(null)),
+  nativePushState: (token: string, signal?: AbortSignal) =>
+    call<{ categories: string[] | null }>(`/me/push/native?token=${encodeURIComponent(token)}`, { signal }),
+  registerNativePush: (body: { platform: "IOS" | "ANDROID"; token: string; categories: string[] }) =>
+    call<void>("/me/push/native", { method: "POST", body }),
+  unregisterNativePush: (token: string) => call<void>("/me/push/native/unregister", { method: "POST", body: { token } }),
 
   me: (signal?: AbortSignal) => call<Me>("/me", { signal }),
   day: (structureId: string, childId: string, date?: string, signal?: AbortSignal) =>
@@ -143,5 +158,24 @@ export const portal = {
     call<Item<AbsenceData>>("/me/absences", { method: "POST", body }),
 };
 
-export const fileUrl = (structureId: string, itemId: string) => `/api/v1/me/files/${structureId}/${itemId}`;
-export const childPhotoUrl = (structureId: string, childId: string) => `/api/v1/me/children/${structureId}/${childId}/photo`;
+export const fileUrl = (structureId: string, itemId: string) => media(`/api/v1/me/files/${structureId}/${itemId}`);
+export const childPhotoUrl = (structureId: string, childId: string) => media(`/api/v1/me/children/${structureId}/${childId}/photo`);
+
+/** Application : une image ou une vidéo ne porte pas d’en-tête ; le jeton de média va dans l’adresse. */
+function media(path: string) {
+  if (!IS_APP) return path;
+  const token = getMediaToken();
+  return `${PORTAL_URL}${path}${token ? `?jeton=${encodeURIComponent(token)}` : ""}`;
+}
+
+type Verified = { email: string; token?: string };
+
+/** Application : le jeton de session arrive dans la réponse et va au trousseau. */
+async function openSession(verified: Promise<Verified>) {
+  const result = await verified;
+  if (IS_APP && result.token) {
+    await storeAppSession(result.token);
+    await portal.refreshMediaToken().catch(() => {});
+  }
+  return { email: result.email };
+}

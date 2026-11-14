@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { errorMessage, portal } from "../api";
 import { Banner, Logo, TextField, TouchButton } from "../components";
+import { IS_APP } from "../native";
 import { meKey } from "../session";
 
 /**
@@ -19,6 +20,8 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tried = useRef(false);
+  const [params] = useSearchParams();
+  const deleted = params.get("compte") === "supprime";
 
   const done = async () => {
     await queryClient.invalidateQueries({ queryKey: meKey });
@@ -76,14 +79,15 @@ export function LoginPage() {
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); void request(); }}>
           <TextField label="Adresse e-mail" type="email" name="email" autoComplete="email" required value={email}
             onChange={(e) => setEmail(e.target.value)} hint="Celle que vous avez donnée à la crèche." />
+          {deleted && <Banner tone="success">Votre compte est supprimé. La crèche est prévenue et vous recontactera pour le dossier de la famille.</Banner>}
           {error && <Banner tone="danger">{error}</Banner>}
-          <TouchButton type="submit" disabled={busy || !email.trim()}>Recevoir mon lien de connexion</TouchButton>
+          <TouchButton type="submit" disabled={busy || !email.trim()}>{IS_APP ? "Recevoir mon code de connexion" : "Recevoir mon lien de connexion"}</TouchButton>
         </form>
       ) : (
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); void verify(); }}>
           <Banner>
             Si cette adresse est connue de la crèche, un e-mail vient de partir vers <strong>{email.trim()}</strong>.
-            Touchez le lien qu’il contient, ou saisissez son code ci-dessous.
+            {IS_APP ? " Saisissez le code à 6 chiffres qu’il contient." : " Touchez le lien qu’il contient, ou saisissez son code ci-dessous."}
           </Banner>
           <TextField label="Code à 6 chiffres" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={7}
             value={code} onChange={(e) => setCode(e.target.value.replace(/[^0-9 ]/g, ""))} />

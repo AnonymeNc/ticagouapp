@@ -143,6 +143,8 @@ public class SyncService {
             jdbc.update("INSERT INTO guardian (structure_id, id, family_id, first_name, last_name, email, updated_at) "
                             + "VALUES (?, ?, ?, ?, ?, ?, ?)", structureId, id, uuid(p, "familyId"), text(p, "firstName"),
                     text(p, "lastName"), text(p, "email").strip().toLowerCase(), Timestamp.from(clock.instant()));
+            // Compte supprimé par le parent puis fiche renvoyée par la crèche (réinvitation, modification) : il peut revenir.
+            jdbc.update("DELETE FROM account_deletion WHERE email = ?", text(p, "email").strip().toLowerCase());
         }
         // Accès retiré ou adresse changée : les sessions de l'ancienne adresse ne voient plus rien de cette famille ;
         // sans autre rattachement, elles sont révoquées.

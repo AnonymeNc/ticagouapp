@@ -22,12 +22,17 @@ import jakarta.validation.constraints.Size;
 import nc.ticagou.portail.PortalProperties;
 import nc.ticagou.portail.common.ApiException;
 
-/** Connexion des parents : demande d'e-mail, lien ou code, déconnexion. La session est un cookie HttpOnly. */
+/**
+ * Connexion des parents : demande d'e-mail, lien ou code, déconnexion. Dans le navigateur, la session est un cookie
+ * HttpOnly ; l'application Ti’Cagou Parents (en-tête X-Ticagou-App) reçoit le jeton dans la réponse et l'envoie en
+ * {@code Authorization: Bearer} (ADR 0024).
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
     public static final String COOKIE = "ticagou_session";
+    public static final String APP_HEADER = "X-Ticagou-App";
 
     public record LoginRequest(@NotBlank(message = "Saisissez votre adresse e-mail")
                                @Email(message = "Adresse e-mail invalide") @Size(max = 150) String email) {
@@ -54,7 +59,8 @@ public class AuthController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<Map<String, String>> verify(@Valid @RequestBody VerifyRequest request, HttpServletRequest http) {
+    public ResponseEntity<Map<String, String>> verify(@Valid @RequestBody VerifyRequest request, HttpServletRequest http,
+                                                      @org.springframework.web.bind.annotation.RequestHeader(value = APP_HEADER, required = false) String app) {
         AuthService.Session session;
         if (request.token() != null && !request.token().isBlank()) {
             session = auth.verifyToken(request.token(), http.getRemoteAddr());
@@ -63,14 +69,19 @@ public class AuthController {
         } else {
             throw ApiException.rule("verify_incomplete", "Saisissez le code reçu par e-mail.");
         }
+        if (app != null && app.startsWith("parents/")) {
+            // Application : jeton gardé dans le trousseau du téléphone, jamais de cookie (autre origine).
+            return ResponseEntity.ok(Map.of("email", session.email(), "token", session.token(),
+                    "expiresAt", session.expiresAt().toString()));
+        }
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie(session.token(),
                         Duration.between(clock.instant(), session.expiresAt()), properties.secureCookie()))
                 .body(Map.of("email", session.email()));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@CookieValue(value = COOKIE, required = false) String token) {
-        auth.logout(token);
+    public ResponseEntity<Void> logout(@CookieValue(value = COOKIE, required = false) String token, HttpServletRequest http) {
+        auth.logout(token != null ? token : ParentSessionInterceptor.bearer(http));
         return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO, properties.secureCookie()))
                 .build();
     }

@@ -57,7 +57,8 @@ public class AuthService {
         }
         boolean known = Boolean.TRUE.equals(jdbc.queryForObject(
                 "SELECT EXISTS (SELECT 1 FROM guardian g JOIN portal_structure s ON s.id = g.structure_id "
-                        + "WHERE lower(g.email) = ? AND " + OPEN_STRUCTURE + ")", Boolean.class, email, today()));
+                        + "WHERE lower(g.email) = ? AND " + OPEN_STRUCTURE + ") "
+                        + "AND NOT EXISTS (SELECT 1 FROM account_deletion d WHERE d.email = ?)", Boolean.class, email, today(), email));
         if (!known) {
             return;
         }
